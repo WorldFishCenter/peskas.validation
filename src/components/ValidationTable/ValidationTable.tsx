@@ -30,6 +30,30 @@ interface Submission {
   alert_flags?: string[];
 }
 
+// Add this constant at the top of the file, after the interfaces
+const STATUS_STYLES = {
+  validation_status_approved: {
+    backgroundColor: 'rgba(87, 167, 115, 0.15)',  // #57A773
+    textColor: '#57A773',
+    borderColor: 'rgba(87, 167, 115, 0.3)',
+  },
+  validation_status_not_approved: {
+    backgroundColor: 'rgba(211, 78, 36, 0.15)',   // #D34E24
+    textColor: '#D34E24',
+    borderColor: 'rgba(211, 78, 36, 0.3)',
+  },
+  validation_status_on_hold: {
+    backgroundColor: 'rgba(137, 144, 159, 0.15)', // #89909F
+    textColor: '#89909F',
+    borderColor: 'rgba(137, 144, 159, 0.3)',
+  },
+  default: {
+    backgroundColor: 'rgba(137, 144, 159, 0.15)', // Same as on_hold
+    textColor: '#89909F',
+    borderColor: 'rgba(137, 144, 159, 0.3)',
+  },
+};
+
 // Define a fuzzy filter function using rankItem
 const fuzzyFilter: FilterFn<Submission> = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value);
@@ -62,12 +86,11 @@ const ValidationTable: React.FC = () => {
     }
   }, [submissions]);
 
-  // Status options for filter dropdown
+  // Update the status options to match the actual valid statuses
   const statusOptions = [
-    'validation_status_pending',
     'validation_status_approved',
-    'validation_status_rejected',
-    'validation_status_requires_review'
+    'validation_status_not_approved',
+    'validation_status_on_hold'
   ];
 
   const columns = useMemo<ColumnDef<Submission, unknown>[]>(
@@ -138,37 +161,15 @@ const ValidationTable: React.FC = () => {
         cell: info => {
           const status = info.getValue() as string;
           
-          // Get appropriate styling based on status
-          let backgroundColor = '#6c757d';
-          let textColor = '#fff';
-          let borderColor = '#6c757d';
-          
-          if (status) {
-            if (status.includes('approved')) {
-              backgroundColor = 'rgba(25, 135, 84, 0.15)';
-              textColor = '#198754';
-              borderColor = 'rgba(25, 135, 84, 0.3)';
-            } else if (status.includes('rejected')) {
-              backgroundColor = 'rgba(220, 53, 69, 0.15)';
-              textColor = '#dc3545';
-              borderColor = 'rgba(220, 53, 69, 0.3)';
-            } else if (status.includes('pending')) {
-              backgroundColor = 'rgba(255, 193, 7, 0.15)';
-              textColor = '#664d03';
-              borderColor = 'rgba(255, 193, 7, 0.3)';
-            } else if (status.includes('review')) {
-              backgroundColor = 'rgba(13, 110, 253, 0.15)';
-              textColor = '#0d6efd';
-              borderColor = 'rgba(13, 110, 253, 0.3)';
-            }
-          }
+          // Use exact status or default
+          const style = STATUS_STYLES[status] || STATUS_STYLES.default;
           
           return (
             <span
               style={{
-                backgroundColor,
-                color: textColor,
-                border: `1px solid ${borderColor}`,
+                backgroundColor: style.backgroundColor,
+                color: style.textColor,
+                border: `1px solid ${style.borderColor}`,
                 borderRadius: '4px',
                 padding: '4px 10px',
                 display: 'inline-block',
@@ -309,7 +310,9 @@ const ValidationTable: React.FC = () => {
               <option value="">All Statuses</option>
               {statusOptions.map(status => (
                 <option key={status} value={status}>
-                  {status.replace('validation_status_', '').replace(/_/g, ' ').toUpperCase()}
+                  {status === 'validation_status_approved' && 'APPROVED'}
+                  {status === 'validation_status_not_approved' && 'NOT APPROVED'}
+                  {status === 'validation_status_on_hold' && 'ON HOLD'}
                 </option>
               ))}
             </select>
