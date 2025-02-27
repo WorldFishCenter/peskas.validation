@@ -54,6 +54,13 @@ const STATUS_STYLES = {
   },
 };
 
+// Update the alert descriptions with more comprehensive information
+const ALERT_FLAG_DESCRIPTIONS = {
+  '5': 'Catch information is incomplete - The submission is missing essential data fields required for validation.',
+  '9': 'Weight of catch is too high - The reported catch weight exceeds expected thresholds for this vessel type.',
+  // Add more flag descriptions as needed
+};
+
 // Define a fuzzy filter function using rankItem
 const fuzzyFilter: FilterFn<Submission> = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value);
@@ -98,6 +105,7 @@ const ValidationTable: React.FC = () => {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
+  const [showAlertGuide, setShowAlertGuide] = useState(false);
 
   useEffect(() => {
     if (submissions && submissions.length > 0) {
@@ -361,6 +369,27 @@ const ValidationTable: React.FC = () => {
             </select>
           </div>
           
+          {/* Alert Info Button - More prominent */}
+          <button 
+            className="btn btn-outline-warning ms-3" 
+            title="View Alert Codes Reference"
+            onClick={() => setShowAlertGuide(true)}
+            style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              height: '38px'
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+              <circle cx="12" cy="12" r="9" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            Alert Codes
+          </button>
+          
           {/* Reset Filters Button */}
           {(globalFilter || table.getState().columnFilters.length > 0) && (
             <button
@@ -500,6 +529,75 @@ const ValidationTable: React.FC = () => {
             isUpdating={isUpdating}
             updateMessage={updateMessage}
           />
+        </div>
+      )}
+      {/* Alert Guide Modal - Improved readability */}
+      {showAlertGuide && (
+        <div className="modal modal-blur show d-block" tabIndex={-1} role="dialog">
+          <div className="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div className="modal-content">
+              <div className="modal-header bg-warning-subtle">
+                <h5 className="modal-title">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-triangle me-2" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M12 9v2m0 4v.01" />
+                    <path d="M5 19h14a2 2 0 0 0 1.84 -2.75l-7.1 -12.25a2 2 0 0 0 -3.5 0l-7.1 12.25a2 2 0 0 0 1.75 2.75" />
+                  </svg>
+                  Alert Codes Reference
+                </h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowAlertGuide(false)}
+                  aria-label="Close"
+                ></button>
+              </div>
+              <div className="modal-body p-4">
+                <div className="alert alert-info mb-4">
+                  <strong>About Alert Codes:</strong> Alerts identify potential issues with a submission that require validation attention. Use this reference to understand what each alert code signifies.
+                </div>
+                <div className="table-responsive">
+                  <table className="table table-bordered">
+                    <thead className="table-light">
+                      <tr>
+                        <th style={{width: "20%"}}>Alert Code</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(ALERT_FLAG_DESCRIPTIONS).map(([code, description]) => (
+                        <tr key={code}>
+                          <td className="align-middle text-center">
+                            <span
+                              className="badge bg-danger-subtle text-danger"
+                              style={{
+                                fontSize: '1rem',
+                                padding: '6px 12px',
+                                borderRadius: '4px',
+                                fontWeight: '600'
+                              }}
+                            >
+                              Code {code}
+                            </span>
+                          </td>
+                          <td className="align-middle fs-5 py-3">{description}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-primary px-4" 
+                  onClick={() => setShowAlertGuide(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
