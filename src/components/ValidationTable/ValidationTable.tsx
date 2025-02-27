@@ -61,6 +61,32 @@ const fuzzyFilter: FilterFn<Submission> = (row, columnId, value, addMeta) => {
   return itemRank.passed;
 };
 
+const formatDate = (dateStr: string | null): string => {
+  if (!dateStr) return 'Never';
+  try {
+    // Check if the date string is actually a Unix timestamp (number)
+    const timestamp = Number(dateStr);
+    const date = !isNaN(timestamp) 
+      ? new Date(timestamp * 1000)  // Convert seconds to milliseconds
+      : new Date(dateStr);
+
+    // Check if it's a valid date object
+    if (isNaN(date.getTime())) {
+      return 'Invalid Date';
+    }
+
+    return date.toLocaleString('en-GB', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (e) {
+    return 'Invalid Date';
+  }
+};
+
 const ValidationTable: React.FC = () => {
   const { data: submissions, isLoading, error, refetch } = useFetchSubmissions();
   const [selectedRow, setSelectedRow] = useState<Submission | null>(null);
@@ -106,7 +132,16 @@ const ValidationTable: React.FC = () => {
       {
         accessorKey: 'submission_date',
         header: () => 'SUBMISSION DATE',
-        cell: info => (info.getValue() as string) || 'N/A',
+        cell: info => {
+          const date = info.getValue() as string;
+          if (!date) return 'N/A';
+          try {
+            // For submission date, we only want YYYY-MM-DD
+            return date.split('T')[0];
+          } catch (e) {
+            return 'Invalid Date';
+          }
+        },
         enableSorting: true,
         enableColumnFilter: true,
         filterFn: fuzzyFilter,
@@ -189,15 +224,7 @@ const ValidationTable: React.FC = () => {
       {
         accessorKey: 'validated_at',
         header: () => 'LAST VALIDATED',
-        cell: info => {
-          const date = info.getValue() as string;
-          if (!date) return 'Never';
-          try {
-            return new Date(date).toLocaleString();
-          } catch (e) {
-            return date || 'N/A';
-          }
-        },
+        cell: info => formatDate(info.getValue() as string),
         enableSorting: true,
         enableColumnFilter: true,
         filterFn: fuzzyFilter,

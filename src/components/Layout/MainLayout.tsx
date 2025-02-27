@@ -35,11 +35,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 </ul>
               </div>
               <div className="col-12 col-lg-auto mt-3 mt-lg-0">
-                <ul className="list-inline list-inline-dots mb-0">
-                  <li className="list-inline-item">
-                    Copyright © 2023
-                  </li>
-                </ul>
               </div>
             </div>
           </div>
