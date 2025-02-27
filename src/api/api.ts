@@ -26,39 +26,12 @@ export const useFetchSubmissions = () => {
       setIsLoading(true);
       setError(null);
       
-      const response = await axios.get(`${API_BASE_URL}/submissions`);
-      setData(response.data);
+      const response = await axios.get(`${API_BASE_URL}/kobo/submissions`);
+      setData(response.data.results);
     } catch (err) {
       console.error('Error fetching submissions:', err);
-      setError('Failed to load submissions. Please try again later.');
-      
-      // Fallback to mock data if API fails
-      setData([
-        {
-          submission_id: '645323011',
-          submission_date: '2025-02-19',
-          alert_flag: '',
-          alert_flags: [],
-          validation_status: 'validation_status_on_hold',
-          validated_at: '2025-02-19T00:00:00.000Z'
-        },
-        {
-          submission_id: '645327348',
-          submission_date: '2025-02-19',
-          alert_flag: '5, 9',
-          alert_flags: ['5', '9'],
-          validation_status: 'validation_status_on_hold',
-          validated_at: '2025-02-19T00:00:00.000Z'
-        },
-        {
-          submission_id: '645345830',
-          submission_date: '2025-02-19',
-          alert_flag: '5',
-          alert_flags: ['5'],
-          validation_status: 'validation_status_on_hold',
-          validated_at: '2025-02-19T00:00:00.000Z'
-        }
-      ]);
+      setError('Failed to load submissions');
+      setData([]);
     } finally {
       setIsLoading(false);
     }

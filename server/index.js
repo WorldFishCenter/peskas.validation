@@ -31,64 +31,56 @@ async function connectToMongo() {
   }
 }
 
-// Get all submissions
-app.get('/api/submissions', async (req, res) => {
+// Rename the endpoint back to match the client's expectation
+app.get('/api/kobo/submissions', async (req, res) => {
   try {
-    const submissions = await db.collection('surveys_flags').find({}).toArray();
-    console.log("Raw MongoDB data:", submissions.slice(0, 3)); // Log first few entries
+    const koboAssetId = process.env.KOBO_ASSET_ID;
+    const koboToken = process.env.KOBO_TOKEN;
     
-    // Filter out the metadata object and transform data
-    const transformedData = submissions
-      .filter(doc => doc.submission_id) // Skip metadata object without submission_id
-      .map(doc => {
-        // Format the date for better display
-        const submissionDate = doc.submission_date 
-          ? new Date(doc.submission_date).toISOString().split('T')[0] 
-          : '';
-        
-        // Handle alert flag carefully with more logging
-        let alertFlag = '';
-        if (doc.alert_flag !== undefined) {
-          // Check different cases of alert_flag format
-          alertFlag = typeof doc.alert_flag === 'string'
-            ? doc.alert_flag.replace(/"/g, '').trim()
-            : String(doc.alert_flag);
-        }
-        
-        // Calculate alert flags array for tooltip
-        const alertFlags = alertFlag 
-          ? alertFlag.split(',').map(flag => flag.trim()).filter(Boolean)
-          : [];
-        
-        const result = {
-          submission_id: doc.submission_id || '',
-          submission_date: submissionDate,
-          alert_flag: alertFlag,
-          alert_flags: alertFlags,
-          validation_status: doc.validation_status || 'validation_status_on_hold',
-          validated_at: doc.validated_at 
-            ? new Date(doc.validated_at).toISOString() 
-            : doc.submission_date 
-              ? new Date(doc.submission_date).toISOString() 
-              : new Date().toISOString()
-        };
-        
-        // Log processed entry for ones with alert flags
-        if (alertFlag) {
-          console.log("Processed entry with alert:", {
-            submission_id: result.submission_id,
-            alert_flag: result.alert_flag,
-            alert_flags: result.alert_flags
-          });
-        }
-        
-        return result;
-      });
+    // 1. Fetch submissions from KoboToolbox
+    const koboUrl = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/`;
+    const koboResponse = await axios.get(koboUrl, {
+      headers: {
+        Authorization: `Token ${koboToken}`
+      }
+    });
+
+    // 2. Fetch alert flags from MongoDB
+    const mongoSubmissions = await db.collection('surveys_flags')
+      .find({})
+      .toArray();
+
+    // 3. Create a map of MongoDB data for easier lookup
+    const mongoDataMap = new Map(
+      mongoSubmissions.map(doc => [doc.submission_id, doc])
+    );
+
+    // 4. Combine the data
+    const combinedData = koboResponse.data.results.map(koboItem => {
+      const mongoData = mongoDataMap.get(koboItem._id);
+      
+      return {
+        submission_id: koboItem._id,
+        submission_date: koboItem._submission_time,
+        vessel_number: koboItem.vessel_number || '',
+        catch_number: koboItem.catch_number || '',
+        validation_status: koboItem._validation_status?.validation_status?.uid || 
+                         koboItem._validation_status?.uid || 
+                         'validation_status_on_hold',
+        validated_at: koboItem._validation_status?.timestamp || koboItem._submission_time,
+        alert_flag: mongoData?.alert_flag || '',
+        alert_flags: mongoData?.alert_flag ? [mongoData.alert_flag] : []
+      };
+    });
     
-    console.log("Sending transformed data count:", transformedData.length);
-    res.json(transformedData);
+    res.json({
+      count: koboResponse.data.count,
+      next: koboResponse.data.next,
+      previous: koboResponse.data.previous,
+      results: combinedData
+    });
   } catch (error) {
-    console.error('Error fetching submissions:', error);
+    console.error('Error fetching combined data:', error);
     res.status(500).json({ error: 'Failed to fetch submissions' });
   }
 });
