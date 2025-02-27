@@ -10,9 +10,9 @@ import {
   Row,
   ColumnFiltersState,
   FilterFn,
+  SortingState,
 } from '@tanstack/react-table';
 import { rankItem } from '@tanstack/match-sorter-utils';
-import StatusBadge from './StatusBadge';
 import StatusUpdateForm from './StatusUpdateForm';
 import { useFetchSubmissions, useUpdateValidationStatus } from '../../api/api';
 import { logData } from '../../utils/debug';
@@ -22,7 +22,7 @@ interface Submission {
   submission_date: string;
   vessel_number: string;
   catch_number: string;
-  alert_number: string;
+  alert_number?: string;
   validation_status: string;
   validated_at: string;
   alert_flag?: string;
@@ -30,7 +30,7 @@ interface Submission {
 }
 
 // Define a fuzzy filter function using rankItem
-const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
+const fuzzyFilter: FilterFn<Submission> = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value);
   addMeta({ itemRank });
   return itemRank.passed;
@@ -41,7 +41,7 @@ const ValidationTable: React.FC = () => {
   const { updateStatus, isUpdating, updateMessage } = useUpdateValidationStatus();
   const [selectedRow, setSelectedRow] = useState<Submission | null>(null);
   const [statusToUpdate, setStatusToUpdate] = useState<string>('validation_status_approved');
-  const [sorting, setSorting] = useState([]);
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -68,7 +68,7 @@ const ValidationTable: React.FC = () => {
     'validation_status_requires_review'
   ];
 
-  const columns = useMemo<ColumnDef<Submission>[]>(
+  const columns = useMemo<ColumnDef<Submission, unknown>[]>(
     () => [
       {
         accessorKey: 'submission_id',
@@ -76,7 +76,7 @@ const ValidationTable: React.FC = () => {
         cell: info => info.getValue(),
         enableSorting: true,
         enableColumnFilter: true,
-        filterFn: 'fuzzy',
+        filterFn: fuzzyFilter,
       },
       {
         accessorKey: 'submission_date',
@@ -84,7 +84,7 @@ const ValidationTable: React.FC = () => {
         cell: info => (info.getValue() as string) || 'N/A',
         enableSorting: true,
         enableColumnFilter: true,
-        filterFn: 'fuzzy',
+        filterFn: fuzzyFilter,
       },
       {
         accessorKey: 'alert_flag',
@@ -197,7 +197,7 @@ const ValidationTable: React.FC = () => {
         },
         enableSorting: true,
         enableColumnFilter: true,
-        filterFn: 'fuzzy',
+        filterFn: fuzzyFilter,
       },
     ],
     []
@@ -205,7 +205,7 @@ const ValidationTable: React.FC = () => {
 
   const table = useReactTable({
     data: submissions || [],
-    columns,
+    columns: columns as any,
     state: {
       sorting,
       pagination: { pageIndex, pageSize },
@@ -226,16 +226,16 @@ const ValidationTable: React.FC = () => {
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    globalFilterFn: fuzzyFilter,
+    globalFilterFn: fuzzyFilter as any,
     filterFns: {
-      fuzzy: fuzzyFilter,
+      fuzzy: fuzzyFilter as any,
     },
     initialState: {
       pagination: { pageSize: 10 },
     },
   });
 
-  const handleRowClick = (row: Row<Submission>) => {
+  const handleRowClick = (row: any) => {
     setSelectedRow(row.original);
   };
 
@@ -447,7 +447,7 @@ const ValidationTable: React.FC = () => {
       {selectedRow && (
         <div className="card-footer">
           <StatusUpdateForm
-            selectedSubmission={selectedRow}
+            selectedSubmission={selectedRow as any}
             status={statusToUpdate}
             setStatus={setStatusToUpdate}
             onUpdate={handleUpdateStatus}
