@@ -72,7 +72,7 @@ update_validation_status <- memoise::memoise(function(submission_id = NULL,
                                                       asset_id = NULL,
                                                       token = NULL,
                                                       debug = TRUE) {
-  base_url <- paste0("https://kf.kobotoolbox.org/api/v2/assets/", asset_id, "/data/")
+  base_url <- paste0("https://eu.kobotoolbox.org/api/v2/assets/", asset_id, "/data/")
   url <- paste0(base_url, submission_id, "/validation_status/")
 
   req <- httr2::request(url) %>%
@@ -131,7 +131,7 @@ update_validation_status <- memoise::memoise(function(submission_id = NULL,
 #' @export
 generate_edit_url <- memoise::memoise(function(submission_id) {
   url <- paste0(
-    "https://kf.kobotoolbox.org/api/v2/assets/",
+    "https://eu.kobotoolbox.org/api/v2/assets/",
     get_pars()$kobo$asset_id,
     "/data/",
     submission_id,

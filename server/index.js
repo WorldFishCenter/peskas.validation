@@ -3,6 +3,7 @@ const { MongoClient } = require('mongodb');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const axios = require('axios');
 
 // Load .env file from parent directory
 dotenv.config();
@@ -123,6 +124,63 @@ app.post('/api/auth/login', (req, res) => {
     res.status(200).json({ success: true });
   } else {
     res.status(401).json({ success: false });
+  }
+});
+
+// Proxy route for getting edit URL
+app.get('/api/kobo/edit_url/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const koboAssetId = process.env.KOBO_ASSET_ID;
+    const koboToken = process.env.KOBO_TOKEN;
+    
+    const url = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/${id}/enketo/edit/?return_url=false`;
+    
+    const response = await axios.get(url, {
+      headers: {
+        Authorization: `Token ${koboToken}`
+      }
+    });
+    
+    res.json({ url: response.data.url });
+  } catch (error) {
+    console.error('Error generating edit URL:', error);
+    res.status(500).json({ error: 'Failed to generate edit URL' });
+  }
+});
+
+// Proxy route for updating validation status
+app.patch('/api/kobo/validation_status/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { validation_status } = req.body;
+    const koboAssetId = process.env.KOBO_ASSET_ID;
+    const koboToken = process.env.KOBO_TOKEN;
+    
+    const url = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/${id}/validation_status/`;
+    
+    // Create form data
+    const formData = new URLSearchParams();
+    formData.append('validation_status.uid', validation_status);
+    
+    const response = await axios.patch(url, formData.toString(), {
+      headers: {
+        Authorization: `Token ${koboToken}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+    
+    res.json({ 
+      success: true, 
+      message: `Validation status correctly updated for submission ${id}` 
+    });
+  } catch (error) {
+    console.error('Error updating validation status:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to update validation status',
+      message: `An error occurred: ${error.message}`
+    });
   }
 });
 

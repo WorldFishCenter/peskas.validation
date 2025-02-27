@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { generateEditUrl } from '../../api/koboToolbox';
 
 interface Submission {
   submission_id: string;
   submission_date: string;
-  vessel_number: string;
-  catch_number: string;
-  alert_number: string;
+  vessel_number?: string;
+  catch_number?: string;
+  alert_number?: string;
   validation_status: string;
   validated_at: string;
 }
@@ -27,6 +28,29 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
   isUpdating,
   updateMessage 
 }) => {
+  const [editUrl, setEditUrl] = useState<string | null>(null);
+  const [isLoadingUrl, setIsLoadingUrl] = useState(false);
+
+  // Fetch edit URL when selected submission changes
+  useEffect(() => {
+    const fetchEditUrl = async () => {
+      if (selectedSubmission?.submission_id) {
+        setIsLoadingUrl(true);
+        try {
+          const url = await generateEditUrl(selectedSubmission.submission_id);
+          setEditUrl(url);
+        } catch (error) {
+          console.error("Failed to get edit URL:", error);
+          setEditUrl(null);
+        } finally {
+          setIsLoadingUrl(false);
+        }
+      }
+    };
+    
+    fetchEditUrl();
+  }, [selectedSubmission]);
+
   return (
     <div>
       <div className="alert alert-info py-2 mb-3" style={{ maxWidth: '400px', borderLeft: '4px solid #0d6efd' }}>
@@ -72,13 +96,13 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
         </div>
         <div className="col-auto d-flex align-items-end">
           <a
-            href={`https://your-edit-url/${selectedSubmission.submission_id}`}
+            href={editUrl || "#"}
             target="_blank"
-            className="btn btn-secondary"
+            className={`btn btn-secondary ${!editUrl ? 'disabled' : ''}`}
             style={{ height: '38px' }}
             rel="noreferrer"
           >
-            Edit Submission
+            {isLoadingUrl ? 'Loading Edit URL...' : 'Edit Submission'}
           </a>
         </div>
       </div>

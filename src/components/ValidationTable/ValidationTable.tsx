@@ -14,8 +14,9 @@ import {
 } from '@tanstack/react-table';
 import { rankItem } from '@tanstack/match-sorter-utils';
 import StatusUpdateForm from './StatusUpdateForm';
-import { useFetchSubmissions, useUpdateValidationStatus } from '../../api/api';
+import { useFetchSubmissions } from '../../api/api';
 import { logData } from '../../utils/debug';
+import { updateValidationStatus } from '../../api/koboToolbox';
 
 interface Submission {
   submission_id: string;
@@ -38,7 +39,6 @@ const fuzzyFilter: FilterFn<Submission> = (row, columnId, value, addMeta) => {
 
 const ValidationTable: React.FC = () => {
   const { data: submissions, isLoading, error, refetch } = useFetchSubmissions();
-  const { updateStatus, isUpdating, updateMessage } = useUpdateValidationStatus();
   const [selectedRow, setSelectedRow] = useState<Submission | null>(null);
   const [statusToUpdate, setStatusToUpdate] = useState<string>('validation_status_approved');
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -46,6 +46,8 @@ const ValidationTable: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (submissions && submissions.length > 0) {
@@ -241,8 +243,22 @@ const ValidationTable: React.FC = () => {
 
   const handleUpdateStatus = async () => {
     if (!selectedRow) return;
-    await updateStatus(selectedRow.submission_id, statusToUpdate);
-    refetch();
+    
+    setIsUpdating(true);
+    try {
+      const result = await updateValidationStatus(selectedRow.submission_id, statusToUpdate);
+      setUpdateMessage(result.message);
+      
+      if (result.success) {
+        // If the update was successful, refresh the data
+        refetch();
+      }
+    } catch (error) {
+      setUpdateMessage("An error occurred while updating the validation status");
+      console.error(error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   if (isLoading)
