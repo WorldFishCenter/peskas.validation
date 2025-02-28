@@ -56,9 +56,11 @@ const STATUS_STYLES = {
 
 // Update the alert descriptions with more comprehensive information
 const ALERT_FLAG_DESCRIPTIONS = {
-  '5': 'Catch information is incomplete - The submission is missing essential data fields required for validation.',
-  '9': 'Weight of catch is too high - The reported catch weight exceeds expected thresholds for this vessel type.',
-  // Add more flag descriptions as needed
+  '5': 'Bucket weight exceeds maximum (50kg)',
+  '6': 'Number of buckets exceeds maximum (300)',
+  '7': 'Number of individuals exceeds maximum (100)',
+  '8': 'A catch was reported, but no details were provided about the species, quantity, or weight',
+  '9': 'A species was specified, but no information was recorded about the number of fish, their size, or their weight' 
 };
 
 // Define a fuzzy filter function using rankItem
