@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { getApiBaseUrl } from '../utils/apiConfig';
 
-// API URL
-const API_BASE_URL = 'http://localhost:3001/api';
+// Get the appropriate API base URL based on environment
+const API_BASE_URL = getApiBaseUrl();
 
 interface Submission {
   submission_id: string;
