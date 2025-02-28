@@ -10,7 +10,13 @@ export interface Submission {
   alert_flags?: string[];
 }
 
-export const STATUS_STYLES = {
+export const STATUS_STYLES: {
+  [key: string]: { 
+    backgroundColor: string; 
+    textColor: string; 
+    borderColor: string; 
+  };
+} = {
   validation_status_approved: {
     backgroundColor: 'rgba(87, 167, 115, 0.15)',  // #57A773
     textColor: '#57A773',

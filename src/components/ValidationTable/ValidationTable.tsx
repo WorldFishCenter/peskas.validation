@@ -108,7 +108,6 @@ const ValidationTable: React.FC = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
   const [showAlertGuide, setShowAlertGuide] = useState(false);
-  const [showStatusModal, setShowStatusModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
