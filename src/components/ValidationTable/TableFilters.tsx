@@ -17,6 +17,10 @@ const TableFilters: React.FC<TableFiltersProps> = ({
   showAlertGuide,
   resetFilters
 }) => {
+  // Get columns with defensive access
+  const statusColumn = table.getColumn('validation_status');
+  const alertColumn = table.getColumn('alert_flag');
+
   return (
     <div className="d-flex gap-3 mt-2 flex-wrap">
       {/* Global Search */}
@@ -46,15 +50,16 @@ const TableFilters: React.FC<TableFiltersProps> = ({
         )}
       </div>
       
-      {/* Status Filter */}
+      {/* Status Filter - with defensive checks */}
       <div className="input-group" style={{ maxWidth: '230px' }}>
         <span className="input-group-text">Status</span>
         <select
           className="form-select"
-          value={(table.getColumn('validation_status')?.getFilterValue() as string) || ''}
+          value={(statusColumn?.getFilterValue() as string) || ''}
           onChange={e =>
-            table.getColumn('validation_status')?.setFilterValue(e.target.value || undefined)
+            statusColumn?.setFilterValue(e.target.value || undefined)
           }
+          disabled={!statusColumn}
         >
           <option value="">All Statuses</option>
           {VALIDATION_STATUS_OPTIONS.map(status => (
@@ -67,15 +72,16 @@ const TableFilters: React.FC<TableFiltersProps> = ({
         </select>
       </div>
       
-      {/* Alert Filter */}
+      {/* Alert Filter - with defensive checks */}
       <div className="input-group" style={{ maxWidth: '200px' }}>
         <span className="input-group-text">Alert</span>
         <select
           className="form-select"
-          value={(table.getColumn('alert_flag')?.getFilterValue() as string) || 'all'}
+          value={(alertColumn?.getFilterValue() as string) || 'all'}
           onChange={e =>
-            table.getColumn('alert_flag')?.setFilterValue(e.target.value)
+            alertColumn?.setFilterValue(e.target.value)
           }
+          disabled={!alertColumn}
         >
           <option value="all">All Items</option>
           <option value="with-alerts">With Alerts</option>
@@ -105,7 +111,7 @@ const TableFilters: React.FC<TableFiltersProps> = ({
       </button>
       
       {/* Reset Filters Button */}
-      {(globalFilter || table.getState().columnFilters.length > 0) && (
+      {(globalFilter || (table.getState().columnFilters.length > 0)) && (
         <button
           className="btn btn-outline-secondary"
           onClick={resetFilters}

@@ -34,24 +34,43 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
   const [isLoadingUrl, setIsLoadingUrl] = useState(false);
   const [urlGeneratedTime, setUrlGeneratedTime] = useState<Date | null>(null);
 
-  // Reset URL state when selected submission changes
+  // Reset URL state when selected submission changes - with cleanup
   useEffect(() => {
-    setEditUrl(null);
-    setUrlGeneratedTime(null);
-    setIsLoadingUrl(false);
-  }, [selectedSubmission.submission_id]);
+    let mounted = true;
+    
+    if (mounted) {
+      setEditUrl(null);
+      setUrlGeneratedTime(null);
+      setIsLoadingUrl(false);
+    }
+    
+    return () => { mounted = false; };
+  }, [selectedSubmission?.submission_id]); // Add optional chaining
 
-  // Function to generate the URL when explicitly requested
+  // Function to generate the URL when explicitly requested - with proper safeguards
   const handleGenerateEditUrl = async () => {
+    if (!selectedSubmission?.submission_id) return;
+    
+    // Prevent multiple clicks
+    if (isLoadingUrl) return;
+    
     setIsLoadingUrl(true);
     try {
       const url = await generateEditUrl(selectedSubmission.submission_id);
+      
+      // Set the URL regardless of loading state (remove the problematic check)
       setEditUrl(url);
       setUrlGeneratedTime(new Date());
       
-      // Optional: automatically open the URL in a new tab
+      // Open URL in new tab with safeguards
       if (url) {
-        window.open(url, '_blank');
+        const newWindow = window.open(url, '_blank');
+        // Handle if popup was blocked
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          console.warn('Popup blocked or could not open window');
+          // Show a message to the user
+          alert('Popup was blocked. Please allow popups for this site.');
+        }
       }
     } catch (error) {
       console.error("Failed to get edit URL:", error);

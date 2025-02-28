@@ -543,19 +543,19 @@ const ValidationTable: React.FC = () => {
               <div className="card-body">
                 <div className="d-flex justify-content-between mb-2">
                   <div className="text-muted">Submission ID:</div>
-                  <div className="fw-bold">{selectedRow.submission_id}</div>
+                  <div className="fw-bold">{selectedRow?.submission_id || 'N/A'}</div>
                 </div>
                 <div className="d-flex justify-content-between mb-2">
                   <div className="text-muted">Date:</div>
-                  <div>{selectedRow.submission_date.split('T')[0]}</div>
+                  <div>{selectedRow?.submission_date ? formatDate(selectedRow.submission_date) : 'N/A'}</div>
                 </div>
-                {selectedRow.vessel_number && (
+                {selectedRow?.vessel_number && (
                   <div className="d-flex justify-content-between mb-2">
                     <div className="text-muted">Vessel:</div>
                     <div>{selectedRow.vessel_number}</div>
                   </div>
                 )}
-                {selectedRow.catch_number && (
+                {selectedRow?.catch_number && (
                   <div className="d-flex justify-content-between mb-2">
                     <div className="text-muted">Catch #:</div>
                     <div>{selectedRow.catch_number}</div>
@@ -566,9 +566,9 @@ const ValidationTable: React.FC = () => {
                   <div>
                     <span
                       style={{
-                        backgroundColor: STATUS_STYLES[selectedRow.validation_status]?.backgroundColor || STATUS_STYLES.default.backgroundColor,
-                        color: STATUS_STYLES[selectedRow.validation_status]?.textColor || STATUS_STYLES.default.textColor,
-                        border: `1px solid ${STATUS_STYLES[selectedRow.validation_status]?.borderColor || STATUS_STYLES.default.borderColor}`,
+                        backgroundColor: STATUS_STYLES[selectedRow?.validation_status || 'default']?.backgroundColor || STATUS_STYLES.default.backgroundColor,
+                        color: STATUS_STYLES[selectedRow?.validation_status || 'default']?.textColor || STATUS_STYLES.default.textColor,
+                        border: `1px solid ${STATUS_STYLES[selectedRow?.validation_status || 'default']?.borderColor || STATUS_STYLES.default.borderColor}`,
                         borderRadius: '4px',
                         padding: '4px 10px',
                         display: 'inline-block',
@@ -577,11 +577,13 @@ const ValidationTable: React.FC = () => {
                         textTransform: 'capitalize',
                       }}
                     >
-                      {selectedRow.validation_status.replace('validation_status_', '').replace(/_/g, ' ')}
+                      {selectedRow?.validation_status 
+                        ? selectedRow.validation_status.replace('validation_status_', '').replace(/_/g, ' ')
+                        : 'Unknown'}
                     </span>
                   </div>
                 </div>
-                {selectedRow.alert_flag && selectedRow.alert_flag.trim() !== '' && (
+                {selectedRow?.alert_flag && selectedRow.alert_flag.trim() !== '' && (
                   <div className="d-flex justify-content-between mb-2">
                     <div className="text-muted">Alert Flags:</div>
                     <div>
@@ -606,7 +608,7 @@ const ValidationTable: React.FC = () => {
                 )}
                 <div className="d-flex justify-content-between">
                   <div className="text-muted">Last Validated:</div>
-                  <div>{formatDate(selectedRow.validated_at)}</div>
+                  <div>{formatDate(selectedRow?.validated_at || null)}</div>
                 </div>
               </div>
             </div>

@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './components/Auth/AuthContext';
 import Login from './components/Auth/Login';
 import ValidationTable from './components/ValidationTable/ValidationTable';
 import MainLayout from './components/Layout/MainLayout';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Remove or fix these imports
 // import '@tabler/core/dist/css/tabler.min.css';
@@ -32,7 +33,9 @@ const AppContent: React.FC = () => {
     <MainLayout>
       {isAuthenticated ? (
           <div className="card-body">
-            <ValidationTable />
+            <ErrorBoundary>
+              <ValidationTable />
+            </ErrorBoundary>
         </div>
       ) : (
         <Login />
