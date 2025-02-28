@@ -10,7 +10,7 @@ export interface Submission {
   alert_flags?: string[];
 }
 
-type ValidationStatus = 
+export type ValidationStatus = 
   | 'validation_status_approved'
   | 'validation_status_not_approved'
   | 'validation_status_on_hold'

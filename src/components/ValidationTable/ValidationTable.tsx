@@ -17,42 +17,7 @@ import StatusUpdateForm from './StatusUpdateForm';
 import { useFetchSubmissions } from '../../api/api';
 import { logData } from '../../utils/debug';
 import { updateValidationStatus } from '../../api/koboToolbox';
-
-interface Submission {
-  submission_id: string;
-  submission_date: string;
-  vessel_number?: string;
-  catch_number?: string;
-  alert_number?: string;
-  validation_status: string;
-  validated_at: string;
-  alert_flag?: string;
-  alert_flags?: string[];
-}
-
-// Add this constant at the top of the file, after the interfaces
-const STATUS_STYLES = {
-  validation_status_approved: {
-    backgroundColor: 'rgba(87, 167, 115, 0.15)',  // #57A773
-    textColor: '#57A773',
-    borderColor: 'rgba(87, 167, 115, 0.3)',
-  },
-  validation_status_not_approved: {
-    backgroundColor: 'rgba(211, 78, 36, 0.15)',   // #D34E24
-    textColor: '#D34E24',
-    borderColor: 'rgba(211, 78, 36, 0.3)',
-  },
-  validation_status_on_hold: {
-    backgroundColor: 'rgba(137, 144, 159, 0.15)', // #89909F
-    textColor: '#89909F',
-    borderColor: 'rgba(137, 144, 159, 0.3)',
-  },
-  default: {
-    backgroundColor: 'rgba(137, 144, 159, 0.15)', // Same as on_hold
-    textColor: '#89909F',
-    borderColor: 'rgba(137, 144, 159, 0.3)',
-  },
-};
+import { Submission, VALIDATION_STATUS_OPTIONS, STATUS_STYLES, ValidationStatus } from '../../types/validation';
 
 // Update the alert descriptions with more comprehensive information
 const ALERT_FLAG_DESCRIPTIONS = {
@@ -208,11 +173,7 @@ const ValidationTable: React.FC = () => {
           const status = info.getValue() as string;
           
           // Use exact status or default
-          const style = STATUS_STYLES[status || 'default'] as {
-            backgroundColor: string;
-            textColor: string;
-            borderColor: string;
-          };
+          const style = STATUS_STYLES[(status || 'default') as ValidationStatus];
           
           return (
             <span
@@ -569,9 +530,9 @@ const ValidationTable: React.FC = () => {
                   <div>
                     <span
                       style={{
-                        backgroundColor: STATUS_STYLES[selectedRow?.validation_status || 'default']?.backgroundColor || STATUS_STYLES.default.backgroundColor,
-                        color: STATUS_STYLES[selectedRow?.validation_status || 'default']?.textColor || STATUS_STYLES.default.textColor,
-                        border: `1px solid ${STATUS_STYLES[selectedRow?.validation_status || 'default']?.borderColor || STATUS_STYLES.default.borderColor}`,
+                        backgroundColor: STATUS_STYLES[(selectedRow?.validation_status || 'default') as ValidationStatus].backgroundColor,
+                        color: STATUS_STYLES[(selectedRow?.validation_status || 'default') as ValidationStatus].textColor,
+                        border: `1px solid ${STATUS_STYLES[(selectedRow?.validation_status || 'default') as ValidationStatus].borderColor}`,
                         borderRadius: '4px',
                         padding: '4px 10px',
                         display: 'inline-block',
