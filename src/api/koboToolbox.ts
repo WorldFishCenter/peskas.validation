@@ -27,19 +27,21 @@ export const generateEditUrl = async (submissionId: string): Promise<string | nu
  */
 export const updateValidationStatus = async (
   submissionId: string, 
-  validationStatus: string
+  status: string
 ): Promise<{ success: boolean; message: string }> => {
   try {
     const response = await axios.patch(`${API_BASE_URL}/validation_status/${submissionId}`, {
-      validation_status: validationStatus
+      validation_status: status
     });
     
-    return response.data;
-  } catch (error: any) {
-    console.error("Error updating validation status:", error);
-    return { 
-      success: false, 
-      message: error.response?.data?.message || `An error occurred: ${error.message}` 
-    };
+    if (!response.data.success) {
+      throw new Error(response.data.message || `Error ${response.status}: ${response.statusText}`);
+    }
+    
+    return { success: true, message: response.data.message || 'Status updated successfully' };
+  } catch (error) {
+    console.error('Failed to update status:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return { success: false, message: `Failed to update: ${errorMessage}` };
   }
 }; 
