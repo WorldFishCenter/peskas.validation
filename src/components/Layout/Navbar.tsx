@@ -12,7 +12,7 @@ const Navbar: React.FC = () => {
         </button>
         <h1 className="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
           <a href=".">
-            PESKAS | <span className="text-muted">surveys validation</span>
+            PESKAS | <span className="text-muted">validation portal</span>
           </a>
         </h1>
         <div className="navbar-nav flex-row order-md-last">
