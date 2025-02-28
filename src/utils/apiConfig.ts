@@ -1,13 +1,7 @@
-interface ImportMetaEnv {
-  VITE_API_URL: string | undefined;
-}
-
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
-}
+/// <reference types="vite/client" />
 
 // Proper environment detection
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = import.meta.env.PROD;
 
 // Base URL detection - this will work in both environments
 export const getApiBaseUrl = () => {

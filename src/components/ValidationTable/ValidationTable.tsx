@@ -208,7 +208,11 @@ const ValidationTable: React.FC = () => {
           const status = info.getValue() as string;
           
           // Use exact status or default
-          const style = STATUS_STYLES[status] || STATUS_STYLES.default;
+          const style = STATUS_STYLES[status || 'default'] as {
+            backgroundColor: string;
+            textColor: string;
+            borderColor: string;
+          };
           
           return (
             <span
