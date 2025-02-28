@@ -17,7 +17,7 @@ import StatusUpdateForm from './StatusUpdateForm';
 import { useFetchSubmissions } from '../../api/api';
 import { logData } from '../../utils/debug';
 import { updateValidationStatus } from '../../api/koboToolbox';
-import { Submission, VALIDATION_STATUS_OPTIONS, STATUS_STYLES, ValidationStatus } from '../../types/validation';
+import { Submission, STATUS_STYLES, ValidationStatus } from '../../types/validation';
 
 // Update the alert descriptions with more comprehensive information
 const ALERT_FLAG_DESCRIPTIONS = {
