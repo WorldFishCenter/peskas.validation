@@ -21,8 +21,8 @@ import { updateValidationStatus } from '../../api/koboToolbox';
 interface Submission {
   submission_id: string;
   submission_date: string;
-  vessel_number: string;
-  catch_number: string;
+  vessel_number?: string;
+  catch_number?: string;
   alert_number?: string;
   validation_status: string;
   validated_at: string;
@@ -108,6 +108,8 @@ const ValidationTable: React.FC = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
   const [showAlertGuide, setShowAlertGuide] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (submissions && submissions.length > 0) {
@@ -275,8 +277,10 @@ const ValidationTable: React.FC = () => {
     },
   });
 
-  const handleRowClick = (row: any) => {
+  const handleRowClick = (row: Row<Submission>) => {
     setSelectedRow(row.original);
+    setSidebarOpen(true);
+    setUpdateMessage(null);
   };
 
   const handleUpdateStatus = async () => {
@@ -308,231 +312,323 @@ const ValidationTable: React.FC = () => {
   if (error) return <div className="alert alert-danger">{error}</div>;
 
   return (
-    <div className="card">
-      <div className="card-header">
-        <div className="d-flex gap-3 mt-2">
-          {/* Global Search */}
-          <div className="input-group" style={{ maxWidth: '300px' }}>
-            <span className="input-group-text">
-              <i className="fas fa-search"></i>
-            </span>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search all columns..."
-              value={globalFilter ?? ''}
-              onChange={e => setGlobalFilter(e.target.value)}
-            />
-            {globalFilter && (
+    <div className="position-relative">
+      <div className="card">
+        <div className="card-header">
+          <div className="d-flex gap-3 mt-2">
+            {/* Global Search */}
+            <div className="input-group" style={{ maxWidth: '300px' }}>
+              <span className="input-group-text">
+                <i className="fas fa-search"></i>
+              </span>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search all columns..."
+                value={globalFilter ?? ''}
+                onChange={e => setGlobalFilter(e.target.value)}
+              />
+              {globalFilter && (
+                <button
+                  className="btn btn-outline-secondary"
+                  type="button"
+                  onClick={() => setGlobalFilter('')}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            
+            {/* Status Filter */}
+            <div className="input-group" style={{ maxWidth: '230px' }}>
+              <span className="input-group-text">Status</span>
+              <select
+                className="form-select"
+                value={(table.getColumn('validation_status')?.getFilterValue() as string) || ''}
+                onChange={e =>
+                  table.getColumn('validation_status')?.setFilterValue(e.target.value || undefined)
+                }
+              >
+                <option value="">All Statuses</option>
+                {statusOptions.map(status => (
+                  <option key={status} value={status}>
+                    {status === 'validation_status_approved' && 'APPROVED'}
+                    {status === 'validation_status_not_approved' && 'NOT APPROVED'}
+                    {status === 'validation_status_on_hold' && 'ON HOLD'}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            {/* Alert Filter */}
+            <div className="input-group" style={{ maxWidth: '200px' }}>
+              <span className="input-group-text">Alert</span>
+              <select
+                className="form-select"
+                value={(table.getColumn('alert_flag')?.getFilterValue() as string) || 'all'}
+                onChange={e =>
+                  table.getColumn('alert_flag')?.setFilterValue(e.target.value)
+                }
+              >
+                <option value="all">All Items</option>
+                <option value="with-alerts">With Alerts</option>
+                <option value="no-alerts">No Alerts</option>
+              </select>
+            </div>
+            
+            {/* Alert Info Button - More prominent */}
+            <button 
+              className="btn btn-outline-warning ms-3" 
+              title="View Alert Codes Reference"
+              onClick={() => setShowAlertGuide(true)}
+              style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                height: '38px'
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <circle cx="12" cy="12" r="9" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              Alert Codes
+            </button>
+            
+            {/* Reset Filters Button */}
+            {(globalFilter || table.getState().columnFilters.length > 0) && (
               <button
                 className="btn btn-outline-secondary"
-                type="button"
-                onClick={() => setGlobalFilter('')}
+                onClick={() => {
+                  setGlobalFilter('');
+                  table.resetColumnFilters();
+                }}
               >
-                ×
+                Reset Filters
               </button>
             )}
           </div>
-          
-          {/* Status Filter */}
-          <div className="input-group" style={{ maxWidth: '230px' }}>
-            <span className="input-group-text">Status</span>
-            <select
-              className="form-select"
-              value={(table.getColumn('validation_status')?.getFilterValue() as string) || ''}
-              onChange={e =>
-                table.getColumn('validation_status')?.setFilterValue(e.target.value || undefined)
-              }
-            >
-              <option value="">All Statuses</option>
-              {statusOptions.map(status => (
-                <option key={status} value={status}>
-                  {status === 'validation_status_approved' && 'APPROVED'}
-                  {status === 'validation_status_not_approved' && 'NOT APPROVED'}
-                  {status === 'validation_status_on_hold' && 'ON HOLD'}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {/* Alert Filter */}
-          <div className="input-group" style={{ maxWidth: '200px' }}>
-            <span className="input-group-text">Alert</span>
-            <select
-              className="form-select"
-              value={(table.getColumn('alert_flag')?.getFilterValue() as string) || 'all'}
-              onChange={e =>
-                table.getColumn('alert_flag')?.setFilterValue(e.target.value)
-              }
-            >
-              <option value="all">All Items</option>
-              <option value="with-alerts">With Alerts</option>
-              <option value="no-alerts">No Alerts</option>
-            </select>
-          </div>
-          
-          {/* Alert Info Button - More prominent */}
-          <button 
-            className="btn btn-outline-warning ms-3" 
-            title="View Alert Codes Reference"
-            onClick={() => setShowAlertGuide(true)}
-            style={{ 
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              height: '38px'
-            }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-              <circle cx="12" cy="12" r="9" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            Alert Codes
-          </button>
-          
-          {/* Reset Filters Button */}
-          {(globalFilter || table.getState().columnFilters.length > 0) && (
-            <button
-              className="btn btn-outline-secondary"
-              onClick={() => {
-                setGlobalFilter('');
-                table.resetColumnFilters();
-              }}
-            >
-              Reset Filters
-            </button>
-          )}
         </div>
-      </div>
-      <div className="card-body">
-        <div className="table-responsive">
-          <table className="table table-vcenter table-hover">
-            <thead>
-              {table.getHeaderGroups().map(headerGroup => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map(header => (
-                    <th
-                      key={header.id}
-                      scope="col"
-                      onClick={header.column.getToggleSortingHandler()}
-                      style={{
-                        cursor: header.column.getCanSort() ? 'pointer' : 'default',
-                        textAlign: 'center',
-                        borderBottom: '2px solid #e9ecef',
-                        padding: '12px 8px',
-                        fontSize: '0.85rem',
-                        fontWeight: '600',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px'
-                      }}
-                    >
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      <span style={{ marginLeft: '4px' }}>
-                        {{
-                          asc: ' ↑',
-                          desc: ' ↓',
-                          false: ' ↕',
-                        }[header.column.getIsSorted() as string] ?? ' ↕'}
-                      </span>
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.length > 0 ? (
-                table.getRowModel().rows.map(row => (
-                  <tr
-                    key={row.id}
-                    onClick={() => handleRowClick(row)}
-                    className={
-                      selectedRow?.submission_id === row.original.submission_id
-                        ? 'table-active'
-                        : ''
-                    }
-                    style={{ 
-                      cursor: 'pointer',
-                      transition: 'background-color 0.15s ease-in-out'
-                    }}
-                  >
-                    {row.getVisibleCells().map(cell => (
-                      <td 
-                        key={cell.id} 
-                        style={{ 
+        <div className="card-body">
+          <div className="table-responsive">
+            <table className="table table-vcenter table-hover">
+              <thead>
+                {table.getHeaderGroups().map(headerGroup => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map(header => (
+                      <th
+                        key={header.id}
+                        scope="col"
+                        onClick={header.column.getToggleSortingHandler()}
+                        style={{
+                          cursor: header.column.getCanSort() ? 'pointer' : 'default',
                           textAlign: 'center',
+                          borderBottom: '2px solid #e9ecef',
                           padding: '12px 8px',
-                          verticalAlign: 'middle'
+                          fontSize: '0.85rem',
+                          fontWeight: '600',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
                         }}
                       >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        <span style={{ marginLeft: '4px' }}>
+                          {{
+                            asc: ' ↑',
+                            desc: ' ↓',
+                            false: ' ↕',
+                          }[header.column.getIsSorted() as string] ?? ' ↕'}
+                        </span>
+                      </th>
                     ))}
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={columns.length} className="text-center py-4">
-                    No results found. Try adjusting your search criteria.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        
-        <div className="d-flex flex-wrap align-items-center justify-content-between mt-4">
-          <div className="d-flex align-items-center gap-2 mb-2">
-            <select
-              value={table.getState().pagination.pageSize}
-              onChange={e => table.setPageSize(Number(e.target.value))}
-              className="form-select"
-              style={{ width: 'auto' }}
-            >
-              {[5, 10, 20, 25, 50].map(size => (
-                <option key={size} value={size}>
-                  Show {size}
-                </option>
-              ))}
-            </select>
-            <span className="text-muted">
-              Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
-            </span>
-            <span className="ms-2 text-muted">
-              {table.getPrePaginationRowModel().rows.length} results
-            </span>
+                ))}
+              </thead>
+              <tbody>
+                {table.getRowModel().rows.length > 0 ? (
+                  table.getRowModel().rows.map(row => (
+                    <tr
+                      key={row.id}
+                      onClick={() => handleRowClick(row)}
+                      className={
+                        selectedRow?.submission_id === row.original.submission_id
+                          ? 'table-active'
+                          : ''
+                      }
+                      style={{ 
+                        cursor: 'pointer',
+                        transition: 'background-color 0.15s ease-in-out'
+                      }}
+                    >
+                      {row.getVisibleCells().map(cell => (
+                        <td 
+                          key={cell.id} 
+                          style={{ 
+                            textAlign: 'center',
+                            padding: '12px 8px',
+                            verticalAlign: 'middle'
+                          }}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={columns.length} className="text-center py-4">
+                      No results found. Try adjusting your search criteria.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-          <div className="d-flex gap-2 mb-2">
-            <button
-              className="btn btn-outline-primary"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Previous
-            </button>
-            <button
-              className="btn btn-outline-primary"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next
-            </button>
+          
+          <div className="d-flex flex-wrap align-items-center justify-content-between mt-4">
+            <div className="d-flex align-items-center gap-2 mb-2">
+              <select
+                value={table.getState().pagination.pageSize}
+                onChange={e => table.setPageSize(Number(e.target.value))}
+                className="form-select"
+                style={{ width: 'auto' }}
+              >
+                {[5, 10, 20, 25, 50].map(size => (
+                  <option key={size} value={size}>
+                    Show {size}
+                  </option>
+                ))}
+              </select>
+              <span className="text-muted">
+                Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
+              </span>
+              <span className="ms-2 text-muted">
+                {table.getPrePaginationRowModel().rows.length} results
+              </span>
+            </div>
+            <div className="d-flex gap-2 mb-2">
+              <button
+                className="btn btn-outline-primary"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                Previous
+              </button>
+              <button
+                className="btn btn-outline-primary"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
       </div>
+      
+      {/* Offcanvas Sidebar */}
       {selectedRow && (
-        <div className="card-footer">
-          <StatusUpdateForm
-            selectedSubmission={selectedRow as any}
-            status={statusToUpdate}
-            setStatus={setStatusToUpdate}
-            onUpdate={handleUpdateStatus}
-            isUpdating={isUpdating}
-            updateMessage={updateMessage}
-          />
+        <div className={`offcanvas offcanvas-end ${sidebarOpen ? 'show' : ''}`} 
+             tabIndex={-1} 
+             id="submissionSidebar" 
+             style={{ width: '400px', visibility: sidebarOpen ? 'visible' : 'hidden' }}>
+          <div className="offcanvas-header border-bottom">
+            <h5 className="offcanvas-title">Submission Details</h5>
+            <button type="button" className="btn-close text-reset" onClick={() => setSidebarOpen(false)} aria-label="Close"></button>
+          </div>
+          <div className="offcanvas-body">
+            <div className="card card-sm mb-3">
+              <div className="card-body">
+                <div className="d-flex justify-content-between mb-2">
+                  <div className="text-muted">Submission ID:</div>
+                  <div className="fw-bold">{selectedRow.submission_id}</div>
+                </div>
+                <div className="d-flex justify-content-between mb-2">
+                  <div className="text-muted">Date:</div>
+                  <div>{selectedRow.submission_date.split('T')[0]}</div>
+                </div>
+                {selectedRow.vessel_number && (
+                  <div className="d-flex justify-content-between mb-2">
+                    <div className="text-muted">Vessel:</div>
+                    <div>{selectedRow.vessel_number}</div>
+                  </div>
+                )}
+                {selectedRow.catch_number && (
+                  <div className="d-flex justify-content-between mb-2">
+                    <div className="text-muted">Catch #:</div>
+                    <div>{selectedRow.catch_number}</div>
+                  </div>
+                )}
+                <div className="d-flex justify-content-between mb-2">
+                  <div className="text-muted">Status:</div>
+                  <div>
+                    <span
+                      style={{
+                        backgroundColor: STATUS_STYLES[selectedRow.validation_status]?.backgroundColor || STATUS_STYLES.default.backgroundColor,
+                        color: STATUS_STYLES[selectedRow.validation_status]?.textColor || STATUS_STYLES.default.textColor,
+                        border: `1px solid ${STATUS_STYLES[selectedRow.validation_status]?.borderColor || STATUS_STYLES.default.borderColor}`,
+                        borderRadius: '4px',
+                        padding: '4px 10px',
+                        display: 'inline-block',
+                        fontWeight: '500',
+                        fontSize: '0.875rem',
+                        textTransform: 'capitalize',
+                      }}
+                    >
+                      {selectedRow.validation_status.replace('validation_status_', '').replace(/_/g, ' ')}
+                    </span>
+                  </div>
+                </div>
+                {selectedRow.alert_flag && selectedRow.alert_flag.trim() !== '' && (
+                  <div className="d-flex justify-content-between mb-2">
+                    <div className="text-muted">Alert Flags:</div>
+                    <div>
+                      <span
+                        className="alert-badge"
+                        style={{
+                          textAlign: 'center',
+                          display: 'block',
+                          backgroundColor: 'rgba(220, 53, 69, 0.15)',
+                          color: '#dc3545',
+                          border: '1px solid rgba(220, 53, 69, 0.3)',
+                          borderRadius: '4px',
+                          padding: '2px 8px',
+                          fontWeight: '600',
+                          fontSize: '0.85rem'
+                        }}
+                      >
+                        {selectedRow.alert_flag}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                <div className="d-flex justify-content-between">
+                  <div className="text-muted">Last Validated:</div>
+                  <div>{formatDate(selectedRow.validated_at)}</div>
+                </div>
+              </div>
+            </div>
+            
+            <StatusUpdateForm
+              selectedSubmission={selectedRow}
+              status={statusToUpdate}
+              setStatus={setStatusToUpdate}
+              onUpdate={handleUpdateStatus}
+              isUpdating={isUpdating}
+              updateMessage={updateMessage}
+              hideSubmissionInfo={true}
+            />
+          </div>
         </div>
       )}
+      
+      {/* Backdrop overlay */}
+      {sidebarOpen && (
+        <div className="offcanvas-backdrop fade show" onClick={() => setSidebarOpen(false)}></div>
+      )}
+      
       {/* Alert Guide Modal - Improved readability */}
       {showAlertGuide && (
         <div className="modal modal-blur show d-block" tabIndex={-1} role="dialog">
