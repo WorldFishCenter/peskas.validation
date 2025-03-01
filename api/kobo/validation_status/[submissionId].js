@@ -8,50 +8,64 @@ export default async function handler(req, res) {
   const { submissionId } = req.query;
   const { validation_status } = req.body;
   
+  console.log('Request info:', {
+    method: req.method,
+    submissionId,
+    body: req.body,
+    validation_status
+  });
+  
   try {
-    // Get environment variables using consistent naming
-    const koboApiUrl = process.env.KOBO_API_URL;
-    const koboApiToken = process.env.KOBO_API_TOKEN;
-    const koboAssetId = process.env.KOBO_ASSET_ID;
+    // Log environment variables
+    console.log('Environment variables available:', { 
+      KOBO_API_URL: !!process.env.KOBO_API_URL,
+      KOBO_API_TOKEN: !!process.env.KOBO_API_TOKEN,
+      KOBO_ASSET_ID: !!process.env.KOBO_ASSET_ID
+    });
     
-    // Verify environment variables are available
-    if (!koboApiToken || !koboApiUrl || !koboAssetId) {
-      console.error('Missing environment variables for KoboToolbox API');
-      return res.status(500).json({
-        success: false,
-        error: 'Configuration error',
-        message: 'Missing required environment variables'
-      });
-    }
+    // Build the request exactly as in your working local code
+    const url = `${process.env.KOBO_API_URL}/assets/${process.env.KOBO_ASSET_ID}/data/${submissionId}`;
+    console.log('Request URL:', url);
     
-    // Make the request exactly like the local version
-    await axios.patch(
-      `${koboApiUrl}/assets/${koboAssetId}/data/${submissionId}`,
-      { validation_status },  // Keep the same JSON format
+    // Log the payload we're about to send
+    console.log('Request payload:', { validation_status });
+    
+    // Make the exact same request that works locally
+    const response = await axios.patch(
+      url,
+      { validation_status },
       {
         headers: {
-          'Authorization': `Token ${koboApiToken}`,
-          'Content-Type': 'application/json'  // Keep as JSON
+          'Authorization': `Token ${process.env.KOBO_API_TOKEN}`,
+          'Content-Type': 'application/json'
         }
       }
     );
     
-    // Return success response
+    console.log('Response received:', {
+      status: response.status,
+      data: response.data
+    });
+    
     res.status(200).json({
       success: true,
       message: `Validation status correctly updated for submission ${submissionId}`
     });
   } catch (error) {
-    console.error('Error updating validation status:', error);
-    console.error('Error details:', {
+    // Log the full error details without exposing sensitive info
+    console.error('Error updating status:', {
       message: error.message,
-      responseData: error.response?.data
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      stack: error.stack
     });
     
     res.status(500).json({
       success: false,
       error: 'Failed to update validation status',
-      message: error.message
+      message: error.message,
+      details: error.response?.data
     });
   }
 } 
