@@ -23,9 +23,13 @@ export default async function handler(req, res) {
       KOBO_ASSET_ID: !!process.env.KOBO_ASSET_ID
     });
     
-    // Build the request exactly as in your working local code
-    const url = `${process.env.KOBO_API_URL}/assets/${process.env.KOBO_ASSET_ID}/data/${submissionId}`;
+    // Use the specific validation_status endpoint
+    const url = `${process.env.KOBO_API_URL}/assets/${process.env.KOBO_ASSET_ID}/data/${submissionId}/validation_status/`;
     console.log('Request URL:', url);
+    
+    // Use form-urlencoded format with the expected parameter name
+    const formData = new URLSearchParams();
+    formData.append('validation_status.uid', validation_status);
     
     // Log the payload we're about to send
     console.log('Request payload:', { validation_status });
@@ -33,11 +37,11 @@ export default async function handler(req, res) {
     // Make the exact same request that works locally
     const response = await axios.patch(
       url,
-      { validation_status },
+      formData.toString(),
       {
         headers: {
           'Authorization': `Token ${process.env.KOBO_API_TOKEN}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/x-www-form-urlencoded'
         }
       }
     );
