@@ -35,7 +35,7 @@ async function connectToMongo() {
 app.get('/api/kobo/submissions', async (req, res) => {
   try {
     const koboAssetId = process.env.KOBO_ASSET_ID;
-    const koboToken = process.env.KOBO_TOKEN;
+    const koboToken = process.env.KOBO_API_TOKEN;
     
     // 1. Fetch submissions from KoboToolbox
     const koboUrl = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/`;
@@ -108,11 +108,19 @@ app.patch('/api/submissions/:id/validation_status', async (req, res) => {
   }
 });
 
-// Auth endpoint (simplified for demo)
+// Auth endpoint using environment variables
 app.post('/api/auth/login', (req, res) => {
   const { username, password } = req.body;
   
-  if (username === 'admin' && password === 'password') {
+  const validUsername = process.env.ADMIN_USERNAME;
+  const validPassword = process.env.ADMIN_PASSWORD;
+  
+  if (!validUsername || !validPassword) {
+    console.error('Authentication credentials not properly configured in environment variables');
+    return res.status(500).json({ success: false, error: 'Server authentication not configured' });
+  }
+  
+  if (username === validUsername && password === validPassword) {
     res.status(200).json({ success: true });
   } else {
     res.status(401).json({ success: false });
@@ -124,7 +132,7 @@ app.get('/api/kobo/edit_url/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const koboAssetId = process.env.KOBO_ASSET_ID;
-    const koboToken = process.env.KOBO_TOKEN;
+    const koboToken = process.env.KOBO_API_TOKEN;
     
     const url = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/${id}/enketo/edit/?return_url=false`;
     
@@ -147,7 +155,7 @@ app.patch('/api/kobo/validation_status/:id', async (req, res) => {
     const { id } = req.params;
     const { validation_status } = req.body;
     const koboAssetId = process.env.KOBO_ASSET_ID;
-    const koboToken = process.env.KOBO_TOKEN;
+    const koboToken = process.env.KOBO_API_TOKEN;
     
     const url = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/${id}/validation_status/`;
     
