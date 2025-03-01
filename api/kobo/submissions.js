@@ -33,8 +33,32 @@ export default async function handler(req, res) {
       }
     });
     
-    res.status(200).json({ results: response.data.results || response.data });
+    // Transform the data to match what your frontend expects
+    // This mirrors the transformation in server/index.js
+    const transformedResults = response.data.results.map(koboItem => {
+      return {
+        submission_id: koboItem._id,
+        submission_date: koboItem._submission_time,
+        vessel_number: koboItem.vessel_number || '',
+        catch_number: koboItem.catch_number || '',
+        validation_status: koboItem._validation_status?.validation_status?.uid || 
+                           koboItem._validation_status?.uid || 
+                           'validation_status_on_hold',
+        validated_at: koboItem._validation_status?.timestamp || koboItem._submission_time,
+        alert_flag: '', // MongoDB data not available in serverless
+        alert_flags: [] // MongoDB data not available in serverless
+      };
+    });
+    
+    // Return the transformed data in the expected format
+    res.status(200).json({
+      count: response.data.count,
+      next: response.data.next,
+      previous: response.data.previous,
+      results: transformedResults
+    });
   } catch (error) {
+    console.error('Error fetching submissions:', error);
     res.status(500).json({ 
       error: 'Failed to fetch submissions',
       details: error.message,
