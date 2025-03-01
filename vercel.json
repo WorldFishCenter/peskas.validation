@@ -1,10 +1,4 @@
 {
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://your-deployed-backend-api.com/api/:path*"
-    }
-  ],
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install"
