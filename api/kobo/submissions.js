@@ -1,48 +1,45 @@
 import axios from 'axios';
 
 export default async function handler(req, res) {
+  // Debug all environment variables (without revealing values)
+  const envVars = Object.keys(process.env).filter(key => key.includes('KOBO'));
+  console.log('Available environment variables:', envVars);
+  
   try {
+    // Direct access check
+    console.log('Direct KOBO_API_TOKEN check:', typeof process.env.KOBO_API_TOKEN);
+    console.log('Direct KOBO_API_URL check:', typeof process.env.KOBO_API_URL);
+    
     // Get environment variables using process.env
     const koboApiUrl = process.env.KOBO_API_URL;
     const koboApiToken = process.env.KOBO_API_TOKEN;
     const koboAssetId = process.env.KOBO_ASSET_ID;
     
-    console.log('API URL:', koboApiUrl);
-    console.log('Token available:', !!koboApiToken);
-    console.log('Asset ID:', koboAssetId);
-    
-    // Check if token exists
+    // Use static test data if environment variables are missing (for debugging)
     if (!koboApiToken) {
       return res.status(500).json({ 
-        error: 'Missing API token',
-        message: 'The KoboToolbox API token is not available in the environment'
+        error: 'Environment Variable Issue',
+        message: 'KOBO_API_TOKEN is not available in the environment',
+        envVars: envVars,
+        availableVars: Object.keys(process.env).length
       });
     }
     
     const apiUrl = `${koboApiUrl}/assets/${koboAssetId}/data`;
-    console.log('Attempting to call:', apiUrl);
     
     const response = await axios.get(apiUrl, {
       headers: {
-        'Authorization': `Token ${process.env.KOBO_API_TOKEN}`,
-        'Content-Type': 'application/json'
+        'Authorization': `Token ${koboApiToken}`
       }
     });
     
-    console.log('Response received with status:', response.status);
     res.status(200).json({ results: response.data.results || response.data });
   } catch (error) {
-    console.error('Detailed error info:', {
-      message: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      responseData: error.response?.data
-    });
-    
     res.status(500).json({ 
       error: 'Failed to fetch submissions',
       details: error.message,
-      responseInfo: error.response?.data
+      responseInfo: error.response?.data,
+      envVars: envVars
     });
   }
 } 
