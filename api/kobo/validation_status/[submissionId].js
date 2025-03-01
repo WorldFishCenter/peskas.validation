@@ -1,9 +1,5 @@
 import axios from 'axios';
 
-// Get KoboToolbox credentials from environment variables
-const KOBO_API_URL = process.env.KOBO_API_URL;
-const KOBO_API_TOKEN = process.env.KOBO_API_TOKEN;
-
 export default async function handler(req, res) {
   if (req.method !== 'PATCH') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -13,14 +9,29 @@ export default async function handler(req, res) {
   const { validation_status } = req.body;
   
   try {
-    // Make the actual request to KoboToolbox API
+    // Get environment variables using consistent naming
+    const koboApiUrl = process.env.KOBO_API_URL;
+    const koboApiToken = process.env.KOBO_API_TOKEN;
+    const koboAssetId = process.env.KOBO_ASSET_ID;
+    
+    // Verify environment variables are available
+    if (!koboApiToken || !koboApiUrl || !koboAssetId) {
+      console.error('Missing environment variables for KoboToolbox API');
+      return res.status(500).json({
+        success: false,
+        error: 'Configuration error',
+        message: 'Missing required environment variables'
+      });
+    }
+    
+    // Make the request exactly like the local version
     await axios.patch(
-      `${KOBO_API_URL}/assets/${process.env.KOBO_ASSET_ID}/data/${submissionId}`,
-      { validation_status },
+      `${koboApiUrl}/assets/${koboAssetId}/data/${submissionId}`,
+      { validation_status },  // Keep the same JSON format
       {
         headers: {
-          'Authorization': `Token ${KOBO_API_TOKEN}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Token ${koboApiToken}`,
+          'Content-Type': 'application/json'  // Keep as JSON
         }
       }
     );
@@ -32,6 +43,11 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Error updating validation status:', error);
+    console.error('Error details:', {
+      message: error.message,
+      responseData: error.response?.data
+    });
+    
     res.status(500).json({
       success: false,
       error: 'Failed to update validation status',
