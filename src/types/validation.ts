@@ -47,8 +47,8 @@ export const STATUS_STYLES: Record<ValidationStatus, StyleConfig> = {
 };
 
 export const ALERT_FLAG_DESCRIPTIONS = {
-  '1': 'Catch taxon not specified',
-  '2': 'Count method (individuals or bucket) not specified',
+  '1': 'A catch was reported, but no taxon was specified',
+  '2': 'A taxon was specified, but no information was provided about the number of fish, their size, or their weight',
   '3': 'Length is smaller than minimum length treshold for the selected catch taxon',
   '4': 'Length exceeds maximum length treshold for the selected catch taxon',
   '5': 'Bucket weight exceeds maximum (50kg)',
