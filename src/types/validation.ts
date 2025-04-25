@@ -11,7 +11,7 @@ export interface Submission {
   alert_flags?: string[];
 }
 
-export type ValidationStatus = 
+export type ValidationStatus =
   | 'validation_status_approved'
   | 'validation_status_not_approved'
   | 'validation_status_on_hold'
@@ -47,11 +47,13 @@ export const STATUS_STYLES: Record<ValidationStatus, StyleConfig> = {
 };
 
 export const ALERT_FLAG_DESCRIPTIONS = {
+  '1': 'Catch taxon not specified',
+  '2': 'Count method (individuals or bucket) not specified',
+  '3': 'Length is smaller than minimum length treshold for the selected catch taxon',
+  '4': 'Length exceeds maximum length treshold for the selected catch taxon',
   '5': 'Bucket weight exceeds maximum (50kg)',
   '6': 'Number of buckets exceeds maximum (300)',
-  '7': 'Number of individuals exceeds maximum (100)',
-  '8': 'A catch was reported, but no details were provided about the species, quantity, or weight',
-  '9': 'A species was specified, but no information was recorded about the number of fish, their size, or their weight' 
+  '7': 'Number of individuals exceeds maximum (100)'
 };
 
 export const VALIDATION_STATUS_OPTIONS = [
