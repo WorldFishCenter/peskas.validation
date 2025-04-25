@@ -1,9 +1,11 @@
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../Auth/AuthContext';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
-
+  const location = useLocation();
+  
   return (
     <header className="navbar navbar-expand-md navbar-light d-print-none">
       <div className="container-xl">
@@ -11,10 +13,41 @@ const Navbar: React.FC = () => {
           <span className="navbar-toggler-icon"></span>
         </button>
         <h1 className="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
-          <a href=".">
+          <Link to="/">
             🇹🇿 PESKAS | <span className="text-muted">validation portal</span>
-          </a>
+          </Link>
         </h1>
+        <div className="collapse navbar-collapse" id="navbar-menu">
+          <div className="d-flex flex-column flex-md-row flex-fill align-items-stretch align-items-md-center">
+            <ul className="navbar-nav">
+              <li className="nav-item">
+                <Link to="/" className={`nav-link px-3 ${location.pathname === '/' ? 'active font-weight-bold' : ''}`}>
+                  <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-checkbox" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                      <path d="M9 11l3 3l8 -8"></path>
+                      <path d="M20 12v6a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h9"></path>
+                    </svg>
+                  </span>
+                  <span className="nav-link-title">Validation</span>
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link to="/enumerators" className={`nav-link px-3 ${location.pathname === '/enumerators' ? 'active font-weight-bold' : ''}`}>
+                  <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-chart-bar" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                      <path d="M3 12m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path>
+                      <path d="M9 8m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path>
+                      <path d="M15 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path>
+                    </svg>
+                  </span>
+                  <span className="nav-link-title">Enumerator Performance</span>
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </div>
         <div className="navbar-nav flex-row order-md-last">
           <div className="nav-item dropdown">
             <a href="#" className="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="Open user menu">

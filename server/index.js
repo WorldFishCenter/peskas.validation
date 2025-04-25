@@ -185,6 +185,106 @@ app.patch('/api/kobo/validation_status/:id', async (req, res) => {
   }
 });
 
+// Add this endpoint to collect enumerator statistics
+app.get('/api/enumerator-stats', async (req, res) => {
+  try {
+    const koboAssetId = process.env.KOBO_ASSET_ID;
+    const koboToken = process.env.KOBO_API_TOKEN;
+    
+    // Fetch submissions from KoboToolbox
+    const koboUrl = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/`;
+    const koboResponse = await axios.get(koboUrl, {
+      headers: {
+        Authorization: `Token ${koboToken}`
+      }
+    });
+
+    const submissions = koboResponse.data.results;
+    
+    // Group by enumerator
+    const enumeratorStats = {};
+    
+    submissions.forEach(submission => {
+      const enumerator = submission.submitted_by || submission._submitted_by || 'Unknown';
+      
+      if (!enumeratorStats[enumerator]) {
+        enumeratorStats[enumerator] = {
+          totalSubmissions: 0,
+          submissionsWithAlerts: 0,
+          alertFrequency: {},
+          submissionsByDate: {},
+          validationStatus: {
+            approved: 0,
+            not_approved: 0,
+            on_hold: 0
+          }
+        };
+      }
+      
+      // Increment total submissions
+      enumeratorStats[enumerator].totalSubmissions++;
+      
+      // Count submissions with alerts
+      if (submission.alert_flag && submission.alert_flag.trim() !== '') {
+        enumeratorStats[enumerator].submissionsWithAlerts++;
+        
+        // Count each alert type
+        const alerts = submission.alert_flag.split(' ');
+        alerts.forEach(alert => {
+          if (!enumeratorStats[enumerator].alertFrequency[alert]) {
+            enumeratorStats[enumerator].alertFrequency[alert] = 0;
+          }
+          enumeratorStats[enumerator].alertFrequency[alert]++;
+        });
+      }
+      
+      // Track submissions by date (for frequency chart)
+      const submissionDate = submission._submission_time.split('T')[0]; // Get just the date part
+      if (!enumeratorStats[enumerator].submissionsByDate[submissionDate]) {
+        enumeratorStats[enumerator].submissionsByDate[submissionDate] = 0;
+      }
+      enumeratorStats[enumerator].submissionsByDate[submissionDate]++;
+      
+      // Count validation statuses
+      const status = submission._validation_status?.validation_status?.uid || 
+                   submission._validation_status?.uid || 
+                   'validation_status_on_hold';
+      
+      if (status.includes('approved')) {
+        enumeratorStats[enumerator].validationStatus.approved++;
+      } else if (status.includes('not_approved')) {
+        enumeratorStats[enumerator].validationStatus.not_approved++;
+      } else {
+        enumeratorStats[enumerator].validationStatus.on_hold++;
+      }
+    });
+    
+    // Calculate error percentages and create formatted response
+    const formattedStats = Object.entries(enumeratorStats).map(([name, stats]) => {
+      return {
+        name,
+        totalSubmissions: stats.totalSubmissions,
+        submissionsWithAlerts: stats.submissionsWithAlerts,
+        errorRate: (stats.submissionsWithAlerts / stats.totalSubmissions) * 100,
+        alertFrequency: Object.entries(stats.alertFrequency).map(([code, count]) => ({
+          code,
+          count,
+          description: ALERT_FLAG_DESCRIPTIONS[code] || 'Unknown alert'
+        })).sort((a, b) => b.count - a.count),
+        submissionTrend: Object.entries(stats.submissionsByDate)
+          .map(([date, count]) => ({ date, count }))
+          .sort((a, b) => new Date(a.date) - new Date(b.date)),
+        validationStatus: stats.validationStatus
+      };
+    }).sort((a, b) => b.totalSubmissions - a.totalSubmissions);
+    
+    res.json(formattedStats);
+  } catch (error) {
+    console.error('Error fetching enumerator statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch enumerator statistics' });
+  }
+});
+
 // Start server after connecting to MongoDB
 connectToMongo().then(() => {
   app.listen(PORT, () => {

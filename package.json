@@ -17,13 +17,17 @@
     "@tabler/icons-react": "^3.30.0",
     "@tanstack/match-sorter-utils": "^8.19.4",
     "@tanstack/react-table": "^8.10.7",
+    "@types/highcharts": "^5.0.44",
     "axios": "^1.6.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "highcharts": "^12.2.0",
+    "highcharts-react-official": "^3.2.1",
     "mongodb": "^6.13.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^7.5.2"
   },
   "devDependencies": {
     "@types/node": "^22.13.5",

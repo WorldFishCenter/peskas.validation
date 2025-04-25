@@ -1,9 +1,11 @@
 import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './components/Auth/AuthContext';
 import Login from './components/Auth/Login';
 import ValidationTable from './components/ValidationTable/ValidationTable';
 import MainLayout from './components/Layout/MainLayout';
 import ErrorBoundary from './components/ErrorBoundary';
+import EnumeratorPerformance from './components/EnumeratorPerformance/EnumeratorPerformance';
 
 // Remove or fix these imports
 // import '@tabler/core/dist/css/tabler.min.css';
@@ -12,6 +14,23 @@ import ErrorBoundary from './components/ErrorBoundary';
 // Add a direct link to Tabler CSS in your index.html instead
 // Or use these alternative imports if available:
 // import '@tabler/core/css/tabler.min.css';
+
+const AppRoutes: React.FC = () => {
+  return (
+    <Routes>
+      <Route path="/" element={
+        <ErrorBoundary>
+          <ValidationTable />
+        </ErrorBoundary>
+      } />
+      <Route path="/enumerators" element={
+        <ErrorBoundary>
+          <EnumeratorPerformance />
+        </ErrorBoundary>
+      } />
+    </Routes>
+  );
+};
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -31,24 +50,18 @@ const AppContent: React.FC = () => {
 
   return (
     <MainLayout>
-      {isAuthenticated ? (
-          <div className="card-body">
-            <ErrorBoundary>
-              <ValidationTable />
-            </ErrorBoundary>
-        </div>
-      ) : (
-        <Login />
-      )}
+      {isAuthenticated ? <AppRoutes /> : <Login />}
     </MainLayout>
   );
 };
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </BrowserRouter>
   );
 };
 

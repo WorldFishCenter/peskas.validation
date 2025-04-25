@@ -71,4 +71,31 @@ export const useUpdateValidationStatus = () => {
   };
 
   return { updateStatus, isUpdating, updateMessage };
+};
+
+// Add this function to fetch enumerator statistics
+export const useFetchEnumeratorStats = () => {
+  const [data, setData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchEnumeratorStats = async () => {
+    setIsLoading(true);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/enumerator-stats`);
+      setData(response.data);
+      setError(null);
+    } catch (error) {
+      console.error('Error fetching enumerator stats:', error);
+      setError('Failed to load enumerator statistics.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEnumeratorStats();
+  }, []);
+
+  return { data, isLoading, error, refetch: fetchEnumeratorStats };
 }; 
