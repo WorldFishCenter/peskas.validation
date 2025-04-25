@@ -106,6 +106,17 @@ const ValidationTable: React.FC = () => {
         filterFn: fuzzyFilter,
       },
       {
+        accessorKey: 'submitted_by',
+        header: () => 'SUBMITTED BY',
+        cell: info => {
+          const value = info.getValue() as string;
+          return value || <span className="text-muted">—</span>;
+        },
+        enableSorting: true,
+        enableColumnFilter: true,
+        filterFn: fuzzyFilter,
+      },
+      {
         accessorKey: 'submission_date',
         header: () => 'SUBMISSION DATE',
         cell: info => {
@@ -512,6 +523,10 @@ const ValidationTable: React.FC = () => {
                 <div className="d-flex justify-content-between mb-2">
                   <div className="text-muted">Date:</div>
                   <div>{selectedRow?.submission_date ? formatDate(selectedRow.submission_date) : 'N/A'}</div>
+                </div>
+                <div className="d-flex justify-content-between mb-2">
+                  <div className="text-muted">Submitted By:</div>
+                  <div>{selectedRow?.submitted_by || 'Unknown'}</div>
                 </div>
                 {selectedRow?.vessel_number && (
                   <div className="d-flex justify-content-between mb-2">

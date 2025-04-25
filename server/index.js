@@ -23,7 +23,7 @@ async function connectToMongo() {
     const client = new MongoClient(MONGODB_URI);
     await client.connect();
     console.log('Connected to MongoDB');
-    db = client.db('zanzibar-dev');
+    db = client.db('zanzibar-prod');
     return db;
   } catch (error) {
     console.error('MongoDB connection error:', error);
@@ -64,6 +64,7 @@ app.get('/api/kobo/submissions', async (req, res) => {
         submission_date: koboItem._submission_time,
         vessel_number: koboItem.vessel_number || '',
         catch_number: koboItem.catch_number || '',
+        submitted_by: koboItem.submitted_by || koboItem._submitted_by || '',
         validation_status: koboItem._validation_status?.validation_status?.uid || 
                          koboItem._validation_status?.uid || 
                          'validation_status_on_hold',
