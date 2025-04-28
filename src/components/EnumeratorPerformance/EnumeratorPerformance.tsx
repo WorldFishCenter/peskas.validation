@@ -276,7 +276,6 @@ const EnumeratorPerformance: React.FC = () => {
 
   // Error state
   if (error) {
-    // The error is already a string from the API
     return (
       <div className="container-xl">
         <div className="alert alert-danger my-4" role="alert">
