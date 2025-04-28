@@ -60,6 +60,17 @@ const refreshEnumeratorStats = async (adminToken: string) => {
   }
 };
 
+// Add extended Highcharts types to fix TypeScript errors
+declare module 'highcharts' {
+  interface ChartOptions {
+    zoomType?: string;
+  }
+  
+  interface TooltipOptions {
+    crosshairs?: boolean;
+  }
+}
+
 const EnumeratorPerformance: React.FC = () => {
   const { data: rawData = [], isLoading, error, refetch } = useFetchEnumeratorStats();
   const [enumerators, setEnumerators] = useState<EnumeratorData[]>([]);
@@ -69,6 +80,8 @@ const EnumeratorPerformance: React.FC = () => {
   const [adminToken, setAdminToken] = useState<string>('');
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [refreshMessage, setRefreshMessage] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'volume' | 'quality' | 'trends'>('volume');
+  const [detailActiveTab, setDetailActiveTab] = useState<'overview' | 'trends' | 'alerts'>('overview');
 
   // Process the raw data into the format needed for the charts
   useEffect(() => {
@@ -208,9 +221,12 @@ const EnumeratorPerformance: React.FC = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="d-flex justify-content-center my-5">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
+      <div className="container-xl">
+        <div className="card">
+          <div className="card-body text-center py-5">
+            <div className="spinner-border text-primary" role="status"></div>
+            <div className="mt-3">Loading data...</div>
+          </div>
         </div>
       </div>
     );
@@ -219,22 +235,24 @@ const EnumeratorPerformance: React.FC = () => {
   // Error state
   if (error) {
     return (
-      <div className="alert alert-danger my-4" role="alert">
-        <div className="d-flex">
-          <div>
-            <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-              <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
-              <path d="M12 8v4"></path>
-              <path d="M12 16h.01"></path>
-            </svg>
+      <div className="container-xl">
+        <div className="alert alert-danger my-4" role="alert">
+          <div className="d-flex">
+            <div>
+              <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
+                <path d="M12 8v4"></path>
+                <path d="M12 16h.01"></path>
+              </svg>
+            </div>
+            <div className="ms-2">{error}</div>
           </div>
-          <div className="ms-2">{error}</div>
-        </div>
-        <div className="mt-3">
-          <button className="btn btn-outline-primary" onClick={refetch}>
-            Try Again
-          </button>
+          <div className="mt-3">
+            <button className="btn btn-outline-primary" onClick={refetch}>
+              Try Again
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -243,23 +261,32 @@ const EnumeratorPerformance: React.FC = () => {
   // No data state
   if (enumerators.length === 0) {
     return (
-      <div className="alert alert-info my-4" role="alert">
-        <div className="d-flex">
-          <div>
-            <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-info-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-              <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
-              <path d="M12 8l.01 0"></path>
-              <path d="M11 12h1v4h1"></path>
-            </svg>
+      <div className="container-xl">
+        <div className="alert alert-info my-4" role="alert">
+          <div className="d-flex">
+            <div>
+              <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-info-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
+                <path d="M12 8l.01 0"></path>
+                <path d="M11 12h1v4h1"></path>
+              </svg>
+            </div>
+            <div className="ms-2">No enumerator performance data available.</div>
           </div>
-          <div className="ms-2">No enumerator performance data available.</div>
         </div>
       </div>
     );
   }
 
   const selectedEnumeratorData = enumerators.find(e => e.name === selectedEnumerator);
+  
+  // Calculate summary statistics
+  const totalSubmissions = enumerators.reduce((sum, e) => sum + e.totalSubmissions, 0);
+  const totalAlerts = enumerators.reduce((sum, e) => sum + e.submissionsWithAlerts, 0);
+  const avgErrorRate = totalAlerts / totalSubmissions * 100;
+  const bestEnumerator = enumerators.reduce((best, current) => 
+    current.errorRate < best.errorRate ? current : best, enumerators[0]);
   
   // Calculate dates for submission trend chart
   const allDates = enumerators.flatMap(e => 
@@ -273,7 +300,7 @@ const EnumeratorPerformance: React.FC = () => {
   const submissionVolumeOptions: Highcharts.Options = {
     chart: {
       type: 'column',
-      height: 350
+      height: 400
     },
     title: {
       text: 'Submission Volume by Enumerator'
@@ -313,6 +340,13 @@ const EnumeratorPerformance: React.FC = () => {
             click: function(this: Highcharts.Point) {
               const category = this.category as string;
               setSelectedEnumerator(category);
+              // Auto-scroll to the detailed section
+              setTimeout(() => {
+                const detailSection = document.getElementById('enumerator-detail');
+                if (detailSection) {
+                  detailSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }, 100);
             }
           }
         },
@@ -381,6 +415,13 @@ const EnumeratorPerformance: React.FC = () => {
             click: function(this: Highcharts.Point) {
               const category = this.category as string;
               setSelectedEnumerator(category);
+              // Auto-scroll to the detailed section
+              setTimeout(() => {
+                const detailSection = document.getElementById('enumerator-detail');
+                if (detailSection) {
+                  detailSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }, 100);
             }
           }
         },
@@ -390,14 +431,20 @@ const EnumeratorPerformance: React.FC = () => {
           style: {
             fontSize: '10px'
           }
-        }
+        },
+        colorByPoint: true,
+        colors: enumerators.map(e => {
+          // Color based on error rate
+          if (e.errorRate < 5) return '#28a745'; // Green for low error rate
+          if (e.errorRate < 15) return '#ffc107'; // Yellow for medium error rate
+          return '#dc3545'; // Red for high error rate
+        })
       }
     },
     series: [{
       name: 'Error Rate',
       type: 'column',
       data: enumerators.map(e => parseFloat(e.errorRate.toFixed(1))),
-      color: '#dc3545'
     }],
     credits: {
       enabled: false
@@ -408,7 +455,8 @@ const EnumeratorPerformance: React.FC = () => {
   const submissionTrendOptions: Highcharts.Options = {
     chart: {
       type: 'line',
-      height: 350
+      height: 400,
+      zoomType: 'x'
     },
     title: {
       text: 'Submission Trend Over Time'
@@ -432,10 +480,18 @@ const EnumeratorPerformance: React.FC = () => {
       min: 0
     },
     tooltip: {
-      shared: true
+      shared: true,
+      crosshairs: true
     },
     legend: {
-      enabled: true
+      enabled: true,
+      layout: 'horizontal',
+      align: 'center',
+      verticalAlign: 'bottom',
+      maxHeight: 80,
+      itemStyle: {
+        fontSize: '10px'
+      }
     },
     series: enumerators
       .sort((a, b) => b.totalSubmissions - a.totalSubmissions)
@@ -588,7 +644,8 @@ const EnumeratorPerformance: React.FC = () => {
   const selectedEnumeratorTrendOptions: Highcharts.Options = {
     chart: {
       type: 'column',
-      height: 350
+      height: 350,
+      zoomType: 'x'
     },
     title: {
       text: `Submission Trend for ${selectedEnumeratorData?.name || ''}`
@@ -645,43 +702,70 @@ const EnumeratorPerformance: React.FC = () => {
 
   return (
     <div className="container-xl">
+      {/* Page header with actions */}
       <div className="page-header d-print-none">
-        <div className="row align-items-center">
-          <div className="col">
-            <h2 className="page-title">Enumerator Performance Dashboard</h2>
-            <div className="text-muted mt-1">
-              Monitor and analyze data collection performance metrics
+        <div className="container-xl">
+          <div className="row g-2 align-items-center">
+            <div className="col">
+              <h2 className="page-title">Enumerator Performance Dashboard</h2>
+              <div className="text-muted mt-1">
+                Monitor and analyze data collection performance metrics
+              </div>
             </div>
-          </div>
-          <div className="col-auto ms-auto">
-            <div className="btn-list">
-              <button 
-                className="btn btn-primary d-none d-sm-inline-block"
-                onClick={refetch}
-                disabled={isRefreshing}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-refresh" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                  <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"></path>
-                  <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"></path>
-                </svg>
-                Refresh Data
-              </button>
-              {isAdmin && (
-                <button 
-                  className="btn btn-outline-primary ms-2"
-                  onClick={handleAdminRefresh}
-                  disabled={isRefreshing}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-database" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                    <path d="M12 6m-8 0a8 3 0 1 0 16 0a8 3 0 1 0 -16 0"></path>
-                    <path d="M4 6v6a8 3 0 0 0 16 0v-6"></path>
-                    <path d="M4 12v6a8 3 0 0 0 16 0v-6"></path>
-                  </svg>
-                  Reload Data (Admin)
-                </button>
-              )}
+            <div className="col-auto ms-auto d-print-none">
+              <div className="btn-list">
+                <div className="d-flex">
+                  <div className="btn-group me-2" role="group" aria-label="Time period">
+                    <button type="button" 
+                      className={`btn btn-sm ${timeframe === 'all' ? 'btn-primary' : 'btn-outline-primary'}`}
+                      onClick={() => setTimeframe('all')}>
+                      All Time
+                    </button>
+                    <button type="button" 
+                      className={`btn btn-sm ${timeframe === '7days' ? 'btn-primary' : 'btn-outline-primary'}`}
+                      onClick={() => setTimeframe('7days')}>
+                      7 Days
+                    </button>
+                    <button type="button" 
+                      className={`btn btn-sm ${timeframe === '30days' ? 'btn-primary' : 'btn-outline-primary'}`}
+                      onClick={() => setTimeframe('30days')}>
+                      30 Days
+                    </button>
+                    <button type="button" 
+                      className={`btn btn-sm ${timeframe === '90days' ? 'btn-primary' : 'btn-outline-primary'}`}
+                      onClick={() => setTimeframe('90days')}>
+                      90 Days
+                    </button>
+                  </div>
+                  <button 
+                    className="btn btn-primary btn-sm"
+                    onClick={refetch}
+                    disabled={isRefreshing}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-refresh" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                      <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"></path>
+                      <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"></path>
+                    </svg>
+                    Refresh
+                  </button>
+                  {isAdmin && (
+                    <button 
+                      className="btn btn-outline-primary btn-sm ms-2"
+                      onClick={handleAdminRefresh}
+                      disabled={isRefreshing}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-database" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                        <path d="M12 6m-8 0a8 3 0 1 0 16 0a8 3 0 1 0 -16 0"></path>
+                        <path d="M4 6v6a8 3 0 0 0 16 0v-6"></path>
+                        <path d="M4 12v6a8 3 0 0 0 16 0v-6"></path>
+                      </svg>
+                      Admin Refresh
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -693,202 +777,293 @@ const EnumeratorPerformance: React.FC = () => {
         </div>
       )}
 
-      <div className="row mb-3">
-        <div className="col-auto">
-          <div className="btn-group" role="group" aria-label="Time frame selector">
-            <button 
-              type="button" 
-              className={`btn ${timeframe === 'all' ? 'btn-primary' : 'btn-outline-primary'}`}
-              onClick={() => setTimeframe('all')}
-            >
-              All Time
-            </button>
-            <button 
-              type="button" 
-              className={`btn ${timeframe === '7days' ? 'btn-primary' : 'btn-outline-primary'}`}
-              onClick={() => setTimeframe('7days')}
-            >
-              Last 7 Days
-            </button>
-            <button 
-              type="button" 
-              className={`btn ${timeframe === '30days' ? 'btn-primary' : 'btn-outline-primary'}`}
-              onClick={() => setTimeframe('30days')}
-            >
-              Last 30 Days
-            </button>
-            <button 
-              type="button" 
-              className={`btn ${timeframe === '90days' ? 'btn-primary' : 'btn-outline-primary'}`}
-              onClick={() => setTimeframe('90days')}
-            >
-              Last 90 Days
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="row row-cards">
-        <div className="col-md-6">
+      {/* Summary statistics cards */}
+      <div className="row row-deck row-cards mb-3">
+        <div className="col-sm-6 col-lg-3">
           <div className="card">
             <div className="card-body">
-              <HighchartsReact highcharts={Highcharts} options={submissionVolumeOptions} />
-            </div>
-          </div>
-        </div>
-        <div className="col-md-6">
-          <div className="card">
-            <div className="card-body">
-              <HighchartsReact highcharts={Highcharts} options={errorRateOptions} />
-            </div>
-          </div>
-        </div>
-        <div className="col-md-12 mt-3">
-          <div className="card">
-            <div className="card-body">
-              <HighchartsReact highcharts={Highcharts} options={submissionTrendOptions} />
-            </div>
-          </div>
-        </div>
-        <div className="col-md-12 mt-3">
-          <div className="card">
-            <div className="card-body">
-              <HighchartsReact highcharts={Highcharts} options={qualityRankingOptions} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {selectedEnumeratorData && (
-        <>
-          <div className="page-header d-print-none mt-4">
-            <div className="row align-items-center">
-              <div className="col">
-                <h3 className="page-title">
-                  <span className="text-azure">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                      <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
-                      <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
-                    </svg>
-                  </span> {" "}
-                  Detailed Analysis: {selectedEnumeratorData.name}
-                </h3>
+              <div className="d-flex align-items-center">
+                <div className="subheader">Total Submissions</div>
               </div>
-              <div className="col-auto">
-                <div className="dropdown">
-                  <button className="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    Select Enumerator
-                  </button>
-                  <ul className="dropdown-menu">
-                    {enumerators.map(enumerator => (
-                      <li key={enumerator.name}>
-                        <a 
-                          className={`dropdown-item ${enumerator.name === selectedEnumerator ? 'active' : ''}`} 
-                          href="#" 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setSelectedEnumerator(enumerator.name);
-                          }}
-                        >
-                          {enumerator.name}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
+              <div className="h1 mb-0">{totalSubmissions}</div>
+              <div className="text-muted mt-1">All enumerators combined</div>
+            </div>
+          </div>
+        </div>
+        <div className="col-sm-6 col-lg-3">
+          <div className="card">
+            <div className="card-body">
+              <div className="d-flex align-items-center">
+                <div className="subheader">Total Enumerators</div>
+              </div>
+              <div className="h1 mb-0">{enumerators.length}</div>
+              <div className="text-muted mt-1">Active data collectors</div>
+            </div>
+          </div>
+        </div>
+        <div className="col-sm-6 col-lg-3">
+          <div className="card">
+            <div className="card-body">
+              <div className="d-flex align-items-center">
+                <div className="subheader">Average Error Rate</div>
+              </div>
+              <div className="h1 mb-0">{avgErrorRate.toFixed(1)}%</div>
+              <div className="text-muted mt-1">Across all submissions</div>
+            </div>
+          </div>
+        </div>
+        <div className="col-sm-6 col-lg-3">
+          <div className="card">
+            <div className="card-body">
+              <div className="d-flex align-items-center">
+                <div className="subheader">Best Performing Enumerator</div>
+              </div>
+              <div className="h1 mb-0">{bestEnumerator.name}</div>
+              <div className="text-muted mt-1">Error rate: {bestEnumerator.errorRate.toFixed(1)}%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main content section with tabs */}
+      <div className="page-body">
+        <div className="container-xl">
+          <div className="card">
+            <div className="card-header">
+              <ul className="nav nav-tabs card-header-tabs" data-bs-toggle="tabs">
+                <li className="nav-item">
+                  <a 
+                    className={`nav-link ${activeTab === 'volume' ? 'active' : ''}`} 
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); setActiveTab('volume'); }}
+                  >
+                    Submission Volume
+                  </a>
+                </li>
+                <li className="nav-item">
+                  <a 
+                    className={`nav-link ${activeTab === 'quality' ? 'active' : ''}`} 
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); setActiveTab('quality'); }}
+                  >
+                    Quality Metrics
+                  </a>
+                </li>
+                <li className="nav-item">
+                  <a 
+                    className={`nav-link ${activeTab === 'trends' ? 'active' : ''}`} 
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); setActiveTab('trends'); }}
+                  >
+                    Submission Trends
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div className="card-body">
+              <div className="tab-content">
+                {/* Volume Tab */}
+                <div className={`tab-pane ${activeTab === 'volume' ? 'active show' : ''}`}>
+                  <h3 className="card-title">Submission Volume by Enumerator</h3>
+                  <p className="text-muted mb-4">Click on any column to view detailed statistics for that enumerator</p>
+                  <HighchartsReact highcharts={Highcharts} options={submissionVolumeOptions} />
+                </div>
+                
+                {/* Quality Tab */}
+                <div className={`tab-pane ${activeTab === 'quality' ? 'active show' : ''}`}>
+                  <div className="row row-cards">
+                    <div className="col-md-6">
+                      <h3 className="card-title">Error Rate by Enumerator</h3>
+                      <p className="text-muted mb-4">Error rates indicate potential data quality issues</p>
+                      <HighchartsReact highcharts={Highcharts} options={errorRateOptions} />
+                    </div>
+                    <div className="col-md-6">
+                      <h3 className="card-title">Enumerator Quality Ranking</h3>
+                      <p className="text-muted mb-4">Ranked by percentage of submissions without alerts</p>
+                      <HighchartsReact highcharts={Highcharts} options={qualityRankingOptions} />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Trends Tab */}
+                <div className={`tab-pane ${activeTab === 'trends' ? 'active show' : ''}`}>
+                  <h3 className="card-title">Submission Trend Over Time</h3>
+                  <p className="text-muted mb-4">Showing top 10 enumerators by submission volume (use mouse to zoom)</p>
+                  <HighchartsReact highcharts={Highcharts} options={submissionTrendOptions} />
                 </div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
-          <div className="row row-cards">
-            <div className="col-md-4">
-              <div className="card mb-4">
-                <div className="card-body">
-                  <div className="d-flex align-items-center">
-                    <div className="subheader">Total Submissions</div>
-                    <div className="ms-auto lh-1">
-                      <div className="badge bg-primary">{timeframe === 'all' ? 'All time' : `Last ${timeframe.replace('days', ' days')}`}</div>
-                    </div>
-                  </div>
-                  <div className="h1 mb-3 mt-2">{selectedEnumeratorData.totalSubmissions}</div>
-                  <div className="d-flex mb-2">
-                    <div>Submission Rate</div>
-                    <div className="ms-auto">
-                      <span className="text-green d-inline-flex align-items-center lh-1">
-                        {Math.round(selectedEnumeratorData.totalSubmissions / (enumerators.reduce((sum, e) => sum + e.totalSubmissions, 0) / enumerators.length) * 100)}% 
-                        <svg xmlns="http://www.w3.org/2000/svg" className="icon ms-1" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      {/* Detailed enumerator analysis section */}
+      {selectedEnumeratorData && (
+        <div className="page-body mt-4" id="enumerator-detail">
+          <div className="container-xl">
+            <div className="card">
+              <div className="card-header">
+                <div className="row align-items-center">
+                  <div className="col">
+                    <h3 className="card-title">
+                      <span className="text-azure me-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
                           <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                          <path d="M3 17l6 -6l4 4l8 -8"></path>
-                          <path d="M14 7l7 0l0 7"></path>
+                          <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                          <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
                         </svg>
                       </span>
+                      Detailed Analysis: {selectedEnumeratorData.name}
+                    </h3>
+                  </div>
+                  <div className="col-auto">
+                    <div className="dropdown">
+                      <button className="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Select Enumerator
+                      </button>
+                      <ul className="dropdown-menu">
+                        {enumerators.map(enumerator => (
+                          <li key={enumerator.name}>
+                            <a 
+                              className={`dropdown-item ${enumerator.name === selectedEnumerator ? 'active' : ''}`} 
+                              href="#" 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setSelectedEnumerator(enumerator.name);
+                              }}
+                            >
+                              {enumerator.name}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </div>
                 </div>
+                <ul className="nav nav-tabs card-header-tabs mt-3" data-bs-toggle="tabs">
+                  <li className="nav-item">
+                    <a 
+                      className={`nav-link ${detailActiveTab === 'overview' ? 'active' : ''}`} 
+                      href="#"
+                      onClick={(e) => { e.preventDefault(); setDetailActiveTab('overview'); }}
+                    >
+                      Overview
+                    </a>
+                  </li>
+                  <li className="nav-item">
+                    <a 
+                      className={`nav-link ${detailActiveTab === 'trends' ? 'active' : ''}`} 
+                      href="#"
+                      onClick={(e) => { e.preventDefault(); setDetailActiveTab('trends'); }}
+                    >
+                      Submission Trend
+                    </a>
+                  </li>
+                  <li className="nav-item">
+                    <a 
+                      className={`nav-link ${detailActiveTab === 'alerts' ? 'active' : ''}`} 
+                      href="#"
+                      onClick={(e) => { e.preventDefault(); setDetailActiveTab('alerts'); }}
+                    >
+                      Alert Distribution
+                    </a>
+                  </li>
+                </ul>
               </div>
-            </div>
-            <div className="col-md-4">
-              <div className="card mb-4">
-                <div className="card-body">
-                  <div className="d-flex align-items-center">
-                    <div className="subheader">Error Rate</div>
-                    <div className="ms-auto lh-1">
-                      <div className="badge bg-danger">Quality Metric</div>
+              <div className="card-body">
+                <div className="tab-content">
+                  {/* Overview Tab */}
+                  <div className={`tab-pane ${detailActiveTab === 'overview' ? 'active show' : ''}`}>
+                    <div className="row row-cards">
+                      <div className="col-md-4">
+                        <div className="card">
+                          <div className="card-body">
+                            <div className="d-flex align-items-center">
+                              <div className="subheader">Total Submissions</div>
+                              <div className="ms-auto lh-1">
+                                <div className="badge bg-primary">{timeframe === 'all' ? 'All time' : `Last ${timeframe.replace('days', ' days')}`}</div>
+                              </div>
+                            </div>
+                            <div className="h1 mb-3 mt-2">{selectedEnumeratorData.totalSubmissions}</div>
+                            <div className="d-flex mb-2">
+                              <div>Submission Rate</div>
+                              <div className="ms-auto">
+                                <span className="text-green d-inline-flex align-items-center lh-1">
+                                  {Math.round(selectedEnumeratorData.totalSubmissions / (enumerators.reduce((sum, e) => sum + e.totalSubmissions, 0) / enumerators.length) * 100)}% 
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="icon ms-1" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                    <path d="M3 17l6 -6l4 4l8 -8"></path>
+                                    <path d="M14 7l7 0l0 7"></path>
+                                  </svg>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-md-4">
+                        <div className="card">
+                          <div className="card-body">
+                            <div className="d-flex align-items-center">
+                              <div className="subheader">Error Rate</div>
+                              <div className="ms-auto lh-1">
+                                <div className="badge bg-danger">Quality Metric</div>
+                              </div>
+                            </div>
+                            <div className="h1 mb-3 mt-2">{selectedEnumeratorData.errorRate.toFixed(1)}%</div>
+                            <div className="d-flex mb-2">
+                              <div>Submissions with Alerts</div>
+                              <div className="ms-auto">
+                                <span className={`text-${selectedEnumeratorData.errorRate < 5 ? 'green' : selectedEnumeratorData.errorRate < 15 ? 'yellow' : 'red'} d-inline-flex align-items-center lh-1`}>
+                                  {selectedEnumeratorData.submissionsWithAlerts}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-md-4">
+                        <div className="card">
+                          <div className="card-body">
+                            <div className="d-flex align-items-center">
+                              <div className="subheader">Quality Score</div>
+                              <div className="ms-auto lh-1">
+                                <div className="badge bg-success">Performance</div>
+                              </div>
+                            </div>
+                            <div className="h1 mb-3 mt-2">{(100 - selectedEnumeratorData.errorRate).toFixed(1)}%</div>
+                            <div className="d-flex mb-2">
+                              <div>Clean Submissions</div>
+                              <div className="ms-auto">
+                                <span className="text-green d-inline-flex align-items-center lh-1">
+                                  {selectedEnumeratorData.totalSubmissions - selectedEnumeratorData.submissionsWithAlerts}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="h1 mb-3 mt-2">{selectedEnumeratorData.errorRate.toFixed(1)}%</div>
-                  <div className="d-flex mb-2">
-                    <div>Submissions with Alerts</div>
-                    <div className="ms-auto">
-                      <span className={`text-${selectedEnumeratorData.errorRate < 5 ? 'green' : selectedEnumeratorData.errorRate < 15 ? 'yellow' : 'red'} d-inline-flex align-items-center lh-1`}>
-                        {selectedEnumeratorData.submissionsWithAlerts}
-                      </span>
-                    </div>
+                  
+                  {/* Trends Tab */}
+                  <div className={`tab-pane ${detailActiveTab === 'trends' ? 'active show' : ''}`}>
+                    <h4 className="card-title">Submission Trend for {selectedEnumeratorData.name}</h4>
+                    <p className="text-muted mb-4">Track submission patterns over time (use mouse to zoom)</p>
+                    <HighchartsReact highcharts={Highcharts} options={selectedEnumeratorTrendOptions} />
                   </div>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="card mb-4">
-                <div className="card-body">
-                  <div className="d-flex align-items-center">
-                    <div className="subheader">Quality Score</div>
-                    <div className="ms-auto lh-1">
-                      <div className="badge bg-success">Performance</div>
-                    </div>
-                  </div>
-                  <div className="h1 mb-3 mt-2">{(100 - selectedEnumeratorData.errorRate).toFixed(1)}%</div>
-                  <div className="d-flex mb-2">
-                    <div>Clean Submissions</div>
-                    <div className="ms-auto">
-                      <span className="text-green d-inline-flex align-items-center lh-1">
-                        {selectedEnumeratorData.totalSubmissions - selectedEnumeratorData.submissionsWithAlerts}
-                      </span>
-                    </div>
+                  
+                  {/* Alerts Tab */}
+                  <div className={`tab-pane ${detailActiveTab === 'alerts' ? 'active show' : ''}`}>
+                    <h4 className="card-title">Alert Types for {selectedEnumeratorData.name}</h4>
+                    <p className="text-muted mb-4">Distribution of alert flags in submissions</p>
+                    <HighchartsReact highcharts={Highcharts} options={alertDistributionOptions} />
                   </div>
                 </div>
               </div>
             </div>
           </div>
-
-          <div className="row row-cards">
-            <div className="col-md-6">
-              <div className="card mb-4">
-                <div className="card-body">
-                  <HighchartsReact highcharts={Highcharts} options={alertDistributionOptions} />
-                </div>
-              </div>
-            </div>
-            <div className="col-md-6">
-              <div className="card mb-4">
-                <div className="card-body">
-                  <HighchartsReact highcharts={Highcharts} options={selectedEnumeratorTrendOptions} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
+        </div>
       )}
     </div>
   );
