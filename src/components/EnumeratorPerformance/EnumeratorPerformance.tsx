@@ -703,7 +703,7 @@ const EnumeratorPerformance: React.FC = () => {
   return (
     <div className="container-xl">
       {/* Page header with actions */}
-      <div className="page-header d-print-none">
+      <div className="page-header d-print-none mb-4">
         <div className="container-xl">
           <div className="row g-2 align-items-center">
             <div className="col">
@@ -772,13 +772,13 @@ const EnumeratorPerformance: React.FC = () => {
       </div>
 
       {refreshMessage && (
-        <div className={`alert ${refreshMessage.includes('Error') ? 'alert-danger' : 'alert-success'} my-3`}>
+        <div className={`alert ${refreshMessage.includes('Error') ? 'alert-danger' : 'alert-success'} mb-4`}>
           {refreshMessage}
         </div>
       )}
 
       {/* Summary statistics cards */}
-      <div className="row row-deck row-cards mb-3">
+      <div className="row row-deck row-cards mb-4">
         <div className="col-sm-6 col-lg-3">
           <div className="card">
             <div className="card-body">
@@ -826,72 +826,68 @@ const EnumeratorPerformance: React.FC = () => {
       </div>
 
       {/* Main content section with tabs */}
-      <div className="page-body">
-        <div className="container-xl">
-          <div className="card">
-            <div className="card-header">
-              <ul className="nav nav-tabs card-header-tabs" data-bs-toggle="tabs">
-                <li className="nav-item">
-                  <a 
-                    className={`nav-link ${activeTab === 'volume' ? 'active' : ''}`} 
-                    href="#"
-                    onClick={(e) => { e.preventDefault(); setActiveTab('volume'); }}
-                  >
-                    Submission Volume
-                  </a>
-                </li>
-                <li className="nav-item">
-                  <a 
-                    className={`nav-link ${activeTab === 'quality' ? 'active' : ''}`} 
-                    href="#"
-                    onClick={(e) => { e.preventDefault(); setActiveTab('quality'); }}
-                  >
-                    Quality Metrics
-                  </a>
-                </li>
-                <li className="nav-item">
-                  <a 
-                    className={`nav-link ${activeTab === 'trends' ? 'active' : ''}`} 
-                    href="#"
-                    onClick={(e) => { e.preventDefault(); setActiveTab('trends'); }}
-                  >
-                    Submission Trends
-                  </a>
-                </li>
-              </ul>
+      <div className="card mb-4">
+        <div className="card-header">
+          <ul className="nav nav-tabs card-header-tabs" data-bs-toggle="tabs">
+            <li className="nav-item">
+              <a 
+                className={`nav-link ${activeTab === 'volume' ? 'active' : ''}`} 
+                href="#"
+                onClick={(e) => { e.preventDefault(); setActiveTab('volume'); }}
+              >
+                Submission Volume
+              </a>
+            </li>
+            <li className="nav-item">
+              <a 
+                className={`nav-link ${activeTab === 'quality' ? 'active' : ''}`} 
+                href="#"
+                onClick={(e) => { e.preventDefault(); setActiveTab('quality'); }}
+              >
+                Quality Metrics
+              </a>
+            </li>
+            <li className="nav-item">
+              <a 
+                className={`nav-link ${activeTab === 'trends' ? 'active' : ''}`} 
+                href="#"
+                onClick={(e) => { e.preventDefault(); setActiveTab('trends'); }}
+              >
+                Submission Trends
+              </a>
+            </li>
+          </ul>
+        </div>
+        <div className="card-body">
+          <div className="tab-content">
+            {/* Volume Tab */}
+            <div className={`tab-pane ${activeTab === 'volume' ? 'active show' : ''}`}>
+              <h3 className="card-title">Submission Volume by Enumerator</h3>
+              <p className="text-muted mb-4">Click on any column to view detailed statistics for that enumerator</p>
+              <HighchartsReact highcharts={Highcharts} options={submissionVolumeOptions} />
             </div>
-            <div className="card-body">
-              <div className="tab-content">
-                {/* Volume Tab */}
-                <div className={`tab-pane ${activeTab === 'volume' ? 'active show' : ''}`}>
-                  <h3 className="card-title">Submission Volume by Enumerator</h3>
-                  <p className="text-muted mb-4">Click on any column to view detailed statistics for that enumerator</p>
-                  <HighchartsReact highcharts={Highcharts} options={submissionVolumeOptions} />
+            
+            {/* Quality Tab */}
+            <div className={`tab-pane ${activeTab === 'quality' ? 'active show' : ''}`}>
+              <div className="row row-cards">
+                <div className="col-md-6">
+                  <h3 className="card-title">Error Rate by Enumerator</h3>
+                  <p className="text-muted mb-4">Error rates indicate potential data quality issues</p>
+                  <HighchartsReact highcharts={Highcharts} options={errorRateOptions} />
                 </div>
-                
-                {/* Quality Tab */}
-                <div className={`tab-pane ${activeTab === 'quality' ? 'active show' : ''}`}>
-                  <div className="row row-cards">
-                    <div className="col-md-6">
-                      <h3 className="card-title">Error Rate by Enumerator</h3>
-                      <p className="text-muted mb-4">Error rates indicate potential data quality issues</p>
-                      <HighchartsReact highcharts={Highcharts} options={errorRateOptions} />
-                    </div>
-                    <div className="col-md-6">
-                      <h3 className="card-title">Enumerator Quality Ranking</h3>
-                      <p className="text-muted mb-4">Ranked by percentage of submissions without alerts</p>
-                      <HighchartsReact highcharts={Highcharts} options={qualityRankingOptions} />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Trends Tab */}
-                <div className={`tab-pane ${activeTab === 'trends' ? 'active show' : ''}`}>
-                  <h3 className="card-title">Submission Trend Over Time</h3>
-                  <p className="text-muted mb-4">Showing top 10 enumerators by submission volume (use mouse to zoom)</p>
-                  <HighchartsReact highcharts={Highcharts} options={submissionTrendOptions} />
+                <div className="col-md-6">
+                  <h3 className="card-title">Enumerator Quality Ranking</h3>
+                  <p className="text-muted mb-4">Ranked by percentage of submissions without alerts</p>
+                  <HighchartsReact highcharts={Highcharts} options={qualityRankingOptions} />
                 </div>
               </div>
+            </div>
+            
+            {/* Trends Tab */}
+            <div className={`tab-pane ${activeTab === 'trends' ? 'active show' : ''}`}>
+              <h3 className="card-title">Submission Trend Over Time</h3>
+              <p className="text-muted mb-4">Showing top 10 enumerators by submission volume (use mouse to zoom)</p>
+              <HighchartsReact highcharts={Highcharts} options={submissionTrendOptions} />
             </div>
           </div>
         </div>
@@ -899,167 +895,165 @@ const EnumeratorPerformance: React.FC = () => {
 
       {/* Detailed enumerator analysis section */}
       {selectedEnumeratorData && (
-        <div className="page-body mt-4" id="enumerator-detail">
-          <div className="container-xl">
-            <div className="card">
-              <div className="card-header">
-                <div className="row align-items-center">
-                  <div className="col">
-                    <h3 className="card-title">
-                      <span className="text-azure me-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                          <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
-                          <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
-                        </svg>
-                      </span>
-                      Detailed Analysis: {selectedEnumeratorData.name}
-                    </h3>
-                  </div>
-                  <div className="col-auto">
-                    <div className="dropdown">
-                      <button className="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        Select Enumerator
-                      </button>
-                      <ul className="dropdown-menu">
-                        {enumerators.map(enumerator => (
-                          <li key={enumerator.name}>
-                            <a 
-                              className={`dropdown-item ${enumerator.name === selectedEnumerator ? 'active' : ''}`} 
-                              href="#" 
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setSelectedEnumerator(enumerator.name);
-                              }}
-                            >
-                              {enumerator.name}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-                <ul className="nav nav-tabs card-header-tabs mt-3" data-bs-toggle="tabs">
-                  <li className="nav-item">
-                    <a 
-                      className={`nav-link ${detailActiveTab === 'overview' ? 'active' : ''}`} 
-                      href="#"
-                      onClick={(e) => { e.preventDefault(); setDetailActiveTab('overview'); }}
-                    >
-                      Overview
-                    </a>
-                  </li>
-                  <li className="nav-item">
-                    <a 
-                      className={`nav-link ${detailActiveTab === 'trends' ? 'active' : ''}`} 
-                      href="#"
-                      onClick={(e) => { e.preventDefault(); setDetailActiveTab('trends'); }}
-                    >
-                      Submission Trend
-                    </a>
-                  </li>
-                  <li className="nav-item">
-                    <a 
-                      className={`nav-link ${detailActiveTab === 'alerts' ? 'active' : ''}`} 
-                      href="#"
-                      onClick={(e) => { e.preventDefault(); setDetailActiveTab('alerts'); }}
-                    >
-                      Alert Distribution
-                    </a>
-                  </li>
-                </ul>
+        <div className="card" id="enumerator-detail">
+          <div className="card-body">
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <div className="d-flex align-items-center">
+                <span className="avatar avatar-md bg-azure-lt me-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </span>
+                <h3 className="card-title m-0">Detailed Analysis: {selectedEnumeratorData.name}</h3>
               </div>
-              <div className="card-body">
-                <div className="tab-content">
-                  {/* Overview Tab */}
-                  <div className={`tab-pane ${detailActiveTab === 'overview' ? 'active show' : ''}`}>
-                    <div className="row row-cards">
-                      <div className="col-md-4">
-                        <div className="card">
-                          <div className="card-body">
-                            <div className="d-flex align-items-center">
-                              <div className="subheader">Total Submissions</div>
-                              <div className="ms-auto lh-1">
-                                <div className="badge bg-primary">{timeframe === 'all' ? 'All time' : `Last ${timeframe.replace('days', ' days')}`}</div>
-                              </div>
-                            </div>
-                            <div className="h1 mb-3 mt-2">{selectedEnumeratorData.totalSubmissions}</div>
-                            <div className="d-flex mb-2">
-                              <div>Submission Rate</div>
-                              <div className="ms-auto">
-                                <span className="text-green d-inline-flex align-items-center lh-1">
-                                  {Math.round(selectedEnumeratorData.totalSubmissions / (enumerators.reduce((sum, e) => sum + e.totalSubmissions, 0) / enumerators.length) * 100)}% 
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="icon ms-1" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                                    <path d="M3 17l6 -6l4 4l8 -8"></path>
-                                    <path d="M14 7l7 0l0 7"></path>
-                                  </svg>
-                                </span>
-                              </div>
-                            </div>
+              <div style={{ width: '200px' }}>
+                <select 
+                  className="form-select" 
+                  value={selectedEnumerator || ''} 
+                  onChange={(e) => setSelectedEnumerator(e.target.value)}
+                >
+                  <option value="" disabled>Select Enumerator</option>
+                  {enumerators
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(enumerator => (
+                      <option key={enumerator.name} value={enumerator.name}>
+                        {enumerator.name}
+                      </option>
+                    ))
+                  }
+                </select>
+              </div>
+            </div>
+            
+            <div className="card-tabs">
+              <ul className="nav nav-tabs nav-tabs-bottom">
+                <li className="nav-item">
+                  <a 
+                    className={`nav-link ${detailActiveTab === 'overview' ? 'active' : ''}`} 
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); setDetailActiveTab('overview'); }}
+                  >
+                    Overview
+                  </a>
+                </li>
+                <li className="nav-item">
+                  <a 
+                    className={`nav-link ${detailActiveTab === 'trends' ? 'active' : ''}`} 
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); setDetailActiveTab('trends'); }}
+                  >
+                    Submission Trend
+                  </a>
+                </li>
+                <li className="nav-item">
+                  <a 
+                    className={`nav-link ${detailActiveTab === 'alerts' ? 'active' : ''}`} 
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); setDetailActiveTab('alerts'); }}
+                  >
+                    Alert Distribution
+                  </a>
+                </li>
+              </ul>
+            </div>
+            
+            <div className="tab-content mt-3">
+              {/* Overview Tab */}
+              <div className={`tab-pane ${detailActiveTab === 'overview' ? 'active show' : ''}`}>
+                <div className="row row-cards">
+                  <div className="col-md-4">
+                    <div className="card">
+                      <div className="card-body p-4">
+                        <div className="d-flex justify-content-between">
+                          <div>
+                            <div className="subheader">TOTAL SUBMISSIONS</div>
+                            <div className="h1 mt-2">{selectedEnumeratorData.totalSubmissions}</div>
+                          </div>
+                          <div>
+                            <span className="badge bg-primary p-2">
+                              {timeframe === 'all' ? 'All time' : `Last ${timeframe.replace('days', ' days')}`}
+                            </span>
                           </div>
                         </div>
-                      </div>
-                      <div className="col-md-4">
-                        <div className="card">
-                          <div className="card-body">
-                            <div className="d-flex align-items-center">
-                              <div className="subheader">Error Rate</div>
-                              <div className="ms-auto lh-1">
-                                <div className="badge bg-danger">Quality Metric</div>
-                              </div>
-                            </div>
-                            <div className="h1 mb-3 mt-2">{selectedEnumeratorData.errorRate.toFixed(1)}%</div>
-                            <div className="d-flex mb-2">
-                              <div>Submissions with Alerts</div>
-                              <div className="ms-auto">
-                                <span className={`text-${selectedEnumeratorData.errorRate < 5 ? 'green' : selectedEnumeratorData.errorRate < 15 ? 'yellow' : 'red'} d-inline-flex align-items-center lh-1`}>
-                                  {selectedEnumeratorData.submissionsWithAlerts}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="col-md-4">
-                        <div className="card">
-                          <div className="card-body">
-                            <div className="d-flex align-items-center">
-                              <div className="subheader">Quality Score</div>
-                              <div className="ms-auto lh-1">
-                                <div className="badge bg-success">Performance</div>
-                              </div>
-                            </div>
-                            <div className="h1 mb-3 mt-2">{(100 - selectedEnumeratorData.errorRate).toFixed(1)}%</div>
-                            <div className="d-flex mb-2">
-                              <div>Clean Submissions</div>
-                              <div className="ms-auto">
-                                <span className="text-green d-inline-flex align-items-center lh-1">
-                                  {selectedEnumeratorData.totalSubmissions - selectedEnumeratorData.submissionsWithAlerts}
-                                </span>
-                              </div>
-                            </div>
+                        <div className="d-flex mt-3">
+                          <div>Submission Rate</div>
+                          <div className="ms-auto text-green">
+                            {Math.round(selectedEnumeratorData.totalSubmissions / (enumerators.reduce((sum, e) => sum + e.totalSubmissions, 0) / enumerators.length) * 100)}%
+                            <svg xmlns="http://www.w3.org/2000/svg" className="icon ms-1" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                              <path d="M3 17l6 -6l4 4l8 -8"></path>
+                              <path d="M14 7l7 0l0 7"></path>
+                            </svg>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Trends Tab */}
-                  <div className={`tab-pane ${detailActiveTab === 'trends' ? 'active show' : ''}`}>
-                    <h4 className="card-title">Submission Trend for {selectedEnumeratorData.name}</h4>
-                    <p className="text-muted mb-4">Track submission patterns over time (use mouse to zoom)</p>
-                    <HighchartsReact highcharts={Highcharts} options={selectedEnumeratorTrendOptions} />
+                  <div className="col-md-4">
+                    <div className="card">
+                      <div className="card-body p-4">
+                        <div className="d-flex justify-content-between">
+                          <div>
+                            <div className="subheader">ERROR RATE</div>
+                            <div className="h1 mt-2">{selectedEnumeratorData.errorRate.toFixed(1)}%</div>
+                          </div>
+                          <div>
+                            <span className="badge bg-danger p-2">
+                              Quality Metric
+                            </span>
+                          </div>
+                        </div>
+                        <div className="d-flex mt-3">
+                          <div>Submissions with Alerts</div>
+                          <div className="ms-auto">
+                            <span className={`text-${selectedEnumeratorData.errorRate < 5 ? 'green' : selectedEnumeratorData.errorRate < 15 ? 'yellow' : 'red'}`}>
+                              {selectedEnumeratorData.submissionsWithAlerts}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
-                  {/* Alerts Tab */}
-                  <div className={`tab-pane ${detailActiveTab === 'alerts' ? 'active show' : ''}`}>
-                    <h4 className="card-title">Alert Types for {selectedEnumeratorData.name}</h4>
-                    <p className="text-muted mb-4">Distribution of alert flags in submissions</p>
-                    <HighchartsReact highcharts={Highcharts} options={alertDistributionOptions} />
+                  <div className="col-md-4">
+                    <div className="card">
+                      <div className="card-body p-4">
+                        <div className="d-flex justify-content-between">
+                          <div>
+                            <div className="subheader">QUALITY SCORE</div>
+                            <div className="h1 mt-2">{(100 - selectedEnumeratorData.errorRate).toFixed(1)}%</div>
+                          </div>
+                          <div>
+                            <span className="badge bg-success p-2">
+                              Performance
+                            </span>
+                          </div>
+                        </div>
+                        <div className="d-flex mt-3">
+                          <div>Clean Submissions</div>
+                          <div className="ms-auto text-green">
+                            {selectedEnumeratorData.totalSubmissions - selectedEnumeratorData.submissionsWithAlerts}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
+              </div>
+              
+              {/* Trends Tab */}
+              <div className={`tab-pane ${detailActiveTab === 'trends' ? 'active show' : ''}`}>
+                <h4 className="mb-3">Submission Trend for {selectedEnumeratorData.name}</h4>
+                <HighchartsReact highcharts={Highcharts} options={selectedEnumeratorTrendOptions} />
+              </div>
+              
+              {/* Alerts Tab */}
+              <div className={`tab-pane ${detailActiveTab === 'alerts' ? 'active show' : ''}`}>
+                <h4 className="mb-3">Alert Types for {selectedEnumeratorData.name}</h4>
+                <HighchartsReact highcharts={Highcharts} options={alertDistributionOptions} />
               </div>
             </div>
           </div>
