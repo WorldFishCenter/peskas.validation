@@ -344,22 +344,18 @@ const EnumeratorPerformance: React.FC = () => {
   // Generate chart options for submission volume by enumerator
   const submissionVolumeOptions: Highcharts.Options = {
     chart: {
-      type: 'column',
-      height: 400
+      type: 'bar',
+      height: 500
     },
     title: {
-      text: 'Submission Volume by Enumerator'
+      text: `Submission Volume by Enumerator (${timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})`
     },
     xAxis: {
-      categories: enumerators.map(e => e.name),
+      categories: enumerators
+        .sort((a, b) => (b.filteredTotal || b.totalSubmissions) - (a.filteredTotal || a.totalSubmissions))
+        .map(e => e.name),
       title: {
         text: 'Enumerator'
-      },
-      labels: {
-        rotation: -45,
-        style: {
-          fontSize: '11px'
-        }
       }
     },
     yAxis: {
@@ -372,13 +368,16 @@ const EnumeratorPerformance: React.FC = () => {
       formatter: function() {
         const x = String(this.x);
         const enumerator = enumerators.find(e => e.name === x);
+        const errorRate = enumerator?.filteredErrorRate !== undefined ? 
+          enumerator.filteredErrorRate : enumerator?.errorRate;
+        
         return `<b>${x}</b><br/>
                 Total Submissions: ${this.y}<br/>
-                Error Rate: ${enumerator?.filteredErrorRate?.toFixed(1) || enumerator?.errorRate.toFixed(1)}%`;
+                Error Rate: ${errorRate?.toFixed(1)}%`;
       }
     },
     plotOptions: {
-      column: {
+      bar: {
         cursor: 'pointer',
         point: {
           events: {
@@ -401,14 +400,17 @@ const EnumeratorPerformance: React.FC = () => {
           style: {
             fontSize: '10px'
           }
-        }
+        },
+        colorByPoint: false,
+        color: '#0d6efd'
       }
     },
     series: [{
       name: 'Submissions',
-      type: 'column',
-      data: enumerators.map(e => e.filteredTotal || e.totalSubmissions),
-      color: '#0d6efd'
+      type: 'bar',
+      data: enumerators
+        .sort((a, b) => (b.filteredTotal || b.totalSubmissions) - (a.filteredTotal || a.totalSubmissions))
+        .map(e => e.filteredTotal || e.totalSubmissions),
     }],
     credits: {
       enabled: false
@@ -418,22 +420,22 @@ const EnumeratorPerformance: React.FC = () => {
   // Error rate chart options
   const errorRateOptions: Highcharts.Options = {
     chart: {
-      type: 'column',
-      height: 350
+      type: 'bar',
+      height: 500
     },
     title: {
-      text: 'Error Rate by Enumerator'
+      text: `Error Rate by Enumerator (${timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})`
     },
     xAxis: {
-      categories: enumerators.map(e => e.name),
+      categories: enumerators
+        .sort((a, b) => {
+          const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
+          const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
+          return bRate - aRate; // Sort descending by error rate
+        })
+        .map(e => e.name),
       title: {
         text: 'Enumerator'
-      },
-      labels: {
-        rotation: -45,
-        style: {
-          fontSize: '11px'
-        }
       }
     },
     yAxis: {
@@ -447,15 +449,22 @@ const EnumeratorPerformance: React.FC = () => {
       formatter: function() {
         const x = String(this.x);
         const enumerator = enumerators.find(e => e.name === x);
-        const total = enumerator?.filteredTotal || enumerator?.totalSubmissions || 0;
-        const alerts = enumerator?.filteredAlertsCount || enumerator?.submissionsWithAlerts || 0;
+        
+        if (!enumerator) return `<b>${x}</b><br/>No data available`;
+        
+        const total = enumerator.filteredTotal !== undefined ? 
+          enumerator.filteredTotal : enumerator.totalSubmissions;
+        
+        const alerts = enumerator.filteredAlertsCount !== undefined ? 
+          enumerator.filteredAlertsCount : enumerator.submissionsWithAlerts;
+        
         return `<b>${x}</b><br/>
                 Error Rate: ${this.y}%<br/>
                 Submissions with Alerts: ${alerts} of ${total}`;
       }
     },
     plotOptions: {
-      column: {
+      bar: {
         cursor: 'pointer',
         point: {
           events: {
@@ -480,22 +489,34 @@ const EnumeratorPerformance: React.FC = () => {
           }
         },
         colorByPoint: true,
-        colors: enumerators.map(e => {
-          // Color based on error rate
-          const rate = e.filteredErrorRate !== undefined ? e.filteredErrorRate : e.errorRate;
-          if (rate < 5) return '#28a745'; // Green for low error rate
-          if (rate < 15) return '#ffc107'; // Yellow for medium error rate
-          return '#dc3545'; // Red for high error rate
-        })
+        colors: enumerators
+          .sort((a, b) => {
+            const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
+            const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
+            return bRate - aRate; // Sort descending by error rate
+          })
+          .map(e => {
+            // Color based on error rate
+            const rate = e.filteredErrorRate !== undefined ? e.filteredErrorRate : e.errorRate;
+            if (rate < 5) return '#28a745'; // Green for low error rate
+            if (rate < 15) return '#ffc107'; // Yellow for medium error rate
+            return '#dc3545'; // Red for high error rate
+          })
       }
     },
     series: [{
       name: 'Error Rate',
-      type: 'column',
-      data: enumerators.map(e => {
-        const rate = e.filteredErrorRate !== undefined ? e.filteredErrorRate : e.errorRate;
-        return parseFloat(rate.toFixed(1));
-      }),
+      type: 'bar',
+      data: enumerators
+        .sort((a, b) => {
+          const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
+          const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
+          return bRate - aRate; // Sort descending by error rate
+        })
+        .map(e => {
+          const rate = e.filteredErrorRate !== undefined ? e.filteredErrorRate : e.errorRate;
+          return parseFloat(rate.toFixed(1));
+        }),
     }],
     credits: {
       enabled: false
@@ -510,7 +531,7 @@ const EnumeratorPerformance: React.FC = () => {
       zoomType: 'x'
     },
     title: {
-      text: 'Submission Trend Over Time'
+      text: `Submission Trend Over Time (${timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})`
     },
     xAxis: {
       categories: uniqueDates,
@@ -574,10 +595,10 @@ const EnumeratorPerformance: React.FC = () => {
   const qualityRankingOptions: Highcharts.Options = {
     chart: {
       type: 'bar',
-      height: 350
+      height: 450
     },
     title: {
-      text: 'Enumerator Quality Ranking'
+      text: `Enumerator Quality Ranking (${timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})`
     },
     xAxis: {
       categories: enumerators
@@ -602,9 +623,16 @@ const EnumeratorPerformance: React.FC = () => {
       formatter: function() {
         const x = String(this.x);
         const enumerator = enumerators.find(e => e.name === x);
-        const total = enumerator?.filteredTotal || enumerator?.totalSubmissions || 0;
-        const alerts = enumerator?.filteredAlertsCount || enumerator?.submissionsWithAlerts || 0;
-        const cleanSubmissions = total - alerts;
+        
+        if (!enumerator) return `<b>${x}</b><br/>No data available`;
+        
+        const total = enumerator.filteredTotal !== undefined ? 
+          enumerator.filteredTotal : enumerator.totalSubmissions;
+        
+        const alerts = enumerator.filteredAlertsCount !== undefined ? 
+          enumerator.filteredAlertsCount : enumerator.submissionsWithAlerts;
+        
+        const cleanSubmissions = Math.max(0, total - alerts);
         
         return `<b>${x}</b><br/>
                 Quality Score: ${this.y}%<br/>
@@ -657,15 +685,17 @@ const EnumeratorPerformance: React.FC = () => {
   };
 
   // Generate detailed analysis for selected enumerator
-  const enumeratorAlertDistribution = selectedEnumeratorData?.submissions.reduce((counts: Record<string, number>, submission) => {
-    if (submission.alert_flag && submission.alert_flag !== "NA") {
-      counts[submission.alert_flag] = (counts[submission.alert_flag] || 0) + 1;
-    }
-    return counts;
-  }, {});
+  const enumeratorAlertDistribution = selectedEnumeratorData ? 
+    // Use filteredSubmissions if available, otherwise use all submissions
+    (selectedEnumeratorData.filteredSubmissions || selectedEnumeratorData.submissions).reduce((counts: Record<string, number>, submission) => {
+      if (submission.alert_flag && submission.alert_flag !== "NA") {
+        counts[submission.alert_flag] = (counts[submission.alert_flag] || 0) + 1;
+      }
+      return counts;
+    }, {}) : {};
   
-  const alertLabels = enumeratorAlertDistribution ? Object.keys(enumeratorAlertDistribution) : [];
-  const alertCounts = enumeratorAlertDistribution ? Object.values(enumeratorAlertDistribution) : [];
+  const alertLabels = Object.keys(enumeratorAlertDistribution);
+  const alertCounts = Object.values(enumeratorAlertDistribution);
 
   const alertDistributionOptions: Highcharts.Options = {
     chart: {
@@ -673,7 +703,7 @@ const EnumeratorPerformance: React.FC = () => {
       height: 350
     },
     title: {
-      text: `Alert Types for ${selectedEnumeratorData?.name || ''}`
+      text: `Alert Types for ${selectedEnumeratorData?.name || ''} (${timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})`
     },
     tooltip: {
       pointFormat: '{series.name}: <b>{point.y} ({point.percentage:.1f}%)</b>'
@@ -924,27 +954,35 @@ const EnumeratorPerformance: React.FC = () => {
             </li>
           </ul>
         </div>
-        <div className="card-body">
+        <div className="card-body" style={{ minHeight: '600px' }}>
           <div className="tab-content">
             {/* Volume Tab */}
             <div className={`tab-pane ${activeTab === 'volume' ? 'active show' : ''}`}>
               <h3 className="card-title">Submission Volume by Enumerator</h3>
-              <p className="text-muted mb-4">Click on any column to view detailed statistics for that enumerator</p>
+              <p className="text-muted mb-4">Click on any bar to view detailed statistics for that enumerator</p>
               <HighchartsReact highcharts={Highcharts} options={submissionVolumeOptions} />
             </div>
             
             {/* Quality Tab */}
             <div className={`tab-pane ${activeTab === 'quality' ? 'active show' : ''}`}>
-              <div className="row row-cards">
+              <div className="row">
                 <div className="col-md-6">
-                  <h3 className="card-title">Error Rate by Enumerator</h3>
-                  <p className="text-muted mb-4">Error rates indicate potential data quality issues</p>
-                  <HighchartsReact highcharts={Highcharts} options={errorRateOptions} />
+                  <div className="card border-0 shadow-none">
+                    <div className="card-body">
+                      <h3 className="card-title">Error Rate by Enumerator</h3>
+                      <p className="text-muted">Error rates indicate potential data quality issues</p>
+                      <HighchartsReact highcharts={Highcharts} options={errorRateOptions} />
+                    </div>
+                  </div>
                 </div>
                 <div className="col-md-6">
-                  <h3 className="card-title">Enumerator Quality Ranking</h3>
-                  <p className="text-muted mb-4">Ranked by percentage of submissions without alerts</p>
-                  <HighchartsReact highcharts={Highcharts} options={qualityRankingOptions} />
+                  <div className="card border-0 shadow-none">
+                    <div className="card-body">
+                      <h3 className="card-title">Enumerator Quality Ranking</h3>
+                      <p className="text-muted">Ranked by percentage of submissions without alerts</p>
+                      <HighchartsReact highcharts={Highcharts} options={qualityRankingOptions} />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1123,7 +1161,9 @@ const EnumeratorPerformance: React.FC = () => {
               
               {/* Trends Tab */}
               <div className={`tab-pane ${detailActiveTab === 'trends' ? 'active show' : ''}`}>
-                <h4 className="mb-3">Submission Trend for {selectedEnumeratorData.name}</h4>
+                <h4 className="mb-3">
+                  Submission Trend for {selectedEnumeratorData.name} ({timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})
+                </h4>
                 <HighchartsReact highcharts={Highcharts} options={selectedEnumeratorTrendOptions} />
               </div>
               
