@@ -249,6 +249,17 @@ const EnumeratorPerformance: React.FC = () => {
     return true;
   };
 
+  // Initialize all popovers after component has rendered
+  useEffect(() => {
+    // Check if Bootstrap's popover function exists
+    if (typeof document !== 'undefined' && (window as any).bootstrap?.Popover) {
+      const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+      [...popoverTriggerList].map(popoverTriggerEl => {
+        return new (window as any).bootstrap.Popover(popoverTriggerEl);
+      });
+    }
+  }, [activeTab]); // Re-initialize when tab changes
+
   // Loading state
   if (isLoading) {
     return (
@@ -884,7 +895,31 @@ const EnumeratorPerformance: React.FC = () => {
                 <div className="col-12">
                   <div className="card border-0 shadow-none">
                     <div className="card-body p-0">
-                      <h3 className="card-title mb-1">Enumerator Quality Ranking</h3>
+                      <div className="d-flex align-items-center mb-1">
+                        <h3 className="card-title mb-0">Enumerator Quality Ranking</h3>
+                        <div className="ms-2">
+                          <span 
+                            className="cursor-help" 
+                            data-bs-toggle="popover" 
+                            data-bs-placement="top" 
+                            data-bs-html="true"
+                            data-bs-trigger="hover focus"
+                            title="Understanding Quality Metrics" 
+                            data-bs-content="
+                              <strong>Quality Score:</strong> Percentage of submissions without alerts (100% - Error Rate).<br><br>
+                              <strong>Best Performer:</strong> Uses a weighted score that considers both quality and submission volume, requiring at least 5 submissions.<br><br>
+                              <strong>Chart:</strong> Green bars show quality score (%), blue bars show submission count.
+                            "
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-info-circle text-primary" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                              <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
+                              <path d="M12 8l.01 0"></path>
+                              <path d="M11 12h1v4h1"></path>
+                            </svg>
+                          </span>
+                        </div>
+                      </div>
                       <p className="text-muted small mb-3">Ranked by percentage of submissions without alerts</p>
                       <HighchartsReact highcharts={Highcharts} options={qualityRankingOptions} />
                     </div>
