@@ -26,17 +26,6 @@ interface EnumeratorData {
   filteredErrorRate?: number;
 }
 
-// Custom interface for Highcharts tooltip formatter
-interface TooltipFormatterContextObject {
-  x?: any;
-  y?: any;
-  key?: string;
-  point?: any;
-  series?: any;
-  percentage?: number;
-  total?: number;
-  category?: string;
-}
 
 // Temporary alternative implementation of refreshEnumeratorStats
 const refreshEnumeratorStats = async (adminToken: string) => {
@@ -327,10 +316,26 @@ const EnumeratorPerformance: React.FC = () => {
   const totalSubmissions = enumerators.reduce((sum, e) => sum + (e.filteredTotal || e.totalSubmissions), 0);
   const totalAlerts = enumerators.reduce((sum, e) => sum + (e.filteredAlertsCount || e.submissionsWithAlerts), 0);
   const avgErrorRate = totalSubmissions > 0 ? (totalAlerts / totalSubmissions) * 100 : 0;
+  
+  // Find the best enumerator using a weighted quality score
   const bestEnumerator = enumerators.reduce((best, current) => {
-    const bestRate = best.filteredErrorRate !== undefined ? best.filteredErrorRate : best.errorRate;
-    const currentRate = current.filteredErrorRate !== undefined ? current.filteredErrorRate : current.errorRate;
-    return currentRate < bestRate ? current : best;
+    // Only consider enumerators with at least 5 submissions
+    const currentSubmissions = current.filteredTotal !== undefined ? current.filteredTotal : current.totalSubmissions;
+    const bestSubmissions = best.filteredTotal !== undefined ? best.filteredTotal : best.totalSubmissions;
+    
+    if (currentSubmissions < 5) return best;
+    if (bestSubmissions < 5 && currentSubmissions >= 5) return current;
+    
+    // Calculate quality scores
+    const bestQualityScore = 100 - (best.filteredErrorRate !== undefined ? best.filteredErrorRate : best.errorRate);
+    const currentQualityScore = 100 - (current.filteredErrorRate !== undefined ? current.filteredErrorRate : current.errorRate);
+    
+    // Calculate weighted scores that consider both quality and volume
+    // Using logarithmic scale to balance between quality and quantity
+    const bestWeightedScore = bestQualityScore * Math.log10(bestSubmissions + 1);
+    const currentWeightedScore = currentQualityScore * Math.log10(currentSubmissions + 1);
+    
+    return currentWeightedScore > bestWeightedScore ? current : best;
   }, enumerators[0] || { name: '', errorRate: 0, filteredErrorRate: 0 });
   
   // Calculate dates for submission trend chart
@@ -438,13 +443,19 @@ const EnumeratorPerformance: React.FC = () => {
         text: 'Enumerator'
       }
     },
-    yAxis: {
+    yAxis: [{
       title: {
         text: 'Quality Score (%)'
       },
       min: 0,
       max: 100
-    },
+    }, {
+      title: {
+        text: 'Submission Count'
+      },
+      min: 0,
+      opposite: true
+    }],
     tooltip: {
       formatter: function() {
         const x = String(this.x);
@@ -461,33 +472,21 @@ const EnumeratorPerformance: React.FC = () => {
         const cleanSubmissions = Math.max(0, total - alerts);
         
         return `<b>${x}</b><br/>
-                Quality Score: ${this.y}%<br/>
-                Clean Submissions: ${cleanSubmissions} of ${total}`;
-      }
+                <span style="color:${this.series.color}">●</span> ${this.series.name}: ${this.y}${this.series.name === 'Quality Score' ? '%' : ''}<br/>
+                Total Submissions: ${total}<br/>
+                Clean Submissions: ${cleanSubmissions}`;
+      },
+      shared: true
     },
     plotOptions: {
       bar: {
         dataLabels: {
           enabled: true,
-          format: '{y}%',
           style: {
             fontSize: '10px'
           }
         },
-        colorByPoint: true,
-        colors: enumerators
-          .sort((a, b) => {
-            const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
-            const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
-            return aRate - bRate;
-          })
-          .map(e => {
-            // Color based on quality score
-            const qualityScore = 100 - (e.filteredErrorRate !== undefined ? e.filteredErrorRate : e.errorRate);
-            if (qualityScore >= 90) return '#28a745'; // Green for high quality
-            if (qualityScore >= 75) return '#ffc107'; // Yellow for medium quality
-            return '#dc3545'; // Red for low quality
-          })
+        grouping: false
       }
     },
     series: [{
@@ -502,10 +501,33 @@ const EnumeratorPerformance: React.FC = () => {
         .map(e => {
           const rate = e.filteredErrorRate !== undefined ? e.filteredErrorRate : e.errorRate;
           return parseFloat((100 - rate).toFixed(1));
+        }),
+      color: '#28a745',
+      dataLabels: {
+        format: '{y}%'
+      }
+    }, {
+      name: 'Submission Count',
+      type: 'bar',
+      data: enumerators
+        .sort((a, b) => {
+          const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
+          const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
+          return aRate - bRate;
         })
+        .map(e => e.filteredTotal || e.totalSubmissions),
+      color: '#17a2b8',
+      yAxis: 1,
+      opacity: 0.7,
+      dataLabels: {
+        format: '{y}'
+      }
     }],
     credits: {
       enabled: false
+    },
+    legend: {
+      enabled: true
     }
   };
 
