@@ -1,34 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { useFetchEnumeratorStats } from '../../api/api';
+import axios from 'axios';
+import { getApiBaseUrl } from '../../utils/apiConfig';
 
-// Create a type for the enumerator data
+// Define types based on the new data structure
+interface SubmissionData {
+  submission_id: number;
+  submitted_by: string;
+  submission_date: string;
+  alert_flag: string | null;
+}
+
 interface EnumeratorData {
   name: string;
+  submissions: SubmissionData[];
   totalSubmissions: number;
   submissionsWithAlerts: number;
   errorRate: number;
-  alertFrequency: Array<{
-    code: string;
-    count: number;
-    description: string;
-  }>;
-  submissionTrend: Array<{
-    date: string;
-    count: number;
-  }>;
-  validationStatus: {
-    approved: number;
-    not_approved: number;
-    on_hold: number;
-  };
+  submissionTrend: { date: string; count: number }[];
 }
 
-// Define types for Highcharts formatter functions
-interface HighchartsFormatterContextObject {
-  x?: string;
-  y?: number;
+// Custom interface for Highcharts tooltip formatter
+interface TooltipFormatterContextObject {
+  x?: any;
+  y?: any;
   key?: string;
   point?: any;
   series?: any;
@@ -37,37 +34,246 @@ interface HighchartsFormatterContextObject {
   category?: string;
 }
 
-const EnumeratorPerformance: React.FC = () => {
-  const { data: enumerators = [], isLoading, error } = useFetchEnumeratorStats();
-  const [selectedEnumerator, setSelectedEnumerator] = useState<string | null>(null);
+// Temporary alternative implementation of refreshEnumeratorStats
+const refreshEnumeratorStats = async (adminToken: string) => {
+  const API_BASE_URL = getApiBaseUrl();
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/admin/refresh-enumerator-stats`,
+      {},
+      {
+        headers: {
+          'Admin-Token': adminToken
+        }
+      }
+    );
+    return {
+      success: true,
+      message: response.data.message
+    };
+  } catch (error) {
+    console.error('Error refreshing enumerator stats:', error);
+    return {
+      success: false,
+      message: (error as any).response?.data?.error || 'Failed to refresh enumerator statistics'
+    };
+  }
+};
 
+const EnumeratorPerformance: React.FC = () => {
+  const { data: rawData = [], isLoading, error, refetch } = useFetchEnumeratorStats();
+  const [enumerators, setEnumerators] = useState<EnumeratorData[]>([]);
+  const [selectedEnumerator, setSelectedEnumerator] = useState<string | null>(null);
+  const [timeframe, setTimeframe] = useState<'all' | '7days' | '30days' | '90days'>('all');
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [adminToken, setAdminToken] = useState<string>('');
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [refreshMessage, setRefreshMessage] = useState<string | null>(null);
+
+  // Process the raw data into the format needed for the charts
+  useEffect(() => {
+    if (rawData && rawData.length > 0) {
+      // Format data from the table shown in the screenshot
+      const processedData: Record<string, any> = {};
+      
+      // Group by enumerator
+      rawData.forEach((item: SubmissionData) => {
+        // Make sure we have a valid enumerator name
+        const enumerator = item.submitted_by || 'Unknown';
+        
+        if (!processedData[enumerator]) {
+          processedData[enumerator] = {
+            name: enumerator,
+            submissions: [],
+            totalSubmissions: 0,
+            submissionsWithAlerts: 0,
+            submissionTrend: {}
+          };
+        }
+        
+        processedData[enumerator].submissions.push(item);
+        processedData[enumerator].totalSubmissions++;
+        
+        // Count submissions with alerts
+        if (item.alert_flag && item.alert_flag !== "NA") {
+          processedData[enumerator].submissionsWithAlerts++;
+        }
+        
+        // Track submission trends by date - Add null check for submission_date
+        if (item.submission_date) {
+          // Parse date safely, handling different formats
+          let dateStr = item.submission_date;
+          
+          // Extract just the date part (handles both ISO formats and other formats with spaces)
+          const datePart = dateStr.includes('T') 
+            ? dateStr.split('T')[0]  // Handle ISO format: "2025-02-19T00:00:00"
+            : dateStr.split(' ')[0]; // Handle space format: "2025-02-19 00:00:00"
+            
+          if (datePart) {
+            if (!processedData[enumerator].submissionTrend[datePart]) {
+              processedData[enumerator].submissionTrend[datePart] = 0;
+            }
+            processedData[enumerator].submissionTrend[datePart]++;
+          }
+        }
+      });
+      
+      // Calculate error rates and format the data for charts
+      const formattedData = Object.values(processedData).map((enumerator: any) => {
+        // Calculate error rate
+        const errorRate = enumerator.totalSubmissions > 0 
+          ? (enumerator.submissionsWithAlerts / enumerator.totalSubmissions) * 100 
+          : 0;
+        
+        // Format submission trend for the chart
+        const submissionTrend = Object.entries(enumerator.submissionTrend).map(
+          ([date, count]: [string, any]) => ({ date, count })
+        ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        
+        return {
+          ...enumerator,
+          errorRate,
+          submissionTrend
+        };
+      });
+      
+      // Sort by total submissions (descending)
+      const sortedData = formattedData.sort((a: any, b: any) => b.totalSubmissions - a.totalSubmissions);
+      
+      setEnumerators(sortedData);
+      
+      // Set default selected enumerator
+      if (sortedData.length > 0 && !selectedEnumerator) {
+        setSelectedEnumerator(sortedData[0].name);
+      }
+    }
+  }, [rawData, selectedEnumerator]);
+
+  // Check for admin token
+  useEffect(() => {
+    const storedToken = localStorage.getItem('admin_token');
+    if (storedToken) {
+      setAdminToken(storedToken);
+      setIsAdmin(true);
+    }
+  }, []);
+
+  // Handle admin refresh
+  const handleAdminRefresh = async () => {
+    if (!adminToken) {
+      const token = prompt('Enter admin token to refresh data:');
+      if (!token) return;
+      setAdminToken(token);
+      localStorage.setItem('admin_token', token);
+      setIsAdmin(true);
+    }
+
+    setIsRefreshing(true);
+    setRefreshMessage(null);
+    
+    try {
+      const result = await refreshEnumeratorStats(adminToken);
+      if (result.success) {
+        setRefreshMessage(result.message);
+        await refetch();
+      } else {
+        setRefreshMessage(`Error: ${result.message}`);
+        if (result.message.includes('Unauthorized')) {
+          setIsAdmin(false);
+          localStorage.removeItem('admin_token');
+        }
+      }
+    } catch (error) {
+      setRefreshMessage('Failed to refresh data. Please try again.');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Filter data based on selected timeframe
+  const filterByTimeframe = (date: string): boolean => {
+    if (timeframe === 'all') return true;
+    
+    const now = new Date();
+    const submissionDate = new Date(date);
+    const daysDifference = Math.floor((now.getTime() - submissionDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (timeframe === '7days') return daysDifference <= 7;
+    if (timeframe === '30days') return daysDifference <= 30;
+    if (timeframe === '90days') return daysDifference <= 90;
+    
+    return true;
+  };
+
+  // Loading state
   if (isLoading) {
     return (
-      <div className="d-flex justify-content-center my-4">
-        <div className="spinner-border text-primary"></div>
+      <div className="d-flex justify-content-center my-5">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
       </div>
     );
   }
 
+  // Error state
   if (error) {
-    return <div className="alert alert-danger">{error}</div>;
+    return (
+      <div className="alert alert-danger my-4" role="alert">
+        <div className="d-flex">
+          <div>
+            <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
+              <path d="M12 8v4"></path>
+              <path d="M12 16h.01"></path>
+            </svg>
+          </div>
+          <div className="ms-2">{error}</div>
+        </div>
+        <div className="mt-3">
+          <button className="btn btn-outline-primary" onClick={refetch}>
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
   }
 
-  // Set default selected enumerator to top performer if none selected
-  if (!selectedEnumerator && enumerators.length > 0) {
-    setSelectedEnumerator(enumerators[0].name);
+  // No data state
+  if (enumerators.length === 0) {
+    return (
+      <div className="alert alert-info my-4" role="alert">
+        <div className="d-flex">
+          <div>
+            <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-info-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
+              <path d="M12 8l.01 0"></path>
+              <path d="M11 12h1v4h1"></path>
+            </svg>
+          </div>
+          <div className="ms-2">No enumerator performance data available.</div>
+        </div>
+      </div>
+    );
   }
 
-  const enumeratorData = enumerators.find(e => e.name === selectedEnumerator) as EnumeratorData | undefined;
+  const selectedEnumeratorData = enumerators.find(e => e.name === selectedEnumerator);
   
   // Calculate dates for submission trend chart
-  const allDates = enumerators.flatMap(e => e.submissionTrend.map((t: {date: string}) => t.date)) || [];
+  const allDates = enumerators.flatMap(e => 
+    e.submissionTrend
+      .filter(t => filterByTimeframe(t.date))
+      .map(t => t.date)
+  );
   const uniqueDates = [...new Set(allDates)].sort();
 
   // Generate chart options for submission volume by enumerator
   const submissionVolumeOptions: Highcharts.Options = {
     chart: {
-      type: 'column'
+      type: 'column',
+      height: 350
     },
     title: {
       text: 'Submission Volume by Enumerator'
@@ -76,45 +282,65 @@ const EnumeratorPerformance: React.FC = () => {
       categories: enumerators.map(e => e.name),
       title: {
         text: 'Enumerator'
+      },
+      labels: {
+        rotation: -45,
+        style: {
+          fontSize: '11px'
+        }
       }
     },
     yAxis: {
       title: {
         text: 'Number of Submissions'
-      }
+      },
+      min: 0
     },
     tooltip: {
       formatter: function() {
         const x = String(this.x);
+        const enumerator = enumerators.find(e => e.name === x);
         return `<b>${x}</b><br/>
                 Total Submissions: ${this.y}<br/>
-                Error Rate: ${enumerators.find(e => e.name === x)?.errorRate.toFixed(1)}%`;
+                Error Rate: ${enumerator?.errorRate.toFixed(1)}%`;
       }
     },
-    series: [{
-      name: 'Submissions',
-      type: 'column',
-      data: enumerators.map(e => e.totalSubmissions)
-    }],
     plotOptions: {
       column: {
         cursor: 'pointer',
         point: {
           events: {
-            click: function() {
+            click: function(this: Highcharts.Point) {
               const category = this.category as string;
               setSelectedEnumerator(category);
             }
           }
+        },
+        dataLabels: {
+          enabled: true,
+          format: '{y}',
+          style: {
+            fontSize: '10px'
+          }
         }
       }
+    },
+    series: [{
+      name: 'Submissions',
+      type: 'column',
+      data: enumerators.map(e => e.totalSubmissions),
+      color: '#0d6efd'
+    }],
+    credits: {
+      enabled: false
     }
   };
 
   // Error rate chart options
   const errorRateOptions: Highcharts.Options = {
     chart: {
-      type: 'column'
+      type: 'column',
+      height: 350
     },
     title: {
       text: 'Error Rate by Enumerator'
@@ -123,13 +349,49 @@ const EnumeratorPerformance: React.FC = () => {
       categories: enumerators.map(e => e.name),
       title: {
         text: 'Enumerator'
+      },
+      labels: {
+        rotation: -45,
+        style: {
+          fontSize: '11px'
+        }
       }
     },
     yAxis: {
       title: {
         text: 'Error Rate (%)'
       },
-      max: 100
+      max: 100,
+      min: 0
+    },
+    tooltip: {
+      formatter: function() {
+        const x = String(this.x);
+        const enumerator = enumerators.find(e => e.name === x);
+        return `<b>${x}</b><br/>
+                Error Rate: ${this.y}%<br/>
+                Submissions with Alerts: ${enumerator?.submissionsWithAlerts || 0} of ${enumerator?.totalSubmissions || 0}`;
+      }
+    },
+    plotOptions: {
+      column: {
+        cursor: 'pointer',
+        point: {
+          events: {
+            click: function(this: Highcharts.Point) {
+              const category = this.category as string;
+              setSelectedEnumerator(category);
+            }
+          }
+        },
+        dataLabels: {
+          enabled: true,
+          format: '{y}%',
+          style: {
+            fontSize: '10px'
+          }
+        }
+      }
     },
     series: [{
       name: 'Error Rate',
@@ -137,140 +399,249 @@ const EnumeratorPerformance: React.FC = () => {
       data: enumerators.map(e => parseFloat(e.errorRate.toFixed(1))),
       color: '#dc3545'
     }],
-    plotOptions: {
-      column: {
-        cursor: 'pointer',
-        point: {
-          events: {
-            click: function() {
-              const category = this.category as string;
-              setSelectedEnumerator(category);
-            }
-          }
-        }
-      }
+    credits: {
+      enabled: false
     }
   };
 
-  // Generate detailed charts for selected enumerator
-  let alertFrequencyOptions: Highcharts.Options = {};
-  let submissionTrendOptions: Highcharts.Options = {};
-  let validationStatusOptions: Highcharts.Options = {};
-
-  if (enumeratorData) {
-    // Alert frequency chart
-    alertFrequencyOptions = {
-      chart: {
-        type: 'bar'
-      },
+  // Generate options for submission trend over time
+  const submissionTrendOptions: Highcharts.Options = {
+    chart: {
+      type: 'line',
+      height: 350
+    },
+    title: {
+      text: 'Submission Trend Over Time'
+    },
+    xAxis: {
+      categories: uniqueDates,
       title: {
-        text: `Common Errors for ${enumeratorData.name}`
+        text: 'Date'
       },
-      xAxis: {
-        categories: enumeratorData.alertFrequency.map(a => `Code ${a.code}`),
-        title: {
-          text: 'Alert Code'
+      labels: {
+        rotation: -45,
+        style: {
+          fontSize: '11px'
         }
-      },
-      yAxis: {
-        title: {
-          text: 'Frequency'
-        }
-      },
-      tooltip: {
-        formatter: function() {
-          const x = String(this.x);
-          const alertCode = x.replace('Code ', '');
-          const alert = enumeratorData.alertFrequency.find(a => a.code === alertCode);
-          return `<b>${x}</b><br/>
-                Count: ${this.y}<br/>
-                Description: ${alert?.description}`;
-        }
-      },
-      series: [{
-        name: 'Occurrence',
-        type: 'bar',
-        data: enumeratorData.alertFrequency.map(a => a.count),
-        color: '#fd7e14'
-      }]
-    };
-
-    // Submission trend chart (line chart over time)
-    const trendData = uniqueDates.map(date => {
-      const entry = enumeratorData.submissionTrend.find(t => t.date === date);
-      return entry ? entry.count : 0;
-    });
-
-    submissionTrendOptions = {
-      chart: {
-        type: 'line'
-      },
+      }
+    },
+    yAxis: {
       title: {
-        text: `Submission Trend for ${enumeratorData.name}`
+        text: 'Number of Submissions'
       },
-      xAxis: {
-        categories: uniqueDates,
-        title: {
-          text: 'Date'
-        }
-      },
-      yAxis: {
-        title: {
-          text: 'Submissions'
-        }
-      },
-      series: [{
-        name: 'Submissions',
-        type: 'line',
-        data: trendData,
-        color: '#0d6efd'
-      }]
-    };
+      min: 0
+    },
+    tooltip: {
+      shared: true
+    },
+    legend: {
+      enabled: true
+    },
+    series: enumerators
+      .sort((a, b) => b.totalSubmissions - a.totalSubmissions)
+      .slice(0, 10) // Top 10 enumerators by volume
+      .map(enumerator => {
+        // Create a map of date -> count for this enumerator
+        const dateCounts = enumerator.submissionTrend.reduce((acc: Record<string, number>, item) => {
+          acc[item.date] = item.count;
+          return acc;
+        }, {});
+        
+        // Generate data points for each date
+        const data = uniqueDates
+          .filter(date => filterByTimeframe(date))
+          .map(date => dateCounts[date] || 0);
+        
+        return {
+          name: enumerator.name,
+          type: 'line' as const,
+          data
+        };
+      }),
+    credits: {
+      enabled: false
+    }
+  };
 
-    // Validation status pie chart
-    validationStatusOptions = {
-      chart: {
-        type: 'pie'
-      },
+  // Generate enumerator quality ranking chart
+  const qualityRankingOptions: Highcharts.Options = {
+    chart: {
+      type: 'bar',
+      height: 350
+    },
+    title: {
+      text: 'Enumerator Quality Ranking'
+    },
+    xAxis: {
+      categories: enumerators
+        .sort((a, b) => a.errorRate - b.errorRate) // Sort by error rate ascending (best first)
+        .map(e => e.name),
       title: {
-        text: `Validation Status for ${enumeratorData.name}`
+        text: 'Enumerator'
+      }
+    },
+    yAxis: {
+      title: {
+        text: 'Quality Score (%)'
       },
-      tooltip: {
-        pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+      min: 0,
+      max: 100
+    },
+    tooltip: {
+      formatter: function() {
+        const x = String(this.x);
+        const enumerator = enumerators.find(e => e.name === x);
+        const cleanSubmissions = enumerator ? 
+          enumerator.totalSubmissions - enumerator.submissionsWithAlerts : 0;
+        const totalSubmissions = enumerator ? enumerator.totalSubmissions : 0;
+        
+        return `<b>${x}</b><br/>
+                Quality Score: ${this.y}%<br/>
+                Error Rate: ${(100 - Number(this.y)).toFixed(1)}%<br/>
+                Clean Submissions: ${cleanSubmissions} of ${totalSubmissions}`;
+      }
+    },
+    plotOptions: {
+      bar: {
+        dataLabels: {
+          enabled: true,
+          format: '{y}%',
+          style: {
+            fontSize: '10px'
+          }
+        },
+        colorByPoint: true,
+        colors: enumerators
+          .sort((a, b) => a.errorRate - b.errorRate)
+          .map(e => {
+            // Color based on quality score
+            const qualityScore = 100 - e.errorRate;
+            if (qualityScore >= 90) return '#28a745'; // Green for high quality
+            if (qualityScore >= 75) return '#ffc107'; // Yellow for medium quality
+            return '#dc3545'; // Red for low quality
+          })
+      }
+    },
+    series: [{
+      name: 'Quality Score',
+      type: 'bar',
+      data: enumerators
+        .sort((a, b) => a.errorRate - b.errorRate)
+        .map(e => parseFloat((100 - e.errorRate).toFixed(1)))
+    }],
+    credits: {
+      enabled: false
+    }
+  };
+
+  // Generate detailed analysis for selected enumerator
+  const enumeratorAlertDistribution = selectedEnumeratorData?.submissions.reduce((counts: Record<string, number>, submission) => {
+    if (submission.alert_flag && submission.alert_flag !== "NA") {
+      counts[submission.alert_flag] = (counts[submission.alert_flag] || 0) + 1;
+    }
+    return counts;
+  }, {});
+  
+  const alertLabels = enumeratorAlertDistribution ? Object.keys(enumeratorAlertDistribution) : [];
+  const alertCounts = enumeratorAlertDistribution ? Object.values(enumeratorAlertDistribution) : [];
+
+  const alertDistributionOptions: Highcharts.Options = {
+    chart: {
+      type: 'pie',
+      height: 350
+    },
+    title: {
+      text: `Alert Types for ${selectedEnumeratorData?.name || ''}`
+    },
+    tooltip: {
+      pointFormat: '{series.name}: <b>{point.y} ({point.percentage:.1f}%)</b>'
+    },
+    accessibility: {
+      point: {
+        valueSuffix: '%'
+      }
+    },
+    plotOptions: {
+      pie: {
+        allowPointSelect: true,
+        cursor: 'pointer',
+        dataLabels: {
+          enabled: true,
+          format: '<b>{point.name}</b>: {point.percentage:.1f} %'
+        }
+      }
+    },
+    series: [{
+      name: 'Alerts',
+      type: 'pie',
+      data: alertLabels.map((label, index) => ({
+        name: label,
+        y: alertCounts[index]
+      }))
+    }],
+    credits: {
+      enabled: false
+    }
+  };
+
+  // Generate individual submission trend for selected enumerator
+  const selectedEnumeratorTrendOptions: Highcharts.Options = {
+    chart: {
+      type: 'column',
+      height: 350
+    },
+    title: {
+      text: `Submission Trend for ${selectedEnumeratorData?.name || ''}`
+    },
+    xAxis: {
+      categories: selectedEnumeratorData?.submissionTrend
+        .filter(t => filterByTimeframe(t.date))
+        .map(t => t.date) || [],
+      title: {
+        text: 'Date'
       },
-      plotOptions: {
-        pie: {
-          allowPointSelect: true,
-          cursor: 'pointer',
-          dataLabels: {
-            enabled: true,
-            format: '<b>{point.name}</b>: {point.percentage:.1f} %'
+      labels: {
+        rotation: -45,
+        style: {
+          fontSize: '11px'
+        }
+      }
+    },
+    yAxis: {
+      title: {
+        text: 'Number of Submissions'
+      },
+      min: 0
+    },
+    tooltip: {
+      formatter: function() {
+        return `<b>${this.x}</b><br/>
+                Submissions: ${this.y}`;
+      }
+    },
+    plotOptions: {
+      column: {
+        dataLabels: {
+          enabled: true,
+          format: '{y}',
+          style: {
+            fontSize: '10px'
           }
         }
-      },
-      series: [{
-        name: 'Status',
-        type: 'pie',
-        data: [
-          {
-            name: 'Approved',
-            y: enumeratorData.validationStatus.approved,
-            color: '#57A773'
-          },
-          {
-            name: 'Not Approved',
-            y: enumeratorData.validationStatus.not_approved,
-            color: '#D34E24'
-          },
-          {
-            name: 'On Hold',
-            y: enumeratorData.validationStatus.on_hold,
-            color: '#89909F'
-          }
-        ]
-      } as any]
-    };
-  }
+      }
+    },
+    series: [{
+      name: 'Submissions',
+      type: 'column',
+      data: selectedEnumeratorData?.submissionTrend
+        .filter(t => filterByTimeframe(t.date))
+        .map(t => t.count) || [],
+      color: '#0d6efd'
+    }],
+    credits: {
+      enabled: false
+    }
+  };
 
   return (
     <div className="container-xl">
@@ -279,132 +650,245 @@ const EnumeratorPerformance: React.FC = () => {
           <div className="col">
             <h2 className="page-title">Enumerator Performance Dashboard</h2>
             <div className="text-muted mt-1">
-              Analyze performance metrics for data collectors
+              Monitor and analyze data collection performance metrics
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="row mt-3">
-        <div className="col-md-6">
-          <div className="card">
-            <div className="card-body">
-              <HighchartsReact
-                highcharts={Highcharts}
-                options={submissionVolumeOptions}
-              />
-            </div>
-          </div>
-        </div>
-        <div className="col-md-6">
-          <div className="card">
-            <div className="card-body">
-              <HighchartsReact
-                highcharts={Highcharts}
-                options={errorRateOptions}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {enumeratorData && (
-        <div className="mt-4">
-          <div className="alert alert-info">
-            <div className="d-flex">
-              <div>
-                <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <div className="col-auto ms-auto">
+            <div className="btn-list">
+              <button 
+                className="btn btn-primary d-none d-sm-inline-block"
+                onClick={refetch}
+                disabled={isRefreshing}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-refresh" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
                   <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                  <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
-                  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"></path>
+                  <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"></path>
                 </svg>
-              </div>
-              <div className="ms-3">
-                <h4 className="my-0">Detailed Analysis for: {enumeratorData.name}</h4>
-                <div className="text-muted">
-                  Total Submissions: {enumeratorData.totalSubmissions} | 
-                  Error Rate: {enumeratorData.errorRate.toFixed(1)}% | 
-                  Submissions with Alerts: {enumeratorData.submissionsWithAlerts}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="row mt-3">
-            <div className="col-md-6">
-              <div className="card">
-                <div className="card-body">
-                  <HighchartsReact
-                    highcharts={Highcharts}
-                    options={alertFrequencyOptions}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="col-md-6">
-              <div className="card">
-                <div className="card-body">
-                  <HighchartsReact
-                    highcharts={Highcharts}
-                    options={validationStatusOptions}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="row mt-3">
-            <div className="col-12">
-              <div className="card">
-                <div className="card-body">
-                  <HighchartsReact
-                    highcharts={Highcharts}
-                    options={submissionTrendOptions}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="row mt-3">
-            <div className="col-12">
-              <div className="card">
-                <div className="card-header">
-                  <h3 className="card-title">Alert Details for {enumeratorData.name}</h3>
-                </div>
-                <div className="table-responsive">
-                  <table className="table table-vcenter card-table">
-                    <thead>
-                      <tr>
-                        <th>Alert Code</th>
-                        <th>Description</th>
-                        <th>Count</th>
-                        <th>Percentage</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {enumeratorData.alertFrequency.map(alert => (
-                        <tr key={alert.code}>
-                          <td>Code {alert.code}</td>
-                          <td>{alert.description}</td>
-                          <td>{alert.count}</td>
-                          <td>
-                            {((alert.count / enumeratorData.submissionsWithAlerts) * 100).toFixed(1)}%
-                          </td>
-                        </tr>
-                      ))}
-                      {enumeratorData.alertFrequency.length === 0 && (
-                        <tr>
-                          <td colSpan={4} className="text-center">No alerts recorded</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                Refresh Data
+              </button>
+              {isAdmin && (
+                <button 
+                  className="btn btn-outline-primary ms-2"
+                  onClick={handleAdminRefresh}
+                  disabled={isRefreshing}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-database" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M12 6m-8 0a8 3 0 1 0 16 0a8 3 0 1 0 -16 0"></path>
+                    <path d="M4 6v6a8 3 0 0 0 16 0v-6"></path>
+                    <path d="M4 12v6a8 3 0 0 0 16 0v-6"></path>
+                  </svg>
+                  Reload Data (Admin)
+                </button>
+              )}
             </div>
           </div>
         </div>
+      </div>
+
+      {refreshMessage && (
+        <div className={`alert ${refreshMessage.includes('Error') ? 'alert-danger' : 'alert-success'} my-3`}>
+          {refreshMessage}
+        </div>
+      )}
+
+      <div className="row mb-3">
+        <div className="col-auto">
+          <div className="btn-group" role="group" aria-label="Time frame selector">
+            <button 
+              type="button" 
+              className={`btn ${timeframe === 'all' ? 'btn-primary' : 'btn-outline-primary'}`}
+              onClick={() => setTimeframe('all')}
+            >
+              All Time
+            </button>
+            <button 
+              type="button" 
+              className={`btn ${timeframe === '7days' ? 'btn-primary' : 'btn-outline-primary'}`}
+              onClick={() => setTimeframe('7days')}
+            >
+              Last 7 Days
+            </button>
+            <button 
+              type="button" 
+              className={`btn ${timeframe === '30days' ? 'btn-primary' : 'btn-outline-primary'}`}
+              onClick={() => setTimeframe('30days')}
+            >
+              Last 30 Days
+            </button>
+            <button 
+              type="button" 
+              className={`btn ${timeframe === '90days' ? 'btn-primary' : 'btn-outline-primary'}`}
+              onClick={() => setTimeframe('90days')}
+            >
+              Last 90 Days
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="row row-cards">
+        <div className="col-md-6">
+          <div className="card">
+            <div className="card-body">
+              <HighchartsReact highcharts={Highcharts} options={submissionVolumeOptions} />
+            </div>
+          </div>
+        </div>
+        <div className="col-md-6">
+          <div className="card">
+            <div className="card-body">
+              <HighchartsReact highcharts={Highcharts} options={errorRateOptions} />
+            </div>
+          </div>
+        </div>
+        <div className="col-md-12 mt-3">
+          <div className="card">
+            <div className="card-body">
+              <HighchartsReact highcharts={Highcharts} options={submissionTrendOptions} />
+            </div>
+          </div>
+        </div>
+        <div className="col-md-12 mt-3">
+          <div className="card">
+            <div className="card-body">
+              <HighchartsReact highcharts={Highcharts} options={qualityRankingOptions} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {selectedEnumeratorData && (
+        <>
+          <div className="page-header d-print-none mt-4">
+            <div className="row align-items-center">
+              <div className="col">
+                <h3 className="page-title">
+                  <span className="text-azure">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                      <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                      <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                    </svg>
+                  </span> {" "}
+                  Detailed Analysis: {selectedEnumeratorData.name}
+                </h3>
+              </div>
+              <div className="col-auto">
+                <div className="dropdown">
+                  <button className="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Select Enumerator
+                  </button>
+                  <ul className="dropdown-menu">
+                    {enumerators.map(enumerator => (
+                      <li key={enumerator.name}>
+                        <a 
+                          className={`dropdown-item ${enumerator.name === selectedEnumerator ? 'active' : ''}`} 
+                          href="#" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setSelectedEnumerator(enumerator.name);
+                          }}
+                        >
+                          {enumerator.name}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="row row-cards">
+            <div className="col-md-4">
+              <div className="card mb-4">
+                <div className="card-body">
+                  <div className="d-flex align-items-center">
+                    <div className="subheader">Total Submissions</div>
+                    <div className="ms-auto lh-1">
+                      <div className="badge bg-primary">{timeframe === 'all' ? 'All time' : `Last ${timeframe.replace('days', ' days')}`}</div>
+                    </div>
+                  </div>
+                  <div className="h1 mb-3 mt-2">{selectedEnumeratorData.totalSubmissions}</div>
+                  <div className="d-flex mb-2">
+                    <div>Submission Rate</div>
+                    <div className="ms-auto">
+                      <span className="text-green d-inline-flex align-items-center lh-1">
+                        {Math.round(selectedEnumeratorData.totalSubmissions / (enumerators.reduce((sum, e) => sum + e.totalSubmissions, 0) / enumerators.length) * 100)}% 
+                        <svg xmlns="http://www.w3.org/2000/svg" className="icon ms-1" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                          <path d="M3 17l6 -6l4 4l8 -8"></path>
+                          <path d="M14 7l7 0l0 7"></path>
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="card mb-4">
+                <div className="card-body">
+                  <div className="d-flex align-items-center">
+                    <div className="subheader">Error Rate</div>
+                    <div className="ms-auto lh-1">
+                      <div className="badge bg-danger">Quality Metric</div>
+                    </div>
+                  </div>
+                  <div className="h1 mb-3 mt-2">{selectedEnumeratorData.errorRate.toFixed(1)}%</div>
+                  <div className="d-flex mb-2">
+                    <div>Submissions with Alerts</div>
+                    <div className="ms-auto">
+                      <span className={`text-${selectedEnumeratorData.errorRate < 5 ? 'green' : selectedEnumeratorData.errorRate < 15 ? 'yellow' : 'red'} d-inline-flex align-items-center lh-1`}>
+                        {selectedEnumeratorData.submissionsWithAlerts}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="card mb-4">
+                <div className="card-body">
+                  <div className="d-flex align-items-center">
+                    <div className="subheader">Quality Score</div>
+                    <div className="ms-auto lh-1">
+                      <div className="badge bg-success">Performance</div>
+                    </div>
+                  </div>
+                  <div className="h1 mb-3 mt-2">{(100 - selectedEnumeratorData.errorRate).toFixed(1)}%</div>
+                  <div className="d-flex mb-2">
+                    <div>Clean Submissions</div>
+                    <div className="ms-auto">
+                      <span className="text-green d-inline-flex align-items-center lh-1">
+                        {selectedEnumeratorData.totalSubmissions - selectedEnumeratorData.submissionsWithAlerts}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="row row-cards">
+            <div className="col-md-6">
+              <div className="card mb-4">
+                <div className="card-body">
+                  <HighchartsReact highcharts={Highcharts} options={alertDistributionOptions} />
+                </div>
+              </div>
+            </div>
+            <div className="col-md-6">
+              <div className="card mb-4">
+                <div className="card-body">
+                  <HighchartsReact highcharts={Highcharts} options={selectedEnumeratorTrendOptions} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

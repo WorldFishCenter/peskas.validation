@@ -73,29 +73,90 @@ export const useUpdateValidationStatus = () => {
   return { updateStatus, isUpdating, updateMessage };
 };
 
-// Add this function to fetch enumerator statistics
+// Hook to fetch enumerator statistics from the new MongoDB collection
 export const useFetchEnumeratorStats = () => {
   const [data, setData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState<number>(0);
+  const maxRetries = 3;
 
-  const fetchEnumeratorStats = async () => {
+  const fetchEnumeratorStats = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/enumerator-stats`);
+      console.log('Fetching enumerator statistics...');
+      const response = await axios.get(`${API_BASE_URL}/enumerators-stats`, { 
+        timeout: 10000 // 10 second timeout
+      });
+      
+      if (!response.data) {
+        throw new Error('Empty response received from server');
+      }
+      
+      console.log(`Received ${response.data.length} enumerator records`);
       setData(response.data);
       setError(null);
-    } catch (error) {
+      setRetryCount(0); // Reset retry count on success
+    } catch (error: any) {
       console.error('Error fetching enumerator stats:', error);
-      setError('Failed to load enumerator statistics.');
+      
+      // Extract the most useful error message
+      let errorMessage = 'Failed to load enumerator statistics.';
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = `Error: ${error.message}`;
+      }
+      
+      setError(errorMessage);
+      
+      // Auto-retry logic for certain types of errors
+      if (retryCount < maxRetries && (error.code === 'ECONNABORTED' || error.response?.status === 500)) {
+        console.log(`Retrying (${retryCount + 1}/${maxRetries})...`);
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => {
+          fetchEnumeratorStats();
+        }, 2000 * (retryCount + 1)); // Progressive backoff
+      }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [retryCount]);
 
   useEffect(() => {
     fetchEnumeratorStats();
-  }, []);
+  }, [fetchEnumeratorStats]);
 
-  return { data, isLoading, error, refetch: fetchEnumeratorStats };
+  // Provide a way to manually retry
+  const refetch = useCallback(() => {
+    setRetryCount(0); // Reset retry count on manual refetch
+    return fetchEnumeratorStats();
+  }, [fetchEnumeratorStats]);
+
+  return { data, isLoading, error, refetch };
+};
+
+// Function to trigger a manual refresh of enumerator stats (admin only)
+export const refreshEnumeratorStats = async (adminToken: string) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/admin/refresh-enumerator-stats`,
+      {},
+      {
+        headers: {
+          'Admin-Token': adminToken
+        }
+      }
+    );
+    return {
+      success: true,
+      message: response.data.message
+    };
+  } catch (error) {
+    console.error('Error refreshing enumerator stats:', error);
+    return {
+      success: false,
+      message: (error as any).response?.data?.error || 'Failed to refresh enumerator statistics'
+    };
+  }
 }; 
