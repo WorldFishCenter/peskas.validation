@@ -421,7 +421,7 @@ const EnumeratorPerformance: React.FC = () => {
   const errorRateOptions: Highcharts.Options = {
     chart: {
       type: 'bar',
-      height: 500
+      height: 550
     },
     title: {
       text: `Error Rate by Enumerator (${timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})`
@@ -527,7 +527,7 @@ const EnumeratorPerformance: React.FC = () => {
   const submissionTrendOptions: Highcharts.Options = {
     chart: {
       type: 'line',
-      height: 400,
+      height: 550,
       zoomType: 'x'
     },
     title: {
@@ -595,7 +595,7 @@ const EnumeratorPerformance: React.FC = () => {
   const qualityRankingOptions: Highcharts.Options = {
     chart: {
       type: 'bar',
-      height: 450
+      height: 550
     },
     title: {
       text: `Enumerator Quality Ranking (${timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})`
@@ -965,21 +965,21 @@ const EnumeratorPerformance: React.FC = () => {
             
             {/* Quality Tab */}
             <div className={`tab-pane ${activeTab === 'quality' ? 'active show' : ''}`}>
-              <div className="row">
-                <div className="col-md-6">
-                  <div className="card border-0 shadow-none">
-                    <div className="card-body">
-                      <h3 className="card-title">Error Rate by Enumerator</h3>
-                      <p className="text-muted">Error rates indicate potential data quality issues</p>
+              <div className="row g-0">
+                <div className="col-md-6 pe-md-2">
+                  <div className="card border-0 shadow-none h-100">
+                    <div className="card-body p-0">
+                      <h3 className="card-title mb-1">Error Rate by Enumerator</h3>
+                      <p className="text-muted small mb-3">Error rates indicate potential data quality issues</p>
                       <HighchartsReact highcharts={Highcharts} options={errorRateOptions} />
                     </div>
                   </div>
                 </div>
-                <div className="col-md-6">
-                  <div className="card border-0 shadow-none">
-                    <div className="card-body">
-                      <h3 className="card-title">Enumerator Quality Ranking</h3>
-                      <p className="text-muted">Ranked by percentage of submissions without alerts</p>
+                <div className="col-md-6 ps-md-2">
+                  <div className="card border-0 shadow-none h-100">
+                    <div className="card-body p-0">
+                      <h3 className="card-title mb-1">Enumerator Quality Ranking</h3>
+                      <p className="text-muted small mb-3">Ranked by percentage of submissions without alerts</p>
                       <HighchartsReact highcharts={Highcharts} options={qualityRankingOptions} />
                     </div>
                   </div>
@@ -989,9 +989,11 @@ const EnumeratorPerformance: React.FC = () => {
             
             {/* Trends Tab */}
             <div className={`tab-pane ${activeTab === 'trends' ? 'active show' : ''}`}>
-              <h3 className="card-title">Submission Trend Over Time</h3>
-              <p className="text-muted mb-4">Showing top 10 enumerators by submission volume (use mouse to zoom)</p>
-              <HighchartsReact highcharts={Highcharts} options={submissionTrendOptions} />
+              <h3 className="card-title mb-1">Submission Trend Over Time</h3>
+              <p className="text-muted small mb-3">Showing top 10 enumerators by submission volume (use mouse to zoom)</p>
+              <div className="mt-0">
+                <HighchartsReact highcharts={Highcharts} options={submissionTrendOptions} />
+              </div>
             </div>
           </div>
         </div>
