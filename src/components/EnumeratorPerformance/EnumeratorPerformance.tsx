@@ -20,6 +20,10 @@ interface EnumeratorData {
   submissionsWithAlerts: number;
   errorRate: number;
   submissionTrend: { date: string; count: number }[];
+  filteredSubmissions?: SubmissionData[];
+  filteredTotal?: number;
+  filteredAlertsCount?: number;
+  filteredErrorRate?: number;
 }
 
 // Custom interface for Highcharts tooltip formatter
@@ -91,8 +95,12 @@ const EnumeratorPerformance: React.FC = () => {
       
       // Group by enumerator
       rawData.forEach((item: SubmissionData) => {
-        // Make sure we have a valid enumerator name
-        const enumerator = item.submitted_by || 'Unknown';
+        // Skip items with missing or "Unknown" enumerator name
+        if (!item.submitted_by || item.submitted_by === 'Unknown') {
+          return;
+        }
+        
+        const enumerator = item.submitted_by;
         
         if (!processedData[enumerator]) {
           processedData[enumerator] = {
@@ -161,6 +169,40 @@ const EnumeratorPerformance: React.FC = () => {
       }
     }
   }, [rawData, selectedEnumerator]);
+
+  // Apply time filtering to data when timeframe changes
+  useEffect(() => {
+    if (enumerators.length === 0) return;
+    
+    // Recalculate stats based on time filter
+    const filteredEnumerators = enumerators.map(enumerator => {
+      // Filter submissions by timeframe
+      const filteredSubmissions = enumerator.submissions.filter(submission => {
+        if (!submission.submission_date) return false;
+        return filterByTimeframe(submission.submission_date.split(' ')[0]);
+      });
+      
+      // Count submissions with alerts in the filtered timeframe
+      const submissionsWithAlerts = filteredSubmissions.filter(
+        s => s.alert_flag && s.alert_flag !== "NA"
+      ).length;
+      
+      // Calculate new error rate based on filtered data
+      const errorRate = filteredSubmissions.length > 0 
+        ? (submissionsWithAlerts / filteredSubmissions.length) * 100 
+        : 0;
+        
+      return {
+        ...enumerator,
+        filteredSubmissions,
+        filteredTotal: filteredSubmissions.length,
+        filteredAlertsCount: submissionsWithAlerts,
+        filteredErrorRate: errorRate
+      };
+    });
+    
+    setEnumerators(filteredEnumerators);
+  }, [timeframe]);
 
   // Check for admin token
   useEffect(() => {
@@ -281,12 +323,15 @@ const EnumeratorPerformance: React.FC = () => {
 
   const selectedEnumeratorData = enumerators.find(e => e.name === selectedEnumerator);
   
-  // Calculate summary statistics
-  const totalSubmissions = enumerators.reduce((sum, e) => sum + e.totalSubmissions, 0);
-  const totalAlerts = enumerators.reduce((sum, e) => sum + e.submissionsWithAlerts, 0);
-  const avgErrorRate = totalAlerts / totalSubmissions * 100;
-  const bestEnumerator = enumerators.reduce((best, current) => 
-    current.errorRate < best.errorRate ? current : best, enumerators[0]);
+  // Calculate summary statistics based on filtered data
+  const totalSubmissions = enumerators.reduce((sum, e) => sum + (e.filteredTotal || e.totalSubmissions), 0);
+  const totalAlerts = enumerators.reduce((sum, e) => sum + (e.filteredAlertsCount || e.submissionsWithAlerts), 0);
+  const avgErrorRate = totalSubmissions > 0 ? (totalAlerts / totalSubmissions) * 100 : 0;
+  const bestEnumerator = enumerators.reduce((best, current) => {
+    const bestRate = best.filteredErrorRate !== undefined ? best.filteredErrorRate : best.errorRate;
+    const currentRate = current.filteredErrorRate !== undefined ? current.filteredErrorRate : current.errorRate;
+    return currentRate < bestRate ? current : best;
+  }, enumerators[0] || { name: '', errorRate: 0, filteredErrorRate: 0 });
   
   // Calculate dates for submission trend chart
   const allDates = enumerators.flatMap(e => 
@@ -329,7 +374,7 @@ const EnumeratorPerformance: React.FC = () => {
         const enumerator = enumerators.find(e => e.name === x);
         return `<b>${x}</b><br/>
                 Total Submissions: ${this.y}<br/>
-                Error Rate: ${enumerator?.errorRate.toFixed(1)}%`;
+                Error Rate: ${enumerator?.filteredErrorRate?.toFixed(1) || enumerator?.errorRate.toFixed(1)}%`;
       }
     },
     plotOptions: {
@@ -362,7 +407,7 @@ const EnumeratorPerformance: React.FC = () => {
     series: [{
       name: 'Submissions',
       type: 'column',
-      data: enumerators.map(e => e.totalSubmissions),
+      data: enumerators.map(e => e.filteredTotal || e.totalSubmissions),
       color: '#0d6efd'
     }],
     credits: {
@@ -402,9 +447,11 @@ const EnumeratorPerformance: React.FC = () => {
       formatter: function() {
         const x = String(this.x);
         const enumerator = enumerators.find(e => e.name === x);
+        const total = enumerator?.filteredTotal || enumerator?.totalSubmissions || 0;
+        const alerts = enumerator?.filteredAlertsCount || enumerator?.submissionsWithAlerts || 0;
         return `<b>${x}</b><br/>
                 Error Rate: ${this.y}%<br/>
-                Submissions with Alerts: ${enumerator?.submissionsWithAlerts || 0} of ${enumerator?.totalSubmissions || 0}`;
+                Submissions with Alerts: ${alerts} of ${total}`;
       }
     },
     plotOptions: {
@@ -435,8 +482,9 @@ const EnumeratorPerformance: React.FC = () => {
         colorByPoint: true,
         colors: enumerators.map(e => {
           // Color based on error rate
-          if (e.errorRate < 5) return '#28a745'; // Green for low error rate
-          if (e.errorRate < 15) return '#ffc107'; // Yellow for medium error rate
+          const rate = e.filteredErrorRate !== undefined ? e.filteredErrorRate : e.errorRate;
+          if (rate < 5) return '#28a745'; // Green for low error rate
+          if (rate < 15) return '#ffc107'; // Yellow for medium error rate
           return '#dc3545'; // Red for high error rate
         })
       }
@@ -444,7 +492,10 @@ const EnumeratorPerformance: React.FC = () => {
     series: [{
       name: 'Error Rate',
       type: 'column',
-      data: enumerators.map(e => parseFloat(e.errorRate.toFixed(1))),
+      data: enumerators.map(e => {
+        const rate = e.filteredErrorRate !== undefined ? e.filteredErrorRate : e.errorRate;
+        return parseFloat(rate.toFixed(1));
+      }),
     }],
     credits: {
       enabled: false
@@ -530,7 +581,11 @@ const EnumeratorPerformance: React.FC = () => {
     },
     xAxis: {
       categories: enumerators
-        .sort((a, b) => a.errorRate - b.errorRate) // Sort by error rate ascending (best first)
+        .sort((a, b) => {
+          const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
+          const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
+          return aRate - bRate;
+        })
         .map(e => e.name),
       title: {
         text: 'Enumerator'
@@ -547,14 +602,14 @@ const EnumeratorPerformance: React.FC = () => {
       formatter: function() {
         const x = String(this.x);
         const enumerator = enumerators.find(e => e.name === x);
-        const cleanSubmissions = enumerator ? 
-          enumerator.totalSubmissions - enumerator.submissionsWithAlerts : 0;
-        const totalSubmissions = enumerator ? enumerator.totalSubmissions : 0;
+        const total = enumerator?.filteredTotal || enumerator?.totalSubmissions || 0;
+        const alerts = enumerator?.filteredAlertsCount || enumerator?.submissionsWithAlerts || 0;
+        const cleanSubmissions = total - alerts;
         
         return `<b>${x}</b><br/>
                 Quality Score: ${this.y}%<br/>
                 Error Rate: ${(100 - Number(this.y)).toFixed(1)}%<br/>
-                Clean Submissions: ${cleanSubmissions} of ${totalSubmissions}`;
+                Clean Submissions: ${cleanSubmissions} of ${total}`;
       }
     },
     plotOptions: {
@@ -568,10 +623,14 @@ const EnumeratorPerformance: React.FC = () => {
         },
         colorByPoint: true,
         colors: enumerators
-          .sort((a, b) => a.errorRate - b.errorRate)
+          .sort((a, b) => {
+            const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
+            const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
+            return aRate - bRate;
+          })
           .map(e => {
             // Color based on quality score
-            const qualityScore = 100 - e.errorRate;
+            const qualityScore = 100 - (e.filteredErrorRate !== undefined ? e.filteredErrorRate : e.errorRate);
             if (qualityScore >= 90) return '#28a745'; // Green for high quality
             if (qualityScore >= 75) return '#ffc107'; // Yellow for medium quality
             return '#dc3545'; // Red for low quality
@@ -582,8 +641,15 @@ const EnumeratorPerformance: React.FC = () => {
       name: 'Quality Score',
       type: 'bar',
       data: enumerators
-        .sort((a, b) => a.errorRate - b.errorRate)
-        .map(e => parseFloat((100 - e.errorRate).toFixed(1)))
+        .sort((a, b) => {
+          const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
+          const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
+          return aRate - bRate;
+        })
+        .map(e => {
+          const rate = e.filteredErrorRate !== undefined ? e.filteredErrorRate : e.errorRate;
+          return parseFloat((100 - rate).toFixed(1));
+        })
     }],
     credits: {
       enabled: false
@@ -819,7 +885,7 @@ const EnumeratorPerformance: React.FC = () => {
                 <div className="subheader">Best Performing Enumerator</div>
               </div>
               <div className="h1 mb-0">{bestEnumerator.name}</div>
-              <div className="text-muted mt-1">Error rate: {bestEnumerator.errorRate.toFixed(1)}%</div>
+              <div className="text-muted mt-1">Error rate: {bestEnumerator.filteredErrorRate !== undefined ? bestEnumerator.filteredErrorRate.toFixed(1) : bestEnumerator.errorRate.toFixed(1)}%</div>
             </div>
           </div>
         </div>
@@ -916,6 +982,7 @@ const EnumeratorPerformance: React.FC = () => {
                 >
                   <option value="" disabled>Select Enumerator</option>
                   {enumerators
+                    .filter(e => e.name !== 'Unknown')
                     .sort((a, b) => a.name.localeCompare(b.name))
                     .map(enumerator => (
                       <option key={enumerator.name} value={enumerator.name}>
@@ -969,7 +1036,7 @@ const EnumeratorPerformance: React.FC = () => {
                         <div className="d-flex justify-content-between">
                           <div>
                             <div className="subheader">TOTAL SUBMISSIONS</div>
-                            <div className="h1 mt-2">{selectedEnumeratorData.totalSubmissions}</div>
+                            <div className="h1 mt-2">{selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions}</div>
                           </div>
                           <div>
                             <span className="badge bg-primary p-2">
@@ -980,7 +1047,7 @@ const EnumeratorPerformance: React.FC = () => {
                         <div className="d-flex mt-3">
                           <div>Submission Rate</div>
                           <div className="ms-auto text-green">
-                            {Math.round(selectedEnumeratorData.totalSubmissions / (enumerators.reduce((sum, e) => sum + e.totalSubmissions, 0) / enumerators.length) * 100)}%
+                            {Math.round((selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions) / (enumerators.reduce((sum, e) => sum + (e.filteredTotal || e.totalSubmissions), 0) / enumerators.length) * 100)}%
                             <svg xmlns="http://www.w3.org/2000/svg" className="icon ms-1" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
                               <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                               <path d="M3 17l6 -6l4 4l8 -8"></path>
@@ -998,7 +1065,7 @@ const EnumeratorPerformance: React.FC = () => {
                         <div className="d-flex justify-content-between">
                           <div>
                             <div className="subheader">ERROR RATE</div>
-                            <div className="h1 mt-2">{selectedEnumeratorData.errorRate.toFixed(1)}%</div>
+                            <div className="h1 mt-2">{selectedEnumeratorData.filteredErrorRate !== undefined ? selectedEnumeratorData.filteredErrorRate.toFixed(1) : selectedEnumeratorData.errorRate.toFixed(1)}%</div>
                           </div>
                           <div>
                             <span className="badge bg-danger p-2">
@@ -1009,8 +1076,17 @@ const EnumeratorPerformance: React.FC = () => {
                         <div className="d-flex mt-3">
                           <div>Submissions with Alerts</div>
                           <div className="ms-auto">
-                            <span className={`text-${selectedEnumeratorData.errorRate < 5 ? 'green' : selectedEnumeratorData.errorRate < 15 ? 'yellow' : 'red'}`}>
-                              {selectedEnumeratorData.submissionsWithAlerts}
+                            <span className={`text-${
+                              (() => {
+                                const rate = selectedEnumeratorData.filteredErrorRate !== undefined 
+                                  ? selectedEnumeratorData.filteredErrorRate 
+                                  : selectedEnumeratorData.errorRate;
+                                if (rate < 5) return 'green';
+                                if (rate < 15) return 'yellow';
+                                return 'red';
+                              })()
+                            }`}>
+                              {selectedEnumeratorData.filteredAlertsCount || selectedEnumeratorData.submissionsWithAlerts}
                             </span>
                           </div>
                         </div>
@@ -1024,7 +1100,7 @@ const EnumeratorPerformance: React.FC = () => {
                         <div className="d-flex justify-content-between">
                           <div>
                             <div className="subheader">QUALITY SCORE</div>
-                            <div className="h1 mt-2">{(100 - selectedEnumeratorData.errorRate).toFixed(1)}%</div>
+                            <div className="h1 mt-2">{(100 - (selectedEnumeratorData.filteredErrorRate !== undefined ? selectedEnumeratorData.filteredErrorRate : selectedEnumeratorData.errorRate)).toFixed(1)}%</div>
                           </div>
                           <div>
                             <span className="badge bg-success p-2">
@@ -1035,7 +1111,8 @@ const EnumeratorPerformance: React.FC = () => {
                         <div className="d-flex mt-3">
                           <div>Clean Submissions</div>
                           <div className="ms-auto text-green">
-                            {selectedEnumeratorData.totalSubmissions - selectedEnumeratorData.submissionsWithAlerts}
+                            {(selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions) - 
+                             (selectedEnumeratorData.filteredAlertsCount || selectedEnumeratorData.submissionsWithAlerts)}
                           </div>
                         </div>
                       </div>
