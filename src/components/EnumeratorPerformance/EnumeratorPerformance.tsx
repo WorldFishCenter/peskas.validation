@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { useFetchEnumeratorStats, refreshEnumeratorStats } from '../../api/api';
-import { getApiBaseUrl } from '../../utils/apiConfig';
 
 // Define types based on the new data structure
 interface SubmissionData {
