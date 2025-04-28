@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
-import { useFetchEnumeratorStats, refreshEnumeratorStats } from '../../api/api';
+import { useFetchEnumeratorStats } from '../../api/api';
+import axios from 'axios';
+import { getApiBaseUrl } from '../../utils/apiConfig';
 
 // Define types based on the new data structure
 interface SubmissionData {
@@ -23,6 +25,33 @@ interface EnumeratorData {
   filteredAlertsCount?: number;
   filteredErrorRate?: number;
 }
+
+
+// Temporary alternative implementation of refreshEnumeratorStats
+const refreshEnumeratorStats = async (adminToken: string) => {
+  const API_BASE_URL = getApiBaseUrl();
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/admin/refresh-enumerator-stats`,
+      {},
+      {
+        headers: {
+          'Admin-Token': adminToken
+        }
+      }
+    );
+    return {
+      success: true,
+      message: response.data.message
+    };
+  } catch (error) {
+    console.error('Error refreshing enumerator stats:', error);
+    return {
+      success: false,
+      message: (error as any).response?.data?.error || 'Failed to refresh enumerator statistics'
+    };
+  }
+};
 
 // Add extended Highcharts types to fix TypeScript errors
 declare module 'highcharts' {
