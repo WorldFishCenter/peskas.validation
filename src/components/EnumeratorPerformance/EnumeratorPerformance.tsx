@@ -417,21 +417,21 @@ const EnumeratorPerformance: React.FC = () => {
     }
   };
 
-  // Error rate chart options
-  const errorRateOptions: Highcharts.Options = {
+  // Generate enumerator quality ranking chart
+  const qualityRankingOptions: Highcharts.Options = {
     chart: {
       type: 'bar',
       height: 550
     },
     title: {
-      text: `Error Rate by Enumerator (${timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})`
+      text: `Enumerator Quality Ranking (${timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})`
     },
     xAxis: {
       categories: enumerators
         .sort((a, b) => {
-          const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
           const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
-          return bRate - aRate; // Sort descending by error rate
+          const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
+          return aRate - bRate;
         })
         .map(e => e.name),
       title: {
@@ -440,10 +440,10 @@ const EnumeratorPerformance: React.FC = () => {
     },
     yAxis: {
       title: {
-        text: 'Error Rate (%)'
+        text: 'Quality Score (%)'
       },
-      max: 100,
-      min: 0
+      min: 0,
+      max: 100
     },
     tooltip: {
       formatter: function() {
@@ -458,29 +458,15 @@ const EnumeratorPerformance: React.FC = () => {
         const alerts = enumerator.filteredAlertsCount !== undefined ? 
           enumerator.filteredAlertsCount : enumerator.submissionsWithAlerts;
         
+        const cleanSubmissions = Math.max(0, total - alerts);
+        
         return `<b>${x}</b><br/>
-                Error Rate: ${this.y}%<br/>
-                Submissions with Alerts: ${alerts} of ${total}`;
+                Quality Score: ${this.y}%<br/>
+                Clean Submissions: ${cleanSubmissions} of ${total}`;
       }
     },
     plotOptions: {
       bar: {
-        cursor: 'pointer',
-        point: {
-          events: {
-            click: function(this: Highcharts.Point) {
-              const category = this.category as string;
-              setSelectedEnumerator(category);
-              // Auto-scroll to the detailed section
-              setTimeout(() => {
-                const detailSection = document.getElementById('enumerator-detail');
-                if (detailSection) {
-                  detailSection.scrollIntoView({ behavior: 'smooth' });
-                }
-              }, 100);
-            }
-          }
-        },
         dataLabels: {
           enabled: true,
           format: '{y}%',
@@ -491,32 +477,32 @@ const EnumeratorPerformance: React.FC = () => {
         colorByPoint: true,
         colors: enumerators
           .sort((a, b) => {
-            const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
             const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
-            return bRate - aRate; // Sort descending by error rate
+            const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
+            return aRate - bRate;
           })
           .map(e => {
-            // Color based on error rate
-            const rate = e.filteredErrorRate !== undefined ? e.filteredErrorRate : e.errorRate;
-            if (rate < 5) return '#28a745'; // Green for low error rate
-            if (rate < 15) return '#ffc107'; // Yellow for medium error rate
-            return '#dc3545'; // Red for high error rate
+            // Color based on quality score
+            const qualityScore = 100 - (e.filteredErrorRate !== undefined ? e.filteredErrorRate : e.errorRate);
+            if (qualityScore >= 90) return '#28a745'; // Green for high quality
+            if (qualityScore >= 75) return '#ffc107'; // Yellow for medium quality
+            return '#dc3545'; // Red for low quality
           })
       }
     },
     series: [{
-      name: 'Error Rate',
+      name: 'Quality Score',
       type: 'bar',
       data: enumerators
         .sort((a, b) => {
-          const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
           const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
-          return bRate - aRate; // Sort descending by error rate
+          const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
+          return aRate - bRate;
         })
         .map(e => {
           const rate = e.filteredErrorRate !== undefined ? e.filteredErrorRate : e.errorRate;
-          return parseFloat(rate.toFixed(1));
-        }),
+          return parseFloat((100 - rate).toFixed(1));
+        })
     }],
     credits: {
       enabled: false
@@ -586,99 +572,6 @@ const EnumeratorPerformance: React.FC = () => {
           data
         };
       }),
-    credits: {
-      enabled: false
-    }
-  };
-
-  // Generate enumerator quality ranking chart
-  const qualityRankingOptions: Highcharts.Options = {
-    chart: {
-      type: 'bar',
-      height: 550
-    },
-    title: {
-      text: `Enumerator Quality Ranking (${timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})`
-    },
-    xAxis: {
-      categories: enumerators
-        .sort((a, b) => {
-          const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
-          const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
-          return aRate - bRate;
-        })
-        .map(e => e.name),
-      title: {
-        text: 'Enumerator'
-      }
-    },
-    yAxis: {
-      title: {
-        text: 'Quality Score (%)'
-      },
-      min: 0,
-      max: 100
-    },
-    tooltip: {
-      formatter: function() {
-        const x = String(this.x);
-        const enumerator = enumerators.find(e => e.name === x);
-        
-        if (!enumerator) return `<b>${x}</b><br/>No data available`;
-        
-        const total = enumerator.filteredTotal !== undefined ? 
-          enumerator.filteredTotal : enumerator.totalSubmissions;
-        
-        const alerts = enumerator.filteredAlertsCount !== undefined ? 
-          enumerator.filteredAlertsCount : enumerator.submissionsWithAlerts;
-        
-        const cleanSubmissions = Math.max(0, total - alerts);
-        
-        return `<b>${x}</b><br/>
-                Quality Score: ${this.y}%<br/>
-                Error Rate: ${(100 - Number(this.y)).toFixed(1)}%<br/>
-                Clean Submissions: ${cleanSubmissions} of ${total}`;
-      }
-    },
-    plotOptions: {
-      bar: {
-        dataLabels: {
-          enabled: true,
-          format: '{y}%',
-          style: {
-            fontSize: '10px'
-          }
-        },
-        colorByPoint: true,
-        colors: enumerators
-          .sort((a, b) => {
-            const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
-            const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
-            return aRate - bRate;
-          })
-          .map(e => {
-            // Color based on quality score
-            const qualityScore = 100 - (e.filteredErrorRate !== undefined ? e.filteredErrorRate : e.errorRate);
-            if (qualityScore >= 90) return '#28a745'; // Green for high quality
-            if (qualityScore >= 75) return '#ffc107'; // Yellow for medium quality
-            return '#dc3545'; // Red for low quality
-          })
-      }
-    },
-    series: [{
-      name: 'Quality Score',
-      type: 'bar',
-      data: enumerators
-        .sort((a, b) => {
-          const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
-          const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
-          return aRate - bRate;
-        })
-        .map(e => {
-          const rate = e.filteredErrorRate !== undefined ? e.filteredErrorRate : e.errorRate;
-          return parseFloat((100 - rate).toFixed(1));
-        })
-    }],
     credits: {
       enabled: false
     }
@@ -965,18 +858,9 @@ const EnumeratorPerformance: React.FC = () => {
             
             {/* Quality Tab */}
             <div className={`tab-pane ${activeTab === 'quality' ? 'active show' : ''}`}>
-              <div className="row g-0">
-                <div className="col-md-6 pe-md-2">
-                  <div className="card border-0 shadow-none h-100">
-                    <div className="card-body p-0">
-                      <h3 className="card-title mb-1">Error Rate by Enumerator</h3>
-                      <p className="text-muted small mb-3">Error rates indicate potential data quality issues</p>
-                      <HighchartsReact highcharts={Highcharts} options={errorRateOptions} />
-                    </div>
-                  </div>
-                </div>
-                <div className="col-md-6 ps-md-2">
-                  <div className="card border-0 shadow-none h-100">
+              <div className="row">
+                <div className="col-12">
+                  <div className="card border-0 shadow-none">
                     <div className="card-body p-0">
                       <h3 className="card-title mb-1">Enumerator Quality Ranking</h3>
                       <p className="text-muted small mb-3">Ranked by percentage of submissions without alerts</p>
@@ -1070,7 +954,7 @@ const EnumeratorPerformance: React.FC = () => {
               {/* Overview Tab */}
               <div className={`tab-pane ${detailActiveTab === 'overview' ? 'active show' : ''}`}>
                 <div className="row row-cards">
-                  <div className="col-md-4">
+                  <div className="col-md-6">
                     <div className="card">
                       <div className="card-body p-4">
                         <div className="d-flex justify-content-between">
@@ -1079,7 +963,7 @@ const EnumeratorPerformance: React.FC = () => {
                             <div className="h1 mt-2">{selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions}</div>
                           </div>
                           <div>
-                            <span className="badge bg-primary p-2">
+                            <span className="badge bg-primary text-white p-2">
                               {timeframe === 'all' ? 'All time' : `Last ${timeframe.replace('days', ' days')}`}
                             </span>
                           </div>
@@ -1099,42 +983,7 @@ const EnumeratorPerformance: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="col-md-4">
-                    <div className="card">
-                      <div className="card-body p-4">
-                        <div className="d-flex justify-content-between">
-                          <div>
-                            <div className="subheader">ERROR RATE</div>
-                            <div className="h1 mt-2">{selectedEnumeratorData.filteredErrorRate !== undefined ? selectedEnumeratorData.filteredErrorRate.toFixed(1) : selectedEnumeratorData.errorRate.toFixed(1)}%</div>
-                          </div>
-                          <div>
-                            <span className="badge bg-danger p-2">
-                              Quality Metric
-                            </span>
-                          </div>
-                        </div>
-                        <div className="d-flex mt-3">
-                          <div>Submissions with Alerts</div>
-                          <div className="ms-auto">
-                            <span className={`text-${
-                              (() => {
-                                const rate = selectedEnumeratorData.filteredErrorRate !== undefined 
-                                  ? selectedEnumeratorData.filteredErrorRate 
-                                  : selectedEnumeratorData.errorRate;
-                                if (rate < 5) return 'green';
-                                if (rate < 15) return 'yellow';
-                                return 'red';
-                              })()
-                            }`}>
-                              {selectedEnumeratorData.filteredAlertsCount || selectedEnumeratorData.submissionsWithAlerts}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="col-md-4">
+                  <div className="col-md-6">
                     <div className="card">
                       <div className="card-body p-4">
                         <div className="d-flex justify-content-between">
@@ -1143,7 +992,7 @@ const EnumeratorPerformance: React.FC = () => {
                             <div className="h1 mt-2">{(100 - (selectedEnumeratorData.filteredErrorRate !== undefined ? selectedEnumeratorData.filteredErrorRate : selectedEnumeratorData.errorRate)).toFixed(1)}%</div>
                           </div>
                           <div>
-                            <span className="badge bg-success p-2">
+                            <span className="badge bg-success text-white p-2">
                               Performance
                             </span>
                           </div>
@@ -1153,6 +1002,9 @@ const EnumeratorPerformance: React.FC = () => {
                           <div className="ms-auto text-green">
                             {(selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions) - 
                              (selectedEnumeratorData.filteredAlertsCount || selectedEnumeratorData.submissionsWithAlerts)}
+                            <span className="text-muted ms-2">
+                              of {selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions}
+                            </span>
                           </div>
                         </div>
                       </div>
