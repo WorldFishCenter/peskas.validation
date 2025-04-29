@@ -17,6 +17,33 @@ interface Submission {
   validated_at: string;
 }
 
+// Normalize field names for consistent access
+const normalizeSubmissionData = (item: any): any => {
+  // Create a new object with all keys from the original
+  const normalized = { ...item };
+  
+  // Look for variations of the submitted_by field
+  // This handles different case variants that might come from the API
+  if (normalized.submitted_by === undefined) {
+    if (normalized.submittedBy !== undefined) {
+      normalized.submitted_by = normalized.submittedBy;
+    } else if (normalized.submittedby !== undefined) {
+      normalized.submitted_by = normalized.submittedby;
+    } else if (normalized.SubmittedBy !== undefined) {
+      normalized.submitted_by = normalized.SubmittedBy;
+    } else if (normalized._submitted_by !== undefined) {
+      normalized.submitted_by = normalized._submitted_by;
+    } else if (normalized.submitted_by_name !== undefined) {
+      normalized.submitted_by = normalized.submitted_by_name;
+    }
+  }
+  
+  // Ensure submitted_by is always a string, even if empty
+  normalized.submitted_by = normalized.submitted_by ? String(normalized.submitted_by) : '';
+  
+  return normalized;
+};
+
 // Hook to fetch submissions
 export const useFetchSubmissions = () => {
   const [data, setData] = useState<Submission[]>([]);
@@ -39,17 +66,22 @@ export const useFetchSubmissions = () => {
           'Unexpected structure');
         
         if (response.data.results && response.data.results.length > 0) {
+          console.log('First item sample:', response.data.results[0]);
           console.log('First item keys:', Object.keys(response.data.results[0]));
-          console.log('submitted_by example:', response.data.results[0].submitted_by);
+          
+          // Try to find variants of the submitted_by field
+          const item = response.data.results[0];
+          console.log('Checking possible submitted_by field variations:');
+          console.log('submitted_by:', item.submitted_by);
+          console.log('submittedBy:', item.submittedBy);
+          console.log('SubmittedBy:', item.SubmittedBy);
+          console.log('_submitted_by:', item._submitted_by);
+          console.log('submitted_by_name:', item.submitted_by_name);
         }
       }
       
-      // Ensure submitted_by is properly handled
-      const processedData = response.data.results.map((item: any) => ({
-        ...item,
-        // Convert null/undefined/empty submitted_by to string
-        submitted_by: item.submitted_by ? String(item.submitted_by) : ''
-      }));
+      // Process and normalize all data
+      const processedData = response.data.results.map(normalizeSubmissionData);
       
       setData(processedData);
     } catch (err) {

@@ -97,14 +97,35 @@ const ValidationTable: React.FC = () => {
         accessorKey: 'submitted_by',
         header: () => 'SUBMITTED BY',
         cell: info => {
+          const row = info.row.original;
           const value = info.getValue();
-          // Add extra logging in production to debug the issue
+          
+          // Add detailed debug information in production
           if (import.meta.env.PROD) {
-            console.log('submitted_by value:', value, 'type:', typeof value);
+            console.log('Row data:', row);
+            console.log('submitted_by value:', value);
+            console.log('submitted_by type:', typeof value);
+            // Check for alternatives in the row data
+            console.log('Direct row access alternatives:');
+            console.log('row.submitted_by:', row.submitted_by);
+            console.log('row.submittedBy:', (row as any).submittedBy);
           }
-          // Handle all possible falsy values or empty strings
-          return value && String(value).trim() !== '' 
-            ? String(value) 
+          
+          // Try multiple ways to get the value
+          let displayValue = value;
+          
+          // If the primary accessor didn't work, try direct access to the row
+          if (!displayValue && row) {
+            if (typeof row.submitted_by === 'string' && row.submitted_by.trim() !== '') {
+              displayValue = row.submitted_by;
+            } else if (typeof (row as any).submittedBy === 'string' && (row as any).submittedBy.trim() !== '') {
+              displayValue = (row as any).submittedBy;
+            }
+          }
+          
+          // Final display logic
+          return displayValue && String(displayValue).trim() !== '' 
+            ? String(displayValue)
             : <span className="text-muted">—</span>;
         },
         enableSorting: true,
