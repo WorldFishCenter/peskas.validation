@@ -8,6 +8,7 @@ const API_BASE_URL = getApiBaseUrl();
 interface Submission {
   submission_id: string;
   submission_date: string;
+  submitted_by?: string; // Make explicit that this might be missing
   vessel_number?: string;
   catch_number?: string;
   alert_flag: string;      // Original string from MongoDB
@@ -28,7 +29,29 @@ export const useFetchSubmissions = () => {
       setError(null);
       
       const response = await axios.get(`${API_BASE_URL}/kobo/submissions`);
-      setData(response.data.results);
+      
+      // Debug the response in production
+      if (import.meta.env.PROD) {
+        console.log('API URL:', API_BASE_URL);
+        console.log('Response data structure:', 
+          response.data.results ? 
+          `Array with ${response.data.results.length} items` : 
+          'Unexpected structure');
+        
+        if (response.data.results && response.data.results.length > 0) {
+          console.log('First item keys:', Object.keys(response.data.results[0]));
+          console.log('submitted_by example:', response.data.results[0].submitted_by);
+        }
+      }
+      
+      // Ensure submitted_by is properly handled
+      const processedData = response.data.results.map((item: any) => ({
+        ...item,
+        // Convert null/undefined/empty submitted_by to string
+        submitted_by: item.submitted_by ? String(item.submitted_by) : ''
+      }));
+      
+      setData(processedData);
     } catch (err) {
       console.error('Error fetching submissions:', err);
       setError('Failed to load submissions');

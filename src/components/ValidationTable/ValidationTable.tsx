@@ -97,8 +97,15 @@ const ValidationTable: React.FC = () => {
         accessorKey: 'submitted_by',
         header: () => 'SUBMITTED BY',
         cell: info => {
-          const value = info.getValue() as string;
-          return value || <span className="text-muted">—</span>;
+          const value = info.getValue();
+          // Add extra logging in production to debug the issue
+          if (import.meta.env.PROD) {
+            console.log('submitted_by value:', value, 'type:', typeof value);
+          }
+          // Handle all possible falsy values or empty strings
+          return value && String(value).trim() !== '' 
+            ? String(value) 
+            : <span className="text-muted">—</span>;
         },
         enableSorting: true,
         enableColumnFilter: true,
