@@ -1,7 +1,7 @@
 export interface Submission {
   submission_id: string;
   submission_date: string;
-  submitted_by: string;
+  submitted_by?: string;
   submittedBy?: string;
   vessel_number?: string;
   catch_number?: string;
