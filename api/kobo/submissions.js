@@ -68,6 +68,7 @@ export default async function handler(req, res) {
       return {
         submission_id: koboItem._id,
         submission_date: koboItem._submission_time,
+        submitted_by: koboItem.submitted_by || koboItem._submitted_by || '',
         vessel_number: koboItem.vessel_number || '',
         catch_number: koboItem.catch_number || '',
         validation_status: koboItem._validation_status?.validation_status?.uid || 

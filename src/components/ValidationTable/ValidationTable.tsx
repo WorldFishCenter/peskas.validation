@@ -73,6 +73,22 @@ const ValidationTable: React.FC = () => {
   useEffect(() => {
     if (submissions && submissions.length > 0) {
       logData('Submissions data received:', submissions.slice(0, 3));
+      
+      // Log more details in production
+      if (import.meta.env.PROD) {
+        console.log('ENVIRONMENT:', import.meta.env.MODE);
+        console.log('Total submissions:', submissions.length);
+        
+        // Check the first few submitted_by values
+        const submittedByValues = submissions.slice(0, 5).map((s, i) => ({
+          index: i,
+          submission_id: s.submission_id,
+          submitted_by: s.submitted_by || 'MISSING',
+          validation_status: s.validation_status
+        }));
+        console.log('Sample submitted_by values:', submittedByValues);
+      }
+      
       const withAlerts = submissions.filter(
         s => s.alert_flag && s.alert_flag.trim() !== ''
       );
@@ -102,13 +118,13 @@ const ValidationTable: React.FC = () => {
           
           // Add detailed debug information in production
           if (import.meta.env.PROD) {
-            console.log('Row data:', row);
-            console.log('submitted_by value:', value);
-            console.log('submitted_by type:', typeof value);
-            // Check for alternatives in the row data
-            console.log('Direct row access alternatives:');
-            console.log('row.submitted_by:', row.submitted_by);
-            console.log('row.submittedBy:', (row as any).submittedBy);
+            console.log(`Cell rendering for row ${row.submission_id}:`, {
+              accessorValue: value,
+              directRowValue: row.submitted_by,
+              valueType: typeof value,
+              rowValueType: typeof row.submitted_by,
+              isEmpty: !value || value === ''
+            });
           }
           
           // Try multiple ways to get the value

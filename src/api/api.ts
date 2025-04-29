@@ -22,24 +22,25 @@ const normalizeSubmissionData = (item: any): any => {
   // Create a new object with all keys from the original
   const normalized = { ...item };
   
-  // Look for variations of the submitted_by field
-  // This handles different case variants that might come from the API
-  if (normalized.submitted_by === undefined) {
-    if (normalized.submittedBy !== undefined) {
-      normalized.submitted_by = normalized.submittedBy;
-    } else if (normalized.submittedby !== undefined) {
-      normalized.submitted_by = normalized.submittedby;
-    } else if (normalized.SubmittedBy !== undefined) {
-      normalized.submitted_by = normalized.SubmittedBy;
-    } else if (normalized._submitted_by !== undefined) {
-      normalized.submitted_by = normalized._submitted_by;
-    } else if (normalized.submitted_by_name !== undefined) {
-      normalized.submitted_by = normalized.submitted_by_name;
-    }
+  // Debug in production - log what we received
+  if (import.meta.env.PROD) {
+    console.log('Raw data keys:', Object.keys(item));
+    console.log('Raw submitted_by value:', item.submitted_by);
+  }
+  
+  // Handle common field name transformations
+  if (!normalized.submitted_by && normalized._submitted_by) {
+    normalized.submitted_by = normalized._submitted_by;
   }
   
   // Ensure submitted_by is always a string, even if empty
   normalized.submitted_by = normalized.submitted_by ? String(normalized.submitted_by) : '';
+  
+  // In production, add the direct export from MongoDB to help debug
+  if (import.meta.env.PROD && !normalized.submitted_by) {
+    console.log('Full item data:', item);
+    console.log('Normalized result:', normalized);
+  }
   
   return normalized;
 };
@@ -55,28 +56,31 @@ export const useFetchSubmissions = () => {
       setIsLoading(true);
       setError(null);
       
+      // Log the API URL we're hitting
+      if (import.meta.env.PROD) {
+        console.log('Fetching from API URL:', `${API_BASE_URL}/kobo/submissions`);
+      }
+      
       const response = await axios.get(`${API_BASE_URL}/kobo/submissions`);
       
       // Debug the response in production
       if (import.meta.env.PROD) {
-        console.log('API URL:', API_BASE_URL);
-        console.log('Response data structure:', 
-          response.data.results ? 
-          `Array with ${response.data.results.length} items` : 
-          'Unexpected structure');
+        console.log('API Response Status:', response.status);
+        console.log('API Response Structure:', {
+          hasResults: !!response.data.results,
+          resultsCount: response.data.results?.length || 0,
+          resultsType: response.data.results ? typeof response.data.results : 'undefined'
+        });
         
         if (response.data.results && response.data.results.length > 0) {
-          console.log('First item sample:', response.data.results[0]);
-          console.log('First item keys:', Object.keys(response.data.results[0]));
-          
-          // Try to find variants of the submitted_by field
-          const item = response.data.results[0];
-          console.log('Checking possible submitted_by field variations:');
-          console.log('submitted_by:', item.submitted_by);
-          console.log('submittedBy:', item.submittedBy);
-          console.log('SubmittedBy:', item.SubmittedBy);
-          console.log('_submitted_by:', item._submitted_by);
-          console.log('submitted_by_name:', item.submitted_by_name);
+          // Check the first item's raw structure
+          const sample = response.data.results[0];
+          console.log('First raw item structure:', {
+            keys: Object.keys(sample),
+            has_submitted_by: 'submitted_by' in sample,
+            submitted_by_value: sample.submitted_by,
+            submitted_by_type: typeof sample.submitted_by
+          });
         }
       }
       
