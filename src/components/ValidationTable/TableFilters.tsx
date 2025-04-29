@@ -1,28 +1,27 @@
-import React from 'react';
 import { Table } from '@tanstack/react-table';
-import { Submission, VALIDATION_STATUS_OPTIONS } from '../../types/validation';
+import { VALIDATION_STATUS_OPTIONS } from '../../types/validation';
 
-interface TableFiltersProps {
-  table: Table<Submission>;
+interface TableFiltersProps<T> {
+  table: Table<T>;
   globalFilter: string;
   setGlobalFilter: (filter: string) => void;
   showAlertGuide: () => void;
   resetFilters: () => void;
 }
 
-const TableFilters: React.FC<TableFiltersProps> = ({ 
+const TableFilters = <T,>({ 
   table, 
   globalFilter, 
   setGlobalFilter, 
   showAlertGuide,
   resetFilters
-}) => {
+}: TableFiltersProps<T>) => {
   // Get columns with defensive access
   const statusColumn = table.getColumn('validation_status');
   const alertColumn = table.getColumn('alert_flag');
 
   return (
-    <div className="d-flex gap-3 mt-2 flex-wrap">
+    <div className="d-flex flex-row flex-nowrap gap-2 mt-2">
       {/* Global Search */}
       <div className="input-group" style={{ maxWidth: '300px' }}>
         <span className="input-group-text">
@@ -90,25 +89,21 @@ const TableFilters: React.FC<TableFiltersProps> = ({
       </div>
       
       {/* Alert Info Button */}
-      <button 
-        className="btn btn-outline-warning ms-3" 
-        title="View Alert Codes Reference"
-        onClick={showAlertGuide}
-        style={{ 
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          height: '38px'
-        }}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-          <circle cx="12" cy="12" r="9" />
-          <line x1="12" y1="8" x2="12" y2="12" />
-          <line x1="12" y1="16" x2="12.01" y2="16" />
-        </svg>
-        Alert Codes
-      </button>
+      <div className="input-group-btn d-inline-flex">
+        <button 
+          className="btn btn-outline-warning" 
+          title="View Alert Codes Reference"
+          onClick={showAlertGuide}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <circle cx="12" cy="12" r="9" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          Alert Codes
+        </button>
+      </div>
       
       {/* Reset Filters Button */}
       {(globalFilter || (table.getState().columnFilters.length > 0)) && (

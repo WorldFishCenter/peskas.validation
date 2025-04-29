@@ -17,21 +17,11 @@ import StatusUpdateForm from './StatusUpdateForm';
 import { useFetchSubmissions } from '../../api/api';
 import { logData } from '../../utils/debug';
 import { updateValidationStatus } from '../../api/koboToolbox';
-import { Submission, STATUS_STYLES, ValidationStatus } from '../../types/validation';
-
-// Update the alert descriptions with more comprehensive information
-const ALERT_FLAG_DESCRIPTIONS = {
-  '1': 'A catch was reported, but no taxon was specified',
-  '2': 'A taxon was specified, but no information was provided about the number of fish, their size, or their weight',
-  '3': 'Length is smaller than minimum length treshold for the selected catch taxon',
-  '4': 'Length exceeds maximum length treshold for the selected catch taxon',
-  '5': 'Bucket weight exceeds maximum (50kg)',
-  '6': 'Number of buckets exceeds maximum (300)',
-  '7': 'Number of individuals exceeds maximum (100)',
-  '8': 'Price per kg exceeds 81420 TZS',
-  '9': 'Catch per unit effort exceeds maximum (30kg per hour per fisher)',
-  '10': 'Revenue per unit effort exceeds maximum (81420 TZS per hour per fisher)'
-};
+import { Submission } from '../../types/validation';
+import AlertBadge from './AlertBadge';
+import TableFilters from './TableFilters';
+import AlertGuideModal from './AlertGuideModal';
+import StatusBadge from './StatusBadge';
 
 // Define a fuzzy filter function using rankItem
 const fuzzyFilter: FilterFn<Submission> = (row, columnId, value, addMeta) => {
@@ -93,13 +83,6 @@ const ValidationTable: React.FC = () => {
     }
   }, [submissions]);
 
-  // Update the status options to match the actual valid statuses
-  const statusOptions = [
-    'validation_status_approved',
-    'validation_status_not_approved',
-    'validation_status_on_hold'
-  ];
-
   const columns = useMemo<ColumnDef<Submission, unknown>[]>(
     () => [
       {
@@ -147,28 +130,10 @@ const ValidationTable: React.FC = () => {
           
           if (alertFlag && alertFlag.trim() !== '') {
             return (
-              <span
-                className="alert-badge"
-                title={
-                  row.alert_flags && row.alert_flags.length > 0
-                    ? `Alerts: ${row.alert_flags.join(', ')}`
-                    : `Alert: ${alertFlag}`
-                }
-                style={{
-                  cursor: 'help',
-                  textAlign: 'center',
-                  display: 'block',
-                  backgroundColor: 'rgba(220, 53, 69, 0.15)',
-                  color: '#dc3545',
-                  border: '1px solid rgba(220, 53, 69, 0.3)',
-                  borderRadius: '4px',
-                  padding: '2px 8px',
-                  fontWeight: '600',
-                  fontSize: '0.85rem'
-                }}
-              >
-                {alertFlag}
-              </span>
+              <AlertBadge 
+                alertFlag={alertFlag} 
+                alertFlags={row.alert_flags} 
+              />
             );
           }
           return <span className="text-muted">—</span>;
@@ -185,30 +150,7 @@ const ValidationTable: React.FC = () => {
       {
         accessorKey: 'validation_status',
         header: () => 'STATUS',
-        cell: info => {
-          const status = info.getValue() as string;
-          
-          // Use exact status or default
-          const style = STATUS_STYLES[(status || 'default') as ValidationStatus];
-          
-          return (
-            <span
-              style={{
-                backgroundColor: style.backgroundColor,
-                color: style.textColor,
-                border: `1px solid ${style.borderColor}`,
-                borderRadius: '4px',
-                padding: '4px 10px',
-                display: 'inline-block',
-                fontWeight: '500',
-                fontSize: '0.875rem',
-                textTransform: 'capitalize',
-              }}
-            >
-              {status ? status.replace('validation_status_', '').replace(/_/g, ' ') : 'Unknown'}
-            </span>
-          );
-        },
+        cell: info => <StatusBadge status={info.getValue() as string} />,
         enableSorting: true,
         enableColumnFilter: true,
         filterFn: 'equals',
@@ -295,101 +237,16 @@ const ValidationTable: React.FC = () => {
     <div className="position-relative">
       <div className="card">
         <div className="card-header">
-          <div className="d-flex gap-3 mt-2">
-            {/* Global Search */}
-            <div className="input-group" style={{ maxWidth: '300px' }}>
-              <span className="input-group-text">
-                <i className="fas fa-search"></i>
-              </span>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search all columns..."
-                value={globalFilter ?? ''}
-                onChange={e => setGlobalFilter(e.target.value)}
-              />
-              {globalFilter && (
-                <button
-                  className="btn btn-outline-secondary"
-                  type="button"
-                  onClick={() => setGlobalFilter('')}
-                >
-                  ×
-                </button>
-              )}
-            </div>
-            
-            {/* Status Filter */}
-            <div className="input-group" style={{ maxWidth: '230px' }}>
-              <span className="input-group-text">Status</span>
-              <select
-                className="form-select"
-                value={(table.getColumn('validation_status')?.getFilterValue() as string) || ''}
-                onChange={e =>
-                  table.getColumn('validation_status')?.setFilterValue(e.target.value || undefined)
-                }
-              >
-                <option value="">All Statuses</option>
-                {statusOptions.map(status => (
-                  <option key={status} value={status}>
-                    {status === 'validation_status_approved' && 'APPROVED'}
-                    {status === 'validation_status_not_approved' && 'NOT APPROVED'}
-                    {status === 'validation_status_on_hold' && 'ON HOLD'}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            {/* Alert Filter */}
-            <div className="input-group" style={{ maxWidth: '200px' }}>
-              <span className="input-group-text">Alert</span>
-              <select
-                className="form-select"
-                value={(table.getColumn('alert_flag')?.getFilterValue() as string) || 'all'}
-                onChange={e =>
-                  table.getColumn('alert_flag')?.setFilterValue(e.target.value)
-                }
-              >
-                <option value="all">All Items</option>
-                <option value="with-alerts">With Alerts</option>
-                <option value="no-alerts">No Alerts</option>
-              </select>
-            </div>
-            
-            {/* Alert Info Button - More prominent */}
-            <button 
-              className="btn btn-outline-warning ms-3" 
-              title="View Alert Codes Reference"
-              onClick={() => setShowAlertGuide(true)}
-              style={{ 
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                height: '38px'
-              }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                <circle cx="12" cy="12" r="9" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              Alert Codes
-            </button>
-            
-            {/* Reset Filters Button */}
-            {(globalFilter || table.getState().columnFilters.length > 0) && (
-              <button
-                className="btn btn-outline-secondary"
-                onClick={() => {
-                  setGlobalFilter('');
-                  table.resetColumnFilters();
-                }}
-              >
-                Reset Filters
-              </button>
-            )}
-          </div>
+          <TableFilters
+            table={table}
+            globalFilter={globalFilter}
+            setGlobalFilter={setGlobalFilter}
+            showAlertGuide={() => setShowAlertGuide(true)}
+            resetFilters={() => {
+              setGlobalFilter('');
+              table.resetColumnFilters();
+            }}
+          />
         </div>
         <div className="card-body">
           <div className="table-responsive">
@@ -548,45 +405,14 @@ const ValidationTable: React.FC = () => {
                 <div className="d-flex justify-content-between mb-2">
                   <div className="text-muted">Status:</div>
                   <div>
-                    <span
-                      style={{
-                        backgroundColor: STATUS_STYLES[(selectedRow?.validation_status || 'default') as ValidationStatus].backgroundColor,
-                        color: STATUS_STYLES[(selectedRow?.validation_status || 'default') as ValidationStatus].textColor,
-                        border: `1px solid ${STATUS_STYLES[(selectedRow?.validation_status || 'default') as ValidationStatus].borderColor}`,
-                        borderRadius: '4px',
-                        padding: '4px 10px',
-                        display: 'inline-block',
-                        fontWeight: '500',
-                        fontSize: '0.875rem',
-                        textTransform: 'capitalize',
-                      }}
-                    >
-                      {selectedRow?.validation_status 
-                        ? selectedRow.validation_status.replace('validation_status_', '').replace(/_/g, ' ')
-                        : 'Unknown'}
-                    </span>
+                    <StatusBadge status={selectedRow.validation_status} />
                   </div>
                 </div>
                 {selectedRow?.alert_flag && selectedRow.alert_flag.trim() !== '' && (
                   <div className="d-flex justify-content-between mb-2">
                     <div className="text-muted">Alert Flags:</div>
                     <div>
-                      <span
-                        className="alert-badge"
-                        style={{
-                          textAlign: 'center',
-                          display: 'block',
-                          backgroundColor: 'rgba(220, 53, 69, 0.15)',
-                          color: '#dc3545',
-                          border: '1px solid rgba(220, 53, 69, 0.3)',
-                          borderRadius: '4px',
-                          padding: '2px 8px',
-                          fontWeight: '600',
-                          fontSize: '0.85rem'
-                        }}
-                      >
-                        {selectedRow.alert_flag}
-                      </span>
+                      <AlertBadge alertFlag={selectedRow.alert_flag} alertFlags={selectedRow.alert_flags} />
                     </div>
                   </div>
                 )}
@@ -615,74 +441,9 @@ const ValidationTable: React.FC = () => {
         <div className="offcanvas-backdrop fade show" onClick={() => setSidebarOpen(false)}></div>
       )}
       
-      {/* Alert Guide Modal - Improved readability */}
+      {/* Alert Guide Modal */}
       {showAlertGuide && (
-        <div className="modal modal-blur show d-block" tabIndex={-1} role="dialog">
-          <div className="modal-dialog modal-lg modal-dialog-centered" role="document">
-            <div className="modal-content">
-              <div className="modal-header bg-warning-subtle">
-                <h5 className="modal-title">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-triangle me-2" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M12 9v2m0 4v.01" />
-                    <path d="M5 19h14a2 2 0 0 0 1.84 -2.75l-7.1 -12.25a2 2 0 0 0 -3.5 0l-7.1 12.25a2 2 0 0 0 1.75 2.75" />
-                  </svg>
-                  Alert Codes Reference
-                </h5>
-                <button 
-                  type="button" 
-                  className="btn-close" 
-                  onClick={() => setShowAlertGuide(false)}
-                  aria-label="Close"
-                ></button>
-              </div>
-              <div className="modal-body p-4">
-                <div className="alert alert-info mb-4">
-                  <strong>About Alert Codes:</strong> Alerts identify potential issues with a submission that require validation attention. Use this reference to understand what each alert code signifies.
-                </div>
-                <div className="table-responsive">
-                  <table className="table table-bordered">
-                    <thead className="table-light">
-                      <tr>
-                        <th style={{width: "20%"}}>Alert Code</th>
-                        <th>Description</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Object.entries(ALERT_FLAG_DESCRIPTIONS).map(([code, description]) => (
-                        <tr key={code}>
-                          <td className="align-middle text-center">
-                            <span
-                              className="badge bg-danger-subtle text-danger"
-                              style={{
-                                fontSize: '1rem',
-                                padding: '6px 12px',
-                                borderRadius: '4px',
-                                fontWeight: '600'
-                              }}
-                            >
-                              Code {code}
-                            </span>
-                          </td>
-                          <td className="align-middle fs-5 py-3">{description}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button 
-                  type="button" 
-                  className="btn btn-primary px-4" 
-                  onClick={() => setShowAlertGuide(false)}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <AlertGuideModal onClose={() => setShowAlertGuide(false)} />
       )}
     </div>
   );

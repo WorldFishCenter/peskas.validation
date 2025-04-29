@@ -1,0 +1,180 @@
+import React from 'react';
+import { EnumeratorData, DetailTabType, TimeframeType } from '../types';
+import { AlertDistributionChart, EnumeratorTrendChart } from '../charts/EnumeratorDetailCharts';
+
+interface EnumeratorDetailProps {
+  selectedEnumeratorData: EnumeratorData;
+  selectedEnumerator: string | null;
+  setSelectedEnumerator: (name: string) => void;
+  enumerators: EnumeratorData[];
+  detailActiveTab: DetailTabType;
+  setDetailActiveTab: (tab: DetailTabType) => void;
+  timeframe: TimeframeType;
+  filterByTimeframe: (date: string) => boolean;
+}
+
+const EnumeratorDetail: React.FC<EnumeratorDetailProps> = ({
+  selectedEnumeratorData,
+  selectedEnumerator,
+  setSelectedEnumerator,
+  enumerators,
+  detailActiveTab,
+  setDetailActiveTab,
+  timeframe,
+  filterByTimeframe
+}) => {
+  return (
+    <div className="card" id="enumerator-detail">
+      <div className="card-body">
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <div className="d-flex align-items-center">
+            <span className="avatar avatar-md bg-azure-lt me-3">
+              <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+              </svg>
+            </span>
+            <h3 className="card-title m-0">Detailed Analysis: {selectedEnumeratorData.name}</h3>
+          </div>
+          <div style={{ width: '200px' }}>
+            <select 
+              className="form-select" 
+              value={selectedEnumerator || ''} 
+              onChange={(e) => setSelectedEnumerator(e.target.value)}
+            >
+              <option value="" disabled>Select Enumerator</option>
+              {enumerators
+                .filter(e => e.name !== 'Unknown')
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map(enumerator => (
+                  <option key={enumerator.name} value={enumerator.name}>
+                    {enumerator.name}
+                  </option>
+                ))
+              }
+            </select>
+          </div>
+        </div>
+        
+        <div className="card-tabs">
+          <ul className="nav nav-tabs nav-tabs-bottom">
+            <li className="nav-item">
+              <a 
+                className={`nav-link ${detailActiveTab === 'overview' ? 'active' : ''}`} 
+                href="#"
+                onClick={(e) => { e.preventDefault(); setDetailActiveTab('overview'); }}
+              >
+                Overview
+              </a>
+            </li>
+            <li className="nav-item">
+              <a 
+                className={`nav-link ${detailActiveTab === 'trends' ? 'active' : ''}`} 
+                href="#"
+                onClick={(e) => { e.preventDefault(); setDetailActiveTab('trends'); }}
+              >
+                Submission Trend
+              </a>
+            </li>
+            <li className="nav-item">
+              <a 
+                className={`nav-link ${detailActiveTab === 'alerts' ? 'active' : ''}`} 
+                href="#"
+                onClick={(e) => { e.preventDefault(); setDetailActiveTab('alerts'); }}
+              >
+                Alert Distribution
+              </a>
+            </li>
+          </ul>
+        </div>
+        
+        <div className="tab-content mt-3">
+          {/* Overview Tab */}
+          <div className={`tab-pane ${detailActiveTab === 'overview' ? 'active show' : ''}`}>
+            <div className="row row-cards">
+              <div className="col-md-6">
+                <div className="card">
+                  <div className="card-body p-4">
+                    <div className="d-flex justify-content-between">
+                      <div>
+                        <div className="subheader">TOTAL SUBMISSIONS</div>
+                        <div className="h1 mt-2">{selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions}</div>
+                      </div>
+                      <div>
+                        <span className="badge bg-primary text-white p-2">
+                          {timeframe === 'all' ? 'All time' : `Last ${timeframe.replace('days', ' days')}`}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="d-flex mt-3">
+                      <div>Submission Rate</div>
+                      <div className="ms-auto text-green">
+                        {Math.round((selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions) / (enumerators.reduce((sum, e) => sum + (e.filteredTotal || e.totalSubmissions), 0) / enumerators.length) * 100)}%
+                        <svg xmlns="http://www.w3.org/2000/svg" className="icon ms-1" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                          <path d="M3 17l6 -6l4 4l8 -8"></path>
+                          <path d="M14 7l7 0l0 7"></path>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="col-md-6">
+                <div className="card">
+                  <div className="card-body p-4">
+                    <div className="d-flex justify-content-between">
+                      <div>
+                        <div className="subheader">QUALITY SCORE</div>
+                        <div className="h1 mt-2">{(100 - (selectedEnumeratorData.filteredErrorRate !== undefined ? selectedEnumeratorData.filteredErrorRate : selectedEnumeratorData.errorRate)).toFixed(1)}%</div>
+                      </div>
+                      <div>
+                        <span className="badge bg-success text-white p-2">
+                          Performance
+                        </span>
+                      </div>
+                    </div>
+                    <div className="d-flex mt-3">
+                      <div>Clean Submissions</div>
+                      <div className="ms-auto text-green">
+                        {(selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions) - 
+                         (selectedEnumeratorData.filteredAlertsCount || selectedEnumeratorData.submissionsWithAlerts)}
+                        <span className="text-muted ms-2">
+                          of {selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Trends Tab */}
+          <div className={`tab-pane ${detailActiveTab === 'trends' ? 'active show' : ''}`}>
+            <h4 className="mb-3">
+              Submission Trend for {selectedEnumeratorData.name} ({timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})
+            </h4>
+            <EnumeratorTrendChart 
+              selectedEnumeratorData={selectedEnumeratorData}
+              filterByTimeframe={filterByTimeframe}
+            />
+          </div>
+          
+          {/* Alerts Tab */}
+          <div className={`tab-pane ${detailActiveTab === 'alerts' ? 'active show' : ''}`}>
+            <h4 className="mb-3">Alert Types for {selectedEnumeratorData.name}</h4>
+            <AlertDistributionChart 
+              selectedEnumeratorData={selectedEnumeratorData}
+              timeframe={timeframe}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default EnumeratorDetail; 

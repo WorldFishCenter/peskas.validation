@@ -1,30 +1,29 @@
 import React from 'react';
+import { STATUS_STYLES, ValidationStatus } from '../../types/validation';
 
 interface StatusBadgeProps {
   status: string;
 }
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-  const getStatusColor = (value: string): string => {
-    switch (value) {
-      case 'validation_status_approved':
-        return 'bg-success';
-      case 'validation_status_not_approved':
-        return 'bg-danger';
-      case 'validation_status_on_hold':
-        return 'bg-secondary';
-      default:
-        return 'bg-secondary';
-    }
-  };
-
-  const getStatusLabel = (value: string): string => {
-    return value.replace('validation_status_', '').replace(/_/g, ' ');
-  };
-
+  // Use exact status or default
+  const style = STATUS_STYLES[(status || 'default') as ValidationStatus];
+  
   return (
-    <span className={`badge ${getStatusColor(status)}`}>
-      {getStatusLabel(status)}
+    <span
+      style={{
+        backgroundColor: style.backgroundColor,
+        color: style.textColor,
+        border: `1px solid ${style.borderColor}`,
+        borderRadius: '4px',
+        padding: '4px 10px',
+        display: 'inline-block',
+        fontWeight: '500',
+        fontSize: '0.875rem',
+        textTransform: 'capitalize',
+      }}
+    >
+      {status ? status.replace('validation_status_', '').replace(/_/g, ' ') : 'Unknown'}
     </span>
   );
 };

@@ -115,7 +115,7 @@ const Login: React.FC = () => {
         </div>
         <div className="text-center text-muted mt-3">
           <a href="https://www.worldfishcenter.org/" className="text-muted" target="_blank" rel="noopener noreferrer">
-            WorldFish Center © 2024
+            WorldFish Center © 2025
           </a>
         </div>
       </div>
