@@ -12,6 +12,15 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
   enumerators, 
   timeframe 
 }) => {
+  // Filter out enumerators with no submissions in the selected timeframe
+  const filteredEnumerators = enumerators.filter(e => {
+    const total = e.filteredTotal !== undefined ? e.filteredTotal : e.totalSubmissions;
+    return total > 0; // Only include enumerators with at least 1 submission
+  });
+  
+  // Log what we're actually displaying
+  console.log(`Quality chart showing ${filteredEnumerators.length} enumerators with submissions in timeframe ${timeframe}`);
+  
   // Generate enumerator quality ranking chart
   const chartOptions: Highcharts.Options = {
     chart: {
@@ -22,7 +31,7 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
       text: `Enumerator Quality Ranking (${timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})`
     },
     xAxis: {
-      categories: enumerators
+      categories: filteredEnumerators
         .sort((a, b) => {
           const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
           const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
@@ -49,7 +58,7 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
     tooltip: {
       formatter: function() {
         const x = String(this.x);
-        const enumerator = enumerators.find(e => e.name === x);
+        const enumerator = filteredEnumerators.find(e => e.name === x);
         
         if (!enumerator) return `<b>${x}</b><br/>No data available`;
         
@@ -82,7 +91,7 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
     series: [{
       name: 'Quality Score',
       type: 'bar',
-      data: enumerators
+      data: filteredEnumerators
         .sort((a, b) => {
           const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
           const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
@@ -99,7 +108,7 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
     }, {
       name: 'Submission Count',
       type: 'bar',
-      data: enumerators
+      data: filteredEnumerators
         .sort((a, b) => {
           const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
           const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;

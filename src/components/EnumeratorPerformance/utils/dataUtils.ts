@@ -6,15 +6,39 @@ import { EnumeratorData, SubmissionData, TimeframeType } from '../types';
 export const filterByTimeframe = (date: string, timeframe: TimeframeType): boolean => {
   if (timeframe === 'all') return true;
   
-  const now = new Date();
-  const submissionDate = new Date(date);
-  const daysDifference = Math.floor((now.getTime() - submissionDate.getTime()) / (1000 * 60 * 60 * 24));
-  
-  if (timeframe === '7days') return daysDifference <= 7;
-  if (timeframe === '30days') return daysDifference <= 30;
-  if (timeframe === '90days') return daysDifference <= 90;
-  
-  return true;
+  try {
+    const now = new Date();
+    
+    // Check if date is valid
+    if (!date || typeof date !== 'string') {
+      console.warn('Invalid date format received:', date);
+      return false;
+    }
+    
+    const submissionDate = new Date(date);
+    
+    // Handle invalid dates
+    if (isNaN(submissionDate.getTime())) {
+      console.warn('Invalid date conversion:', date);
+      return false;
+    }
+    
+    // Set both dates to the start of day to avoid time differences affecting calculations
+    const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const subDate = new Date(submissionDate.getFullYear(), submissionDate.getMonth(), submissionDate.getDate());
+    
+    // Calculate days difference (more accurate)
+    const daysDifference = Math.floor((nowDate.getTime() - subDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (timeframe === '7days') return daysDifference < 7;
+    if (timeframe === '30days') return daysDifference < 30;
+    if (timeframe === '90days') return daysDifference < 90;
+    
+    return true;
+  } catch (error) {
+    console.error('Error in filterByTimeframe:', error, 'for date:', date);
+    return false;
+  }
 };
 
 /**
@@ -104,32 +128,65 @@ export const applyTimeFiltering = (
 ): EnumeratorData[] => {
   if (enumerators.length === 0) return [];
   
+  console.log(`Applying timeframe filter: ${timeframe}`);
+  
   // Recalculate stats based on time filter
   return enumerators.map(enumerator => {
-    // Filter submissions by timeframe
-    const filteredSubmissions = enumerator.submissions.filter(submission => {
-      if (!submission.submission_date) return false;
-      const date = submission.submission_date.split(' ')[0];
-      return filterByTimeframe(date, timeframe);
-    });
-    
-    // Count submissions with alerts in the filtered timeframe
-    const submissionsWithAlerts = filteredSubmissions.filter(
-      s => s.alert_flag && s.alert_flag !== "NA"
-    ).length;
-    
-    // Calculate new error rate based on filtered data
-    const errorRate = filteredSubmissions.length > 0 
-      ? (submissionsWithAlerts / filteredSubmissions.length) * 100 
-      : 0;
+    try {
+      // Filter submissions by timeframe
+      const filteredSubmissions = enumerator.submissions.filter(submission => {
+        if (!submission.submission_date) return false;
+        
+        // Extract date part from submission_date, handling different formats
+        let datePart;
+        if (submission.submission_date.includes('T')) {
+          // Handle ISO format: "2025-02-19T00:00:00"
+          datePart = submission.submission_date.split('T')[0];
+        } else {
+          // Handle space format: "2025-02-19 00:00:00"
+          datePart = submission.submission_date.split(' ')[0];
+        }
+        
+        return filterByTimeframe(datePart, timeframe);
+      });
       
-    return {
-      ...enumerator,
-      filteredSubmissions,
-      filteredTotal: filteredSubmissions.length,
-      filteredAlertsCount: submissionsWithAlerts,
-      filteredErrorRate: errorRate
-    };
+      // Count submissions with alerts in the filtered timeframe
+      const submissionsWithAlerts = filteredSubmissions.filter(
+        s => s.alert_flag && s.alert_flag !== "NA"
+      ).length;
+      
+      // Calculate new error rate based on filtered data
+      const errorRate = filteredSubmissions.length > 0 
+        ? (submissionsWithAlerts / filteredSubmissions.length) * 100 
+        : 0;
+      
+      // Debug information when all submissions show 100% quality
+      if (filteredSubmissions.length > 0 && submissionsWithAlerts === 0 && timeframe !== 'all') {
+        console.log(`Enumerator ${enumerator.name} has ${filteredSubmissions.length} submissions in timeframe ${timeframe} with 0 alerts`);
+        // Log a sample submission date to verify filtering logic
+        if (filteredSubmissions.length > 0) {
+          console.log('Sample submission date:', filteredSubmissions[0].submission_date);
+        }
+      }
+      
+      return {
+        ...enumerator,
+        filteredSubmissions,
+        filteredTotal: filteredSubmissions.length,
+        filteredAlertsCount: submissionsWithAlerts,
+        filteredErrorRate: errorRate
+      };
+    } catch (error) {
+      console.error(`Error filtering enumerator ${enumerator.name}:`, error);
+      // Return unfiltered data in case of error
+      return {
+        ...enumerator,
+        filteredSubmissions: [],
+        filteredTotal: 0,
+        filteredAlertsCount: 0,
+        filteredErrorRate: 0
+      };
+    }
   });
 };
 

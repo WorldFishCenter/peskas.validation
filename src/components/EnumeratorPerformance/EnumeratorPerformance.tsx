@@ -24,6 +24,7 @@ declare module 'highcharts' {
 const EnumeratorPerformance: React.FC = () => {
   const { data: rawData = [], isLoading, error, refetch } = useFetchEnumeratorStats();
   const [enumerators, setEnumerators] = useState<EnumeratorData[]>([]);
+  const [processedData, setProcessedData] = useState<EnumeratorData[]>([]);
   const [selectedEnumerator, setSelectedEnumerator] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<TimeframeType>('all');
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -33,26 +34,28 @@ const EnumeratorPerformance: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ChartTabType>('volume');
   const [detailActiveTab, setDetailActiveTab] = useState<DetailTabType>('overview');
 
-  // Process the raw data into the format needed for the charts
+  // Process the raw data into the format needed for the charts - do this only once
   useEffect(() => {
     if (rawData && rawData.length > 0) {
-      const processedData = processEnumeratorData(rawData);
-      setEnumerators(processedData);
+      console.log('Processing raw data...', rawData.length, 'records');
+      const processed = processEnumeratorData(rawData);
+      setProcessedData(processed);
       
       // Set default selected enumerator
-      if (processedData.length > 0 && !selectedEnumerator) {
-        setSelectedEnumerator(processedData[0].name);
+      if (processed.length > 0 && !selectedEnumerator) {
+        setSelectedEnumerator(processed[0].name);
       }
     }
-  }, [rawData, selectedEnumerator]);
+  }, [rawData]); // Remove selectedEnumerator dependency to avoid re-processing
 
-  // Apply time filtering to data when timeframe changes
+  // Apply time filtering to data when timeframe or processed data changes
   useEffect(() => {
-    if (enumerators.length === 0) return;
+    if (processedData.length === 0) return;
     
-    const filteredEnumerators = applyTimeFiltering(enumerators, timeframe);
+    console.log(`Applying ${timeframe} filter to processed data...`);
+    const filteredEnumerators = applyTimeFiltering(processedData, timeframe);
     setEnumerators(filteredEnumerators);
-  }, [timeframe]);
+  }, [timeframe, processedData]); 
 
   // Check for admin token
   useEffect(() => {
