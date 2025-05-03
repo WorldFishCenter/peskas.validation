@@ -14,6 +14,15 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = ({
   timeframe,
   onEnumeratorSelect
 }) => {
+  // Filter out enumerators with no submissions in the selected timeframe
+  const filteredEnumerators = enumerators.filter(e => {
+    const total = e.filteredTotal !== undefined ? e.filteredTotal : e.totalSubmissions;
+    return total > 0; // Only include enumerators with at least 1 submission
+  });
+
+  // Log what we're actually displaying
+  console.log(`Volume chart showing ${filteredEnumerators.length} enumerators with submissions in timeframe ${timeframe}`);
+
   // Generate chart options for submission volume by enumerator
   const chartOptions: Highcharts.Options = {
     chart: {
@@ -24,7 +33,7 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = ({
       text: `Submission Volume by Enumerator (${timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})`
     },
     xAxis: {
-      categories: enumerators
+      categories: filteredEnumerators
         .sort((a, b) => (b.filteredTotal || b.totalSubmissions) - (a.filteredTotal || a.totalSubmissions))
         .map(e => e.name),
       title: {
@@ -40,7 +49,7 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = ({
     tooltip: {
       formatter: function() {
         const x = String(this.x);
-        const enumerator = enumerators.find(e => e.name === x);
+        const enumerator = filteredEnumerators.find(e => e.name === x);
         const errorRate = enumerator?.filteredErrorRate !== undefined ? 
           enumerator.filteredErrorRate : enumerator?.errorRate;
         
@@ -81,7 +90,7 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = ({
     series: [{
       name: 'Submissions',
       type: 'bar',
-      data: enumerators
+      data: filteredEnumerators
         .sort((a, b) => (b.filteredTotal || b.totalSubmissions) - (a.filteredTotal || a.totalSubmissions))
         .map(e => e.filteredTotal || e.totalSubmissions),
     }],
