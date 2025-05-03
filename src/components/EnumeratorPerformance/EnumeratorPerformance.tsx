@@ -98,16 +98,7 @@ const EnumeratorPerformance: React.FC = () => {
     }
   };
 
-  // Initialize all popovers after component has rendered
-  useEffect(() => {
-    // Check if Bootstrap's popover function exists
-    if (typeof document !== 'undefined' && (window as any).bootstrap?.Popover) {
-      const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
-      [...popoverTriggerList].map(popoverTriggerEl => {
-        return new (window as any).bootstrap.Popover(popoverTriggerEl);
-      });
-    }
-  }, [activeTab]); // Re-initialize when tab changes
+  // Note: Popover initialization is now handled in the ChartTabs component
 
   // Loading state
   if (isLoading) {

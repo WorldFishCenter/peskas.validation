@@ -19,5 +19,5 @@ export interface EnumeratorData {
 }
 
 export type TimeframeType = 'all' | '7days' | '30days' | '90days';
-export type ChartTabType = 'volume' | 'quality' | 'trends';
+export type ChartTabType = 'volume' | 'trends' | 'quality' | 'errors';
 export type DetailTabType = 'overview' | 'trends' | 'alerts'; 
