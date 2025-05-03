@@ -4,7 +4,6 @@ import { TimeframeType } from '../types';
 interface PageHeaderProps {
   timeframe: TimeframeType;
   setTimeframe: (timeframe: TimeframeType) => void;
-  refetch: () => void;
   isRefreshing: boolean;
   isAdmin: boolean;
   handleAdminRefresh: () => void;
@@ -13,7 +12,6 @@ interface PageHeaderProps {
 const PageHeader: React.FC<PageHeaderProps> = ({
   timeframe,
   setTimeframe,
-  refetch,
   isRefreshing,
   isAdmin,
   handleAdminRefresh

@@ -196,7 +196,6 @@ const EnumeratorPerformance: React.FC = () => {
       <PageHeader 
         timeframe={timeframe}
         setTimeframe={setTimeframe}
-        refetch={refetch}
         isRefreshing={isRefreshing}
         isAdmin={isAdmin}
         handleAdminRefresh={handleAdminRefresh}
