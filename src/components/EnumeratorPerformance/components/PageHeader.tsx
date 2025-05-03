@@ -29,58 +29,44 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             </div>
           </div>
           <div className="col-auto ms-auto d-print-none">
-            <div className="btn-list">
-              <div className="d-flex">
-                <div className="btn-group me-2" role="group" aria-label="Time period">
-                  <button type="button" 
-                    className={`btn btn-sm ${timeframe === 'all' ? 'btn-primary' : 'btn-outline-primary'}`}
-                    onClick={() => setTimeframe('all')}>
-                    All Time
-                  </button>
-                  <button type="button" 
-                    className={`btn btn-sm ${timeframe === '7days' ? 'btn-primary' : 'btn-outline-primary'}`}
-                    onClick={() => setTimeframe('7days')}>
-                    7 Days
-                  </button>
-                  <button type="button" 
-                    className={`btn btn-sm ${timeframe === '30days' ? 'btn-primary' : 'btn-outline-primary'}`}
-                    onClick={() => setTimeframe('30days')}>
-                    30 Days
-                  </button>
-                  <button type="button" 
-                    className={`btn btn-sm ${timeframe === '90days' ? 'btn-primary' : 'btn-outline-primary'}`}
-                    onClick={() => setTimeframe('90days')}>
-                    90 Days
-                  </button>
-                </div>
+            <div className="d-flex align-items-center">
+              <div className="btn-group shadow me-2" role="group" aria-label="Time period">
+                <button type="button" 
+                  className={`btn ${timeframe === 'all' ? 'btn-primary' : 'btn-outline-primary'} fw-medium px-3`}
+                  onClick={() => setTimeframe('all')}>
+                  All Time
+                </button>
+                <button type="button" 
+                  className={`btn ${timeframe === '7days' ? 'btn-primary' : 'btn-outline-primary'} fw-medium px-3`}
+                  onClick={() => setTimeframe('7days')}>
+                  7 Days
+                </button>
+                <button type="button" 
+                  className={`btn ${timeframe === '30days' ? 'btn-primary' : 'btn-outline-primary'} fw-medium px-3`}
+                  onClick={() => setTimeframe('30days')}>
+                  30 Days
+                </button>
+                <button type="button" 
+                  className={`btn ${timeframe === '90days' ? 'btn-primary' : 'btn-outline-primary'} fw-medium px-3`}
+                  onClick={() => setTimeframe('90days')}>
+                  90 Days
+                </button>
+              </div>
+              {isAdmin && (
                 <button 
-                  className="btn btn-primary btn-sm"
-                  onClick={refetch}
+                  className="btn btn-outline-secondary d-flex align-items-center"
+                  onClick={handleAdminRefresh}
                   disabled={isRefreshing}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-refresh" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-database me-1" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                    <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"></path>
-                    <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"></path>
+                    <path d="M12 6m-8 0a8 3 0 1 0 16 0a8 3 0 1 0 -16 0"></path>
+                    <path d="M4 6v6a8 3 0 0 0 16 0v-6"></path>
+                    <path d="M4 12v6a8 3 0 0 0 16 0v-6"></path>
                   </svg>
-                  Refresh
+                  Refresh Data
                 </button>
-                {isAdmin && (
-                  <button 
-                    className="btn btn-outline-primary btn-sm ms-2"
-                    onClick={handleAdminRefresh}
-                    disabled={isRefreshing}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-database" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                      <path d="M12 6m-8 0a8 3 0 1 0 16 0a8 3 0 1 0 -16 0"></path>
-                      <path d="M4 6v6a8 3 0 0 0 16 0v-6"></path>
-                      <path d="M4 12v6a8 3 0 0 0 16 0v-6"></path>
-                    </svg>
-                    Admin Refresh
-                  </button>
-                )}
-              </div>
+              )}
             </div>
           </div>
         </div>
