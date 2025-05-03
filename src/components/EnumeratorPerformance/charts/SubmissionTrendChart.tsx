@@ -22,8 +22,26 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
     return total > 0; // Only include enumerators with at least 1 submission
   });
 
+  // Filter and sort dates chronologically
+  const filteredDates = uniqueDates
+    .filter(date => filterByTimeframe(date))
+    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
+  // Format dates for better display
+  const formattedDates = filteredDates.map(date => {
+    const d = new Date(date);
+    return d.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+    });
+  });
+
   // Log what we're actually displaying
-  console.log(`Trend chart showing data for timeframe ${timeframe} with ${uniqueDates.length} unique dates`);
+  console.log(`Trend chart showing data for timeframe ${timeframe} with ${filteredDates.length} unique dates`);
+  
+  // Determine appropriate tick interval based on number of dates
+  const tickInterval = Math.max(1, Math.floor(filteredDates.length / 10));
   
   // Generate options for submission trend over time
   const chartOptions: Highcharts.Options = {
@@ -36,7 +54,7 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
       text: `Submission Trend Over Time (${timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})`
     },
     xAxis: {
-      categories: uniqueDates,
+      categories: formattedDates,
       title: {
         text: 'Date'
       },
@@ -44,8 +62,13 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
         rotation: -45,
         style: {
           fontSize: '11px'
-        }
-      }
+        },
+        step: tickInterval
+      },
+      tickmarkPlacement: 'on',
+      startOnTick: true,
+      endOnTick: true,
+      showLastLabel: true
     },
     yAxis: {
       title: {
@@ -55,7 +78,21 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
     },
     tooltip: {
       shared: true,
-      crosshairs: true
+      crosshairs: true,
+      formatter: function() {
+        const points = this.points || [];
+        let tooltip = `<b>${this.x}</b><br/>`;
+        
+        // Add information for each series point at this x position
+        points.forEach(point => {
+          const value = point.y || 0;
+          if (value > 0) {
+            tooltip += `<span style="color:${point.series.color}">●</span> ${point.series.name}: ${value} submission${value !== 1 ? 's' : ''}<br/>`;
+          }
+        });
+        
+        return tooltip;
+      }
     },
     legend: {
       enabled: true,
@@ -65,6 +102,14 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
       maxHeight: 80,
       itemStyle: {
         fontSize: '10px'
+      }
+    },
+    plotOptions: {
+      line: {
+        marker: {
+          enabled: filteredDates.length < 30 // Only show markers if we have fewer dates
+        },
+        connectNulls: false
       }
     },
     series: filteredEnumerators
@@ -83,9 +128,7 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
         }, {});
         
         // Generate data points for each date
-        const data = uniqueDates
-          .filter(date => filterByTimeframe(date))
-          .map(date => dateCounts[date] || 0);
+        const data = filteredDates.map(date => dateCounts[date] || 0);
         
         // Calculate series total for logging
         const seriesTotal = data.reduce((sum, value) => sum + value, 0);
@@ -93,7 +136,8 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
         return {
           name: enumerator.name,
           type: 'line' as const,
-          data
+          data,
+          visible: seriesTotal > 0 // Only make series visible if it has data in the timeframe
         };
       }),
     credits: {

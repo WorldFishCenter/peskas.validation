@@ -76,6 +76,33 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
   selectedEnumeratorData, 
   filterByTimeframe
 }) => {
+  // Filter and sort dates for this enumerator's trend chart
+  const trendData = selectedEnumeratorData?.submissionTrend || [];
+  
+  // Filter dates by timeframe and sort chronologically
+  const filteredDates = trendData
+    .filter(t => filterByTimeframe(t.date))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  
+  // Format dates for better display
+  const formattedDateMap = filteredDates.reduce((map, item) => {
+    const d = new Date(item.date);
+    const formatted = d.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+    });
+    map[item.date] = { formatted, count: item.count };
+    return map;
+  }, {} as Record<string, { formatted: string, count: number }>);
+  
+  // Create arrays for categories and data
+  const categories = filteredDates.map(item => formattedDateMap[item.date].formatted);
+  const data = filteredDates.map(item => item.count);
+  
+  // Determine appropriate tick interval based on number of dates
+  const tickInterval = Math.max(1, Math.floor(categories.length / 8));
+  
   // Generate individual submission trend for selected enumerator
   const chartOptions: Highcharts.Options = {
     chart: {
@@ -87,9 +114,7 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
       text: `Submission Trend for ${selectedEnumeratorData?.name || ''}`
     },
     xAxis: {
-      categories: selectedEnumeratorData?.submissionTrend
-        .filter(t => filterByTimeframe(t.date))
-        .map(t => t.date) || [],
+      categories: categories,
       title: {
         text: 'Date'
       },
@@ -97,8 +122,13 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
         rotation: -45,
         style: {
           fontSize: '11px'
-        }
-      }
+        },
+        step: tickInterval
+      },
+      tickmarkPlacement: 'on',
+      startOnTick: true,
+      endOnTick: true,
+      showLastLabel: true
     },
     yAxis: {
       title: {
@@ -108,8 +138,9 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
     },
     tooltip: {
       formatter: function() {
+        const value = this.y || 0;
         return `<b>${this.x}</b><br/>
-                Submissions: ${this.y}`;
+                Submissions: ${value} ${value !== 1 ? 'submissions' : 'submission'}`;
       }
     },
     plotOptions: {
@@ -120,15 +151,14 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
           style: {
             fontSize: '10px'
           }
-        }
+        },
+        pointWidth: Math.max(5, Math.min(25, 800 / Math.max(1, filteredDates.length))) // Responsive bar width
       }
     },
     series: [{
       name: 'Submissions',
       type: 'column',
-      data: selectedEnumeratorData?.submissionTrend
-        .filter(t => filterByTimeframe(t.date))
-        .map(t => t.count) || [],
+      data: data,
       color: '#0d6efd'
     }],
     credits: {
