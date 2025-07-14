@@ -5,13 +5,11 @@ import { EnumeratorData } from '../types';
 
 interface SubmissionVolumeChartProps {
   enumerators: EnumeratorData[];
-  timeframe: 'all' | '7days' | '30days' | '90days';
   onEnumeratorSelect: (name: string) => void;
 }
 
 const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = ({ 
   enumerators, 
-  timeframe,
   onEnumeratorSelect
 }) => {
   // Filter out enumerators with no submissions in the selected timeframe
@@ -21,7 +19,7 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = ({
   });
 
   // Log what we're actually displaying
-  console.log(`Volume chart showing ${filteredEnumerators.length} enumerators with submissions in timeframe ${timeframe}`);
+  console.log(`Volume chart showing ${filteredEnumerators.length} enumerators with submissions in selected date range`);
 
   // Generate chart options for submission volume by enumerator
   const chartOptions: Highcharts.Options = {
@@ -30,7 +28,7 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = ({
       height: 500
     },
     title: {
-      text: `Submission Volume by Enumerator (${timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})`
+      text: `Submission Volume by Enumerator (Selected Date Range)`
     },
     xAxis: {
       categories: filteredEnumerators

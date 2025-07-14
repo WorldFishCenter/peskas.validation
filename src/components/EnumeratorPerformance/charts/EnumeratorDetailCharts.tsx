@@ -5,12 +5,10 @@ import { EnumeratorData } from '../types';
 
 interface AlertDistributionChartProps {
   selectedEnumeratorData: EnumeratorData;
-  timeframe: 'all' | '7days' | '30days' | '90days';
 }
 
 export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({ 
-  selectedEnumeratorData, 
-  timeframe 
+  selectedEnumeratorData
 }) => {
   // Generate detailed analysis for selected enumerator
   const enumeratorAlertDistribution = 
@@ -31,7 +29,7 @@ export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
       height: 350
     },
     title: {
-      text: `Alert Types for ${selectedEnumeratorData?.name || ''} (${timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})`
+      text: `Alert Types for ${selectedEnumeratorData?.name || ''} (Selected Date Range)`
     },
     tooltip: {
       pointFormat: '{series.name}: <b>{point.y} ({point.percentage:.1f}%)</b>'
@@ -69,19 +67,28 @@ export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
 
 interface EnumeratorTrendChartProps {
   selectedEnumeratorData: EnumeratorData;
-  filterByTimeframe: (date: string) => boolean;
 }
 
 export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({ 
-  selectedEnumeratorData, 
-  filterByTimeframe
+  selectedEnumeratorData
 }) => {
   // Filter and sort dates for this enumerator's trend chart
   const trendData = selectedEnumeratorData?.submissionTrend || [];
   
-  // Filter dates by timeframe and sort chronologically
+  // Filter dates by selected date range and sort chronologically
   const filteredDates = trendData
-    .filter(t => filterByTimeframe(t.date))
+    .filter(t => {
+      const datePart = t.date.includes('T') ? t.date.split('T')[0] : t.date.split(' ')[0];
+      // Use filteredSubmissions to determine range
+      // If the date is present in filteredSubmissions, include it
+      return (
+        selectedEnumeratorData.filteredSubmissions?.some(s => {
+          if (!s.submission_date) return false;
+          const sDate = s.submission_date.includes('T') ? s.submission_date.split('T')[0] : s.submission_date.split(' ')[0];
+          return sDate === datePart;
+        })
+      );
+    })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   
   // Format dates for better display

@@ -5,12 +5,10 @@ import { EnumeratorData } from '../types';
 
 interface QualityRankingChartProps {
   enumerators: EnumeratorData[];
-  timeframe: 'all' | '7days' | '30days' | '90days';
 }
 
 const QualityRankingChart: React.FC<QualityRankingChartProps> = ({ 
-  enumerators, 
-  timeframe 
+  enumerators
 }) => {
   // Filter out enumerators with no submissions in the selected timeframe
   const filteredEnumerators = enumerators.filter(e => {
@@ -19,7 +17,7 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
   });
   
   // Log what we're actually displaying
-  console.log(`Quality chart showing ${filteredEnumerators.length} enumerators with submissions in timeframe ${timeframe}`);
+  console.log(`Quality chart showing ${filteredEnumerators.length} enumerators with submissions in selected date range`);
   
   // Generate enumerator quality ranking chart
   const chartOptions: Highcharts.Options = {
@@ -28,7 +26,7 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
       height: 550
     },
     title: {
-      text: `Enumerator Quality Ranking (${timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})`
+      text: `Enumerator Quality Ranking (Selected Date Range)`
     },
     xAxis: {
       categories: filteredEnumerators

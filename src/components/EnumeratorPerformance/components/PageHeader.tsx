@@ -2,19 +2,27 @@ import React from 'react';
 import { TimeframeType } from '../types';
 
 interface PageHeaderProps {
-  timeframe: TimeframeType;
-  setTimeframe: (timeframe: TimeframeType) => void;
   isRefreshing: boolean;
   isAdmin: boolean;
   handleAdminRefresh: () => void;
+  fromDate: string;
+  toDate: string;
+  setFromDate: (date: string) => void;
+  setToDate: (date: string) => void;
+  minDate: string;
+  maxDate: string;
 }
 
 const PageHeader: React.FC<PageHeaderProps> = ({
-  timeframe,
-  setTimeframe,
   isRefreshing,
   isAdmin,
-  handleAdminRefresh
+  handleAdminRefresh,
+  fromDate,
+  toDate,
+  setFromDate,
+  setToDate,
+  minDate,
+  maxDate
 }) => {
   return (
     <div className="page-header d-print-none mb-4">
@@ -27,28 +35,35 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             </div>
           </div>
           <div className="col-auto ms-auto d-print-none">
-            <div className="d-flex align-items-center">
-              <div className="btn-group shadow me-2" role="group" aria-label="Time period">
-                <button type="button" 
-                  className={`btn ${timeframe === 'all' ? 'btn-primary' : 'btn-outline-primary'} fw-medium px-3`}
-                  onClick={() => setTimeframe('all')}>
-                  All Time
-                </button>
-                <button type="button" 
-                  className={`btn ${timeframe === '7days' ? 'btn-primary' : 'btn-outline-primary'} fw-medium px-3`}
-                  onClick={() => setTimeframe('7days')}>
-                  7 Days
-                </button>
-                <button type="button" 
-                  className={`btn ${timeframe === '30days' ? 'btn-primary' : 'btn-outline-primary'} fw-medium px-3`}
-                  onClick={() => setTimeframe('30days')}>
-                  30 Days
-                </button>
-                <button type="button" 
-                  className={`btn ${timeframe === '90days' ? 'btn-primary' : 'btn-outline-primary'} fw-medium px-3`}
-                  onClick={() => setTimeframe('90days')}>
-                  90 Days
-                </button>
+            <div className="d-flex align-items-center gap-2 flex-wrap">
+              {/* Date Range Filter */}
+              <div className="d-flex align-items-center gap-2" style={{ minWidth: 320 }}>
+                <div className="d-flex flex-column align-items-start" style={{ minWidth: 120 }}>
+                  <label htmlFor="from-date" className="form-label mb-0" style={{ fontSize: '0.85em' }}>From</label>
+                  <input
+                    id="from-date"
+                    type="date"
+                    className="form-control"
+                    style={{ minWidth: 120, maxWidth: 160 }}
+                    value={fromDate}
+                    min={minDate}
+                    max={toDate || maxDate}
+                    onChange={e => setFromDate(e.target.value)}
+                  />
+                </div>
+                <div className="d-flex flex-column align-items-start" style={{ minWidth: 120 }}>
+                  <label htmlFor="to-date" className="form-label mb-0" style={{ fontSize: '0.85em' }}>To</label>
+                  <input
+                    id="to-date"
+                    type="date"
+                    className="form-control"
+                    style={{ minWidth: 120, maxWidth: 160 }}
+                    value={toDate}
+                    min={fromDate || minDate}
+                    max={maxDate}
+                    onChange={e => setToDate(e.target.value)}
+                  />
+                </div>
               </div>
               {isAdmin && (
                 <button 

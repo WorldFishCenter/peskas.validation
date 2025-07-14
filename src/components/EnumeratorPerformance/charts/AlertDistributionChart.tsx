@@ -5,12 +5,10 @@ import { EnumeratorData, TimeframeType } from '../types';
 
 interface AlertDistributionChartProps {
   enumerators: EnumeratorData[];
-  timeframe: TimeframeType;
 }
 
 const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({ 
-  enumerators, 
-  timeframe 
+  enumerators
 }) => {
   // Process and calculate alert distribution using memoization for better performance
   const { alertData, totalAlerts } = useMemo(() => {
@@ -67,7 +65,7 @@ const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
       height: 550 // Increased height for better visualization
     },
     title: {
-      text: `Alert Distribution Across All Enumerators (${timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})`
+      text: `Alert Distribution Across All Enumerators`
     },
     subtitle: {
       text: `Total Alerts: ${totalAlerts}`

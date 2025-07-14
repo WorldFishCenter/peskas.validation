@@ -9,8 +9,6 @@ interface EnumeratorDetailProps {
   enumerators: EnumeratorData[];
   detailActiveTab: DetailTabType;
   setDetailActiveTab: (tab: DetailTabType) => void;
-  timeframe: TimeframeType;
-  filterByTimeframe: (date: string) => boolean;
 }
 
 const EnumeratorDetail: React.FC<EnumeratorDetailProps> = ({
@@ -19,9 +17,7 @@ const EnumeratorDetail: React.FC<EnumeratorDetailProps> = ({
   setSelectedEnumerator,
   enumerators,
   detailActiveTab,
-  setDetailActiveTab,
-  timeframe,
-  filterByTimeframe
+  setDetailActiveTab
 }) => {
   return (
     <div className="card" id="enumerator-detail">
@@ -103,7 +99,7 @@ const EnumeratorDetail: React.FC<EnumeratorDetailProps> = ({
                       </div>
                       <div>
                         <span className="badge bg-primary text-white p-2">
-                          {timeframe === 'all' ? 'All time' : `Last ${timeframe.replace('days', ' days')}`}
+                          Selected Date Range
                         </span>
                       </div>
                     </div>
@@ -155,11 +151,10 @@ const EnumeratorDetail: React.FC<EnumeratorDetailProps> = ({
           {/* Trends Tab */}
           <div className={`tab-pane ${detailActiveTab === 'trends' ? 'active show' : ''}`}>
             <h4 className="mb-3">
-              Submission Trend for {selectedEnumeratorData.name} ({timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})
+              Submission Trend for {selectedEnumeratorData.name} (Selected Date Range)
             </h4>
             <EnumeratorTrendChart 
               selectedEnumeratorData={selectedEnumeratorData}
-              filterByTimeframe={filterByTimeframe}
             />
           </div>
           
@@ -168,7 +163,6 @@ const EnumeratorDetail: React.FC<EnumeratorDetailProps> = ({
             <h4 className="mb-3">Alert Types for {selectedEnumeratorData.name}</h4>
             <AlertDistributionChart 
               selectedEnumeratorData={selectedEnumeratorData}
-              timeframe={timeframe}
             />
           </div>
         </div>

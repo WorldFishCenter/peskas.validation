@@ -7,6 +7,12 @@ interface TableFiltersProps<T> {
   setGlobalFilter: (filter: string) => void;
   showAlertGuide: () => void;
   resetFilters: () => void;
+  fromDate: string;
+  toDate: string;
+  setFromDate: (date: string) => void;
+  setToDate: (date: string) => void;
+  minDate: string;
+  maxDate: string;
 }
 
 const TableFilters = <T,>({ 
@@ -14,7 +20,13 @@ const TableFilters = <T,>({
   globalFilter, 
   setGlobalFilter, 
   showAlertGuide,
-  resetFilters
+  resetFilters,
+  fromDate,
+  toDate,
+  setFromDate,
+  setToDate,
+  minDate,
+  maxDate
 }: TableFiltersProps<T>) => {
   // Get columns with defensive access
   const statusColumn = table.getColumn('validation_status');
@@ -88,21 +100,34 @@ const TableFilters = <T,>({
         </select>
       </div>
       
-      {/* Alert Info Button */}
-      <div className="input-group-btn d-inline-flex">
-        <button 
-          className="btn btn-outline-warning" 
-          title="View Alert Codes Reference"
-          onClick={showAlertGuide}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-            <circle cx="12" cy="12" r="9" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          Alert Codes
-        </button>
+      {/* Date Range Filter */}
+      <div className="d-flex align-items-center gap-2" style={{ minWidth: 320 }}>
+        <div className="d-flex flex-column align-items-start" style={{ minWidth: 120 }}>
+          <label htmlFor="from-date" className="form-label mb-0" style={{ fontSize: '0.85em' }}>From</label>
+          <input
+            id="from-date"
+            type="date"
+            className="form-control"
+            style={{ minWidth: 120, maxWidth: 160 }}
+            value={fromDate}
+            min={minDate}
+            max={toDate || maxDate}
+            onChange={e => setFromDate(e.target.value)}
+          />
+        </div>
+        <div className="d-flex flex-column align-items-start" style={{ minWidth: 120 }}>
+          <label htmlFor="to-date" className="form-label mb-0" style={{ fontSize: '0.85em' }}>To</label>
+          <input
+            id="to-date"
+            type="date"
+            className="form-control"
+            style={{ minWidth: 120, maxWidth: 160 }}
+            value={toDate}
+            min={fromDate || minDate}
+            max={maxDate}
+            onChange={e => setToDate(e.target.value)}
+          />
+        </div>
       </div>
       
       {/* Reset Filters Button */}

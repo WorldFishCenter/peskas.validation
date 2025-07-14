@@ -5,27 +5,21 @@ import { EnumeratorData } from '../types';
 
 interface SubmissionTrendChartProps {
   enumerators: EnumeratorData[];
-  timeframe: 'all' | '7days' | '30days' | '90days';
   uniqueDates: string[];
-  filterByTimeframe: (date: string) => boolean;
 }
 
 const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({ 
   enumerators, 
-  timeframe,
-  uniqueDates,
-  filterByTimeframe
+  uniqueDates
 }) => {
-  // Filter out enumerators with no submissions in the selected timeframe
+  // Filter out enumerators with no submissions in the selected date range
   const filteredEnumerators = enumerators.filter(e => {
     const total = e.filteredTotal !== undefined ? e.filteredTotal : e.totalSubmissions;
     return total > 0; // Only include enumerators with at least 1 submission
   });
 
   // Filter and sort dates chronologically
-  const filteredDates = uniqueDates
-    .filter(date => filterByTimeframe(date))
-    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  const filteredDates = uniqueDates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
   // Format dates for better display
   const formattedDates = filteredDates.map(date => {
@@ -38,7 +32,7 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
   });
 
   // Log what we're actually displaying
-  console.log(`Trend chart showing data for timeframe ${timeframe} with ${filteredDates.length} unique dates`);
+  console.log(`Trend chart showing data for selected date range with ${filteredDates.length} unique dates`);
   
   // Determine appropriate tick interval based on number of dates
   const tickInterval = Math.max(1, Math.floor(filteredDates.length / 10));
@@ -51,7 +45,7 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
       zoomType: 'x'
     },
     title: {
-      text: `Submission Trend Over Time (${timeframe === 'all' ? 'All Time' : `Last ${timeframe.replace('days', ' days')}`})`
+      text: `Enumerator Quality Ranking (Selected Date Range)`
     },
     xAxis: {
       categories: formattedDates,

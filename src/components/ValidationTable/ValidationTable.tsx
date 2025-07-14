@@ -56,6 +56,18 @@ const formatDate = (dateStr: string | null): string => {
   }
 };
 
+// Helper to get min and max date from submissions
+const getMinMaxDate = (subs: Submission[] | undefined): [string, string] => {
+  if (!subs || subs.length === 0) return ['2024-02-01', '2024-02-01'];
+  let min = subs[0].submission_date;
+  let max = subs[0].submission_date;
+  for (const s of subs) {
+    if (s.submission_date && s.submission_date < min) min = s.submission_date;
+    if (s.submission_date && s.submission_date > max) max = s.submission_date;
+  }
+  return [min.slice(0, 10), max.slice(0, 10)];
+};
+
 const ValidationTable: React.FC = () => {
   const { data: submissions, isLoading, error, refetch } = useFetchSubmissions();
   const [selectedRow, setSelectedRow] = useState<Submission | null>(null);
@@ -69,6 +81,9 @@ const ValidationTable: React.FC = () => {
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
   const [showAlertGuide, setShowAlertGuide] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [minDate, maxDate] = getMinMaxDate(submissions);
 
   useEffect(() => {
     if (submissions && submissions.length > 0) {
@@ -98,6 +113,19 @@ const ValidationTable: React.FC = () => {
       }
     }
   }, [submissions]);
+
+  useEffect(() => {
+    setFromDate(minDate);
+    setToDate(maxDate);
+  }, [minDate, maxDate]);
+
+  const dateRangeFilter: FilterFn<Submission> = (row, columnId, value) => {
+    const [from, to] = value as [string, string];
+    const dateStr = row.getValue(columnId) as string;
+    if (!dateStr) return false;
+    const rowDate = dateStr.slice(0, 10);
+    return (!from || rowDate >= from) && (!to || rowDate <= to);
+  };
 
   const columns = useMemo<ColumnDef<Submission, unknown>[]>(
     () => [
@@ -163,7 +191,7 @@ const ValidationTable: React.FC = () => {
         },
         enableSorting: true,
         enableColumnFilter: true,
-        filterFn: fuzzyFilter,
+        filterFn: dateRangeFilter,
       },
       {
         accessorKey: 'alert_flag',
@@ -208,7 +236,7 @@ const ValidationTable: React.FC = () => {
         filterFn: fuzzyFilter,
       },
     ],
-    []
+    [fromDate, toDate]
   );
 
   const table = useReactTable({
@@ -237,11 +265,16 @@ const ValidationTable: React.FC = () => {
     globalFilterFn: fuzzyFilter as any,
     filterFns: {
       fuzzy: fuzzyFilter as any,
+      dateRange: dateRangeFilter as any,
     },
     initialState: {
       pagination: { pageSize: 10 },
     },
   });
+
+  useEffect(() => {
+    table.getColumn('submission_date')?.setFilterValue([fromDate, toDate]);
+  }, [fromDate, toDate, table]);
 
   const handleRowClick = (row: Row<Submission>) => {
     setSelectedRow(row.original);
@@ -289,7 +322,22 @@ const ValidationTable: React.FC = () => {
             resetFilters={() => {
               setGlobalFilter('');
               table.resetColumnFilters();
+              setFromDate(minDate);
+              setToDate(maxDate);
+              table.getColumn('submission_date')?.setFilterValue([minDate, maxDate]);
             }}
+            fromDate={fromDate}
+            toDate={toDate}
+            setFromDate={(date: string) => {
+              setFromDate(date);
+              table.getColumn('submission_date')?.setFilterValue([date, toDate]);
+            }}
+            setToDate={(date: string) => {
+              setToDate(date);
+              table.getColumn('submission_date')?.setFilterValue([fromDate, date]);
+            }}
+            minDate={minDate}
+            maxDate={maxDate}
           />
         </div>
         <div className="card-body">

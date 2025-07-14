@@ -9,20 +9,16 @@ interface ChartTabsProps {
   activeTab: ChartTabType;
   setActiveTab: (tab: ChartTabType) => void;
   enumerators: EnumeratorData[];
-  timeframe: TimeframeType;
   onEnumeratorSelect: (name: string) => void;
   uniqueDates: string[];
-  filterByTimeframe: (date: string) => boolean;
 }
 
 const ChartTabs: React.FC<ChartTabsProps> = ({
   activeTab,
   setActiveTab,
   enumerators,
-  timeframe,
   onEnumeratorSelect,
-  uniqueDates,
-  filterByTimeframe
+  uniqueDates
 }) => {
   // Initialize popovers when tab changes
   useEffect(() => {
@@ -85,7 +81,6 @@ const ChartTabs: React.FC<ChartTabsProps> = ({
             <p className="text-muted mb-4">Click on any bar to view detailed statistics for that enumerator</p>
             <SubmissionVolumeChart 
               enumerators={enumerators} 
-              timeframe={timeframe} 
               onEnumeratorSelect={onEnumeratorSelect} 
             />
           </div>
@@ -96,9 +91,7 @@ const ChartTabs: React.FC<ChartTabsProps> = ({
             <p className="text-muted small mb-3">Showing top 10 enumerators by submission volume (use mouse to zoom)</p>
             <SubmissionTrendChart 
               enumerators={enumerators} 
-              timeframe={timeframe} 
               uniqueDates={uniqueDates}
-              filterByTimeframe={filterByTimeframe}
             />
           </div>
           
@@ -131,7 +124,6 @@ const ChartTabs: React.FC<ChartTabsProps> = ({
             </div>
             <QualityRankingChart 
               enumerators={enumerators} 
-              timeframe={timeframe} 
             />
           </div>
 
@@ -164,7 +156,6 @@ const ChartTabs: React.FC<ChartTabsProps> = ({
             </div>
             <AlertDistributionChart 
               enumerators={enumerators} 
-              timeframe={timeframe} 
             />
           </div>
         </div>

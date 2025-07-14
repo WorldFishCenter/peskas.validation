@@ -34,6 +34,12 @@ const EnumeratorPerformance: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ChartTabType>('volume');
   const [detailActiveTab, setDetailActiveTab] = useState<DetailTabType>('overview');
 
+  // Date range filter state
+  const [fromDate, setFromDate] = useState<string>('');
+  const [toDate, setToDate] = useState<string>('');
+  const [minDate, setMinDate] = useState<string>('');
+  const [maxDate, setMaxDate] = useState<string>('');
+
   // Process the raw data into the format needed for the charts - do this only once
   useEffect(() => {
     if (rawData && rawData.length > 0) {
@@ -48,14 +54,59 @@ const EnumeratorPerformance: React.FC = () => {
     }
   }, [rawData]); // Remove selectedEnumerator dependency to avoid re-processing
 
-  // Apply time filtering to data when timeframe or processed data changes
+  // Compute min/max dates from processedData
+  useEffect(() => {
+    if (processedData.length > 0) {
+      const allDates = processedData.flatMap(e =>
+        e.submissions.map(s => {
+          // Extract just the date part
+          if (!s.submission_date) return null;
+          return s.submission_date.includes('T')
+            ? s.submission_date.split('T')[0]
+            : s.submission_date.split(' ')[0];
+        }).filter(Boolean)
+      ) as string[];
+      if (allDates.length > 0) {
+        const sorted = allDates.sort();
+        setMinDate(sorted[0]);
+        setMaxDate(sorted[sorted.length - 1]);
+        // Set defaults if not already set
+        setFromDate(prev => prev || sorted[0]);
+        setToDate(prev => prev || sorted[sorted.length - 1]);
+      }
+    }
+  }, [processedData]);
+
+  // Apply date range filtering to data when processed data or date range changes
   useEffect(() => {
     if (processedData.length === 0) return;
-    
-    console.log(`Applying ${timeframe} filter to processed data...`);
-    const filteredEnumerators = applyTimeFiltering(processedData, timeframe);
+    const filterByDateRange = (date: string) => {
+      const datePart = date.includes('T') ? date.split('T')[0] : date.split(' ')[0];
+      const fromOk = fromDate ? datePart >= fromDate : true;
+      const toOk = toDate ? datePart <= toDate : true;
+      return fromOk && toOk;
+    };
+    const filteredEnumerators = processedData.map(enumerator => {
+      const filteredSubmissions = enumerator.submissions.filter(submission => {
+        if (!submission.submission_date) return false;
+        return filterByDateRange(submission.submission_date);
+      });
+      const submissionsWithAlerts = filteredSubmissions.filter(
+        s => s.alert_flag && s.alert_flag !== "NA"
+      ).length;
+      const errorRate = filteredSubmissions.length > 0 
+        ? (submissionsWithAlerts / filteredSubmissions.length) * 100 
+        : 0;
+      return {
+        ...enumerator,
+        filteredSubmissions,
+        filteredTotal: filteredSubmissions.length,
+        filteredAlertsCount: submissionsWithAlerts,
+        filteredErrorRate: errorRate
+      };
+    });
     setEnumerators(filteredEnumerators);
-  }, [timeframe, processedData]); 
+  }, [processedData, fromDate, toDate]);
 
   // Check for admin token
   useEffect(() => {
@@ -171,25 +222,33 @@ const EnumeratorPerformance: React.FC = () => {
   // Find the best enumerator using a weighted quality score
   const bestEnumerator = findBestEnumerator(enumerators);
   
-  // Calculate dates for submission trend chart
+  // Calculate dates for submission trend chart (filtered by date range only)
   const allDates = enumerators.flatMap(e => 
     e.submissionTrend
-      .filter(t => filterByTimeframe(t.date, timeframe))
+      .filter(t => {
+        const datePart = t.date.includes('T') ? t.date.split('T')[0] : t.date.split(' ')[0];
+        const fromOk = fromDate ? datePart >= fromDate : true;
+        const toOk = toDate ? datePart <= toDate : true;
+        return fromOk && toOk;
+      })
       .map(t => t.date)
   );
   const uniqueDates = [...new Set(allDates)].sort();
-
-  const filterByTimeframeWithCurry = (date: string) => filterByTimeframe(date, timeframe);
 
   return (
     <div className="container-xl">
       {/* Page header with actions */}
       <PageHeader 
-        timeframe={timeframe}
-        setTimeframe={setTimeframe}
+        // timeframe and setTimeframe removed
         isRefreshing={isRefreshing}
         isAdmin={isAdmin}
         handleAdminRefresh={handleAdminRefresh}
+        fromDate={fromDate}
+        toDate={toDate}
+        setFromDate={setFromDate}
+        setToDate={setToDate}
+        minDate={minDate}
+        maxDate={maxDate}
       />
 
       {refreshMessage && (
@@ -211,10 +270,8 @@ const EnumeratorPerformance: React.FC = () => {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         enumerators={enumerators}
-        timeframe={timeframe}
         onEnumeratorSelect={setSelectedEnumerator}
         uniqueDates={uniqueDates}
-        filterByTimeframe={filterByTimeframeWithCurry}
       />
 
       {/* Detailed enumerator analysis section */}
@@ -226,8 +283,6 @@ const EnumeratorPerformance: React.FC = () => {
           enumerators={enumerators}
           detailActiveTab={detailActiveTab}
           setDetailActiveTab={setDetailActiveTab}
-          timeframe={timeframe}
-          filterByTimeframe={filterByTimeframeWithCurry}
         />
       )}
     </div>
