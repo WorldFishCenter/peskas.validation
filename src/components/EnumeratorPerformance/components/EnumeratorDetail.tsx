@@ -1,5 +1,5 @@
 import React from 'react';
-import { EnumeratorData, DetailTabType, TimeframeType } from '../types';
+import { EnumeratorData, DetailTabType } from '../types';
 import { AlertDistributionChart, EnumeratorTrendChart } from '../charts/EnumeratorDetailCharts';
 
 interface EnumeratorDetailProps {

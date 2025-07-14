@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useFetchEnumeratorStats } from '../../api/api';
-import { TimeframeType, ChartTabType, DetailTabType, EnumeratorData } from './types';
-import { processEnumeratorData, applyTimeFiltering, filterByTimeframe, findBestEnumerator } from './utils/dataUtils';
+import { ChartTabType, DetailTabType, EnumeratorData } from './types';
+import { processEnumeratorData, findBestEnumerator } from './utils/dataUtils';
 import { refreshEnumeratorStats } from './utils/apiUtils';
 
 // Components
@@ -26,7 +26,6 @@ const EnumeratorPerformance: React.FC = () => {
   const [enumerators, setEnumerators] = useState<EnumeratorData[]>([]);
   const [processedData, setProcessedData] = useState<EnumeratorData[]>([]);
   const [selectedEnumerator, setSelectedEnumerator] = useState<string | null>(null);
-  const [timeframe, setTimeframe] = useState<TimeframeType>('all');
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [adminToken, setAdminToken] = useState<string>('');
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);

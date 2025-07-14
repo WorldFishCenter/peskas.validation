@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ChartTabType, TimeframeType, EnumeratorData } from '../types';
+import { ChartTabType, EnumeratorData } from '../types';
 import SubmissionVolumeChart from '../charts/SubmissionVolumeChart';
 import QualityRankingChart from '../charts/QualityRankingChart';
 import SubmissionTrendChart from '../charts/SubmissionTrendChart';

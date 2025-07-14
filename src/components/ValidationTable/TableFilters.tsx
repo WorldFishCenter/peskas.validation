@@ -5,7 +5,6 @@ interface TableFiltersProps<T> {
   table: Table<T>;
   globalFilter: string;
   setGlobalFilter: (filter: string) => void;
-  showAlertGuide: () => void;
   resetFilters: () => void;
   fromDate: string;
   toDate: string;
@@ -19,7 +18,6 @@ const TableFilters = <T,>({
   table, 
   globalFilter, 
   setGlobalFilter, 
-  showAlertGuide,
   resetFilters,
   fromDate,
   toDate,

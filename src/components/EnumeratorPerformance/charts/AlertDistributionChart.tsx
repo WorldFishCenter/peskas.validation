@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
-import { EnumeratorData, TimeframeType } from '../types';
+import { EnumeratorData } from '../types';
 
 interface AlertDistributionChartProps {
   enumerators: EnumeratorData[];

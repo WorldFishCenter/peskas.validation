@@ -1,5 +1,4 @@
 import React from 'react';
-import { TimeframeType } from '../types';
 
 interface PageHeaderProps {
   isRefreshing: boolean;

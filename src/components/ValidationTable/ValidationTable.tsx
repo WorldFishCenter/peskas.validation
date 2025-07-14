@@ -318,7 +318,6 @@ const ValidationTable: React.FC = () => {
             table={table}
             globalFilter={globalFilter}
             setGlobalFilter={setGlobalFilter}
-            showAlertGuide={() => setShowAlertGuide(true)}
             resetFilters={() => {
               setGlobalFilter('');
               table.resetColumnFilters();
