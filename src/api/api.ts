@@ -5,28 +5,13 @@ import { getApiBaseUrl } from '../utils/apiConfig';
 // Get the appropriate API base URL based on environment
 const API_BASE_URL = getApiBaseUrl();
 
-interface Submission {
-  submission_id: string;
-  submission_date: string;
-  submitted_by?: string; // Make explicit that this might be missing
-  vessel_number?: string;
-  catch_number?: string;
-  alert_flag: string;      // Original string from MongoDB
-  alert_flags: string[];   // Parsed array for tooltip
-  validation_status: string;
-  validated_at: string;
-}
+import { Submission } from '../types/validation';
 
 // Normalize field names for consistent access
 const normalizeSubmissionData = (item: any): any => {
   // Create a new object with all keys from the original
   const normalized = { ...item };
   
-  // Debug in production - log what we received
-  if (import.meta.env.PROD) {
-    console.log('Raw data keys:', Object.keys(item));
-    console.log('Raw submitted_by value:', item.submitted_by);
-  }
   
   // Handle common field name transformations
   if (!normalized.submitted_by && normalized._submitted_by) {
@@ -36,11 +21,6 @@ const normalizeSubmissionData = (item: any): any => {
   // Ensure submitted_by is always a string, even if empty
   normalized.submitted_by = normalized.submitted_by ? String(normalized.submitted_by) : '';
   
-  // In production, add the direct export from MongoDB to help debug
-  if (import.meta.env.PROD && !normalized.submitted_by) {
-    console.log('Full item data:', item);
-    console.log('Normalized result:', normalized);
-  }
   
   return normalized;
 };
@@ -56,33 +36,9 @@ export const useFetchSubmissions = () => {
       setIsLoading(true);
       setError(null);
       
-      // Log the API URL we're hitting
-      if (import.meta.env.PROD) {
-        console.log('Fetching from API URL:', `${API_BASE_URL}/kobo/submissions`);
-      }
       
       const response = await axios.get(`${API_BASE_URL}/kobo/submissions`);
       
-      // Debug the response in production
-      if (import.meta.env.PROD) {
-        console.log('API Response Status:', response.status);
-        console.log('API Response Structure:', {
-          hasResults: !!response.data.results,
-          resultsCount: response.data.results?.length || 0,
-          resultsType: response.data.results ? typeof response.data.results : 'undefined'
-        });
-        
-        if (response.data.results && response.data.results.length > 0) {
-          // Check the first item's raw structure
-          const sample = response.data.results[0];
-          console.log('First raw item structure:', {
-            keys: Object.keys(sample),
-            has_submitted_by: 'submitted_by' in sample,
-            submitted_by_value: sample.submitted_by,
-            submitted_by_type: typeof sample.submitted_by
-          });
-        }
-      }
       
       // Process and normalize all data
       const processedData = response.data.results.map(normalizeSubmissionData);

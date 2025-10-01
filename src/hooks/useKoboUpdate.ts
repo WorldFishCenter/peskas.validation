@@ -5,12 +5,12 @@ export const useKoboUpdate = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
 
-  const updateStatus = async (submissionId: string, status: string) => {
+  const updateStatus = async (submissionId: string, status: string, assetId?: string) => {
     try {
       setIsUpdating(true);
       setUpdateMessage(null);
-      
-      const result = await updateValidationStatus(submissionId, status);
+
+      const result = await updateValidationStatus(submissionId, status, assetId);
       setUpdateMessage(result.message);
       return result.success;
     } catch (error) {

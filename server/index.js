@@ -38,15 +38,25 @@ async function connectToMongo() {
 app.get('/api/kobo/submissions', async (req, res) => {
   try {
     const koboAssetId = process.env.KOBO_ASSET_ID;
+    const koboAssetIdV2 = process.env.KOBO_ASSET_ID_V2;
     const koboToken = process.env.KOBO_API_TOKEN;
-    
-    // 1. Fetch submissions from KoboToolbox
-    const koboUrl = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/`;
-    const koboResponse = await axios.get(koboUrl, {
-      headers: {
-        Authorization: `Token ${koboToken}`
-      }
-    });
+
+    // 1. Fetch submissions from both KoboToolbox assets
+    const koboUrl1 = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/`;
+    const koboUrl2 = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetIdV2}/data/`;
+
+    const [koboResponse1, koboResponse2] = await Promise.all([
+      axios.get(koboUrl1, {
+        headers: {
+          Authorization: `Token ${koboToken}`
+        }
+      }),
+      axios.get(koboUrl2, {
+        headers: {
+          Authorization: `Token ${koboToken}`
+        }
+      })
+    ]);
 
     // 2. Fetch alert flags from MongoDB
     const mongoSubmissions = await db.collection('surveys_flags')
@@ -58,30 +68,37 @@ app.get('/api/kobo/submissions', async (req, res) => {
       mongoSubmissions.map(doc => [doc.submission_id, doc])
     );
 
-    // 4. Combine the data
-    const combinedData = koboResponse.data.results.map(koboItem => {
-      const mongoData = mongoDataMap.get(koboItem._id);
-      
-      return {
-        submission_id: koboItem._id,
-        submission_date: koboItem._submission_time,
-        vessel_number: koboItem.vessel_number || '',
-        catch_number: koboItem.catch_number || '',
-        submitted_by: koboItem.submitted_by || koboItem._submitted_by || '',
-        validation_status: koboItem._validation_status?.validation_status?.uid || 
-                         koboItem._validation_status?.uid || 
-                         'validation_status_on_hold',
-        validated_at: koboItem._validation_status?.timestamp || koboItem._submission_time,
-        alert_flag: mongoData?.alert_flag || '',
-        alert_flags: mongoData?.alert_flag ? [mongoData.alert_flag] : []
-      };
-    });
-    
+    // 4. Combine the data from both assets, adding asset_id to track source
+    const processSubmissions = (koboItems, assetId) => {
+      return koboItems.map(koboItem => {
+        const mongoData = mongoDataMap.get(koboItem._id);
+
+        return {
+          submission_id: koboItem._id,
+          submission_date: koboItem._submission_time,
+          vessel_number: koboItem.vessel_number || '',
+          catch_number: koboItem.catch_number || '',
+          submitted_by: koboItem.submitted_by || koboItem._submitted_by || '',
+          validation_status: koboItem._validation_status?.validation_status?.uid ||
+                           koboItem._validation_status?.uid ||
+                           'validation_status_on_hold',
+          validated_at: koboItem._validation_status?.timestamp || koboItem._submission_time,
+          alert_flag: mongoData?.alert_flag || '',
+          alert_flags: mongoData?.alert_flag ? [mongoData.alert_flag] : [],
+          asset_id: assetId
+        };
+      });
+    };
+
+    const combinedData1 = processSubmissions(koboResponse1.data.results, koboAssetId);
+    const combinedData2 = processSubmissions(koboResponse2.data.results, koboAssetIdV2);
+    const allSubmissions = [...combinedData1, ...combinedData2];
+
     res.json({
-      count: koboResponse.data.count,
-      next: koboResponse.data.next,
-      previous: koboResponse.data.previous,
-      results: combinedData
+      count: koboResponse1.data.count + koboResponse2.data.count,
+      next: null,
+      previous: null,
+      results: allSubmissions
     });
   } catch (error) {
     console.error('Error fetching combined data:', error);
@@ -135,17 +152,18 @@ app.post('/api/auth/login', (req, res) => {
 app.get('/api/kobo/edit_url/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const koboAssetId = process.env.KOBO_ASSET_ID;
+    const { asset_id } = req.query;
+    const koboAssetId = asset_id || process.env.KOBO_ASSET_ID;
     const koboToken = process.env.KOBO_API_TOKEN;
-    
+
     const url = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/${id}/enketo/edit/?return_url=false`;
-    
+
     const response = await axios.get(url, {
       headers: {
         Authorization: `Token ${koboToken}`
       }
     });
-    
+
     res.json({ url: response.data.url });
   } catch (error) {
     console.error('Error generating edit URL:', error);
@@ -157,31 +175,31 @@ app.get('/api/kobo/edit_url/:id', async (req, res) => {
 app.patch('/api/kobo/validation_status/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { validation_status } = req.body;
-    const koboAssetId = process.env.KOBO_ASSET_ID;
+    const { validation_status, asset_id } = req.body;
+    const koboAssetId = asset_id || process.env.KOBO_ASSET_ID;
     const koboToken = process.env.KOBO_API_TOKEN;
-    
+
     const url = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/${id}/validation_status/`;
-    
+
     // Create form data
     const formData = new URLSearchParams();
     formData.append('validation_status.uid', validation_status);
-    
+
     const response = await axios.patch(url, formData.toString(), {
       headers: {
         Authorization: `Token ${koboToken}`,
         'Content-Type': 'application/x-www-form-urlencoded'
       }
     });
-    
-    res.json({ 
-      success: true, 
-      message: `Validation status correctly updated for submission ${id}` 
+
+    res.json({
+      success: true,
+      message: `Validation status correctly updated for submission ${id}`
     });
   } catch (error) {
     console.error('Error updating validation status:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: 'Failed to update validation status',
       message: `An error occurred: ${error.message}`
     });
@@ -192,17 +210,27 @@ app.patch('/api/kobo/validation_status/:id', async (req, res) => {
 app.get('/api/enumerator-stats', async (req, res) => {
   try {
     const koboAssetId = process.env.KOBO_ASSET_ID;
+    const koboAssetIdV2 = process.env.KOBO_ASSET_ID_V2;
     const koboToken = process.env.KOBO_API_TOKEN;
-    
-    // Fetch submissions from KoboToolbox
-    const koboUrl = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/`;
-    const koboResponse = await axios.get(koboUrl, {
-      headers: {
-        Authorization: `Token ${koboToken}`
-      }
-    });
 
-    const submissions = koboResponse.data.results;
+    // Fetch submissions from both KoboToolbox assets
+    const koboUrl1 = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/`;
+    const koboUrl2 = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetIdV2}/data/`;
+
+    const [koboResponse1, koboResponse2] = await Promise.all([
+      axios.get(koboUrl1, {
+        headers: {
+          Authorization: `Token ${koboToken}`
+        }
+      }),
+      axios.get(koboUrl2, {
+        headers: {
+          Authorization: `Token ${koboToken}`
+        }
+      })
+    ]);
+
+    const submissions = [...koboResponse1.data.results, ...koboResponse2.data.results];
     
     // Group by enumerator
     const enumeratorStats = {};
@@ -269,11 +297,25 @@ app.get('/api/enumerator-stats', async (req, res) => {
         totalSubmissions: stats.totalSubmissions,
         submissionsWithAlerts: stats.submissionsWithAlerts,
         errorRate: (stats.submissionsWithAlerts / stats.totalSubmissions) * 100,
-        alertFrequency: Object.entries(stats.alertFrequency).map(([code, count]) => ({
-          code,
-          count,
-          description: ALERT_FLAG_DESCRIPTIONS[code] || 'Unknown alert'
-        })).sort((a, b) => b.count - a.count),
+        alertFrequency: Object.entries(stats.alertFrequency).map(([code, count]) => {
+          const ALERT_FLAG_DESCRIPTIONS = {
+            '1': 'A catch was reported, but no taxon was specified',
+            '2': 'A taxon was specified, but no information was provided about the number of fish, their size, or their weight',
+            '3': 'Length is smaller than minimum length treshold for the selected catch taxon',
+            '4': 'Length exceeds maximum length treshold for the selected catch taxon',
+            '5': 'Bucket weight exceeds maximum (50kg)',
+            '6': 'Number of buckets exceeds maximum (300)',
+            '7': 'Number of individuals exceeds maximum (100)',
+            '8': 'Price per kg exceeds 81420 TZS',
+            '9': 'Catch per unit effort exceeds maximum (30kg per hour per fisher)',
+            '10': 'Revenue per unit effort exceeds maximum (81420 TZS per hour per fisher)'
+          };
+          return {
+            code,
+            count,
+            description: ALERT_FLAG_DESCRIPTIONS[code] || 'Unknown alert'
+          };
+        }).sort((a, b) => b.count - a.count),
         submissionTrend: Object.entries(stats.submissionsByDate)
           .map(([date, count]) => ({ date, count }))
           .sort((a, b) => new Date(a.date) - new Date(b.date)),
@@ -323,19 +365,29 @@ app.post('/api/admin/refresh-enumerator-stats', async (req, res) => {
     // Here we would typically implement the data migration logic
     // For this example, we'll just fetch the data from Kobo and MongoDB and rebuild the stats
     const koboAssetId = process.env.KOBO_ASSET_ID;
+    const koboAssetIdV2 = process.env.KOBO_ASSET_ID_V2;
     const koboToken = process.env.KOBO_API_TOKEN;
-    
-    if (!koboAssetId || !koboToken) {
+
+    if (!koboAssetId || !koboAssetIdV2 || !koboToken) {
       return res.status(500).json({ error: 'Missing KoboToolbox configuration' });
     }
-    
-    // 1. Fetch submissions from KoboToolbox
-    const koboUrl = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/`;
-    const koboResponse = await axios.get(koboUrl, {
-      headers: {
-        Authorization: `Token ${koboToken}`
-      }
-    });
+
+    // 1. Fetch submissions from both KoboToolbox assets
+    const koboUrl1 = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/`;
+    const koboUrl2 = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetIdV2}/data/`;
+
+    const [koboResponse1, koboResponse2] = await Promise.all([
+      axios.get(koboUrl1, {
+        headers: {
+          Authorization: `Token ${koboToken}`
+        }
+      }),
+      axios.get(koboUrl2, {
+        headers: {
+          Authorization: `Token ${koboToken}`
+        }
+      })
+    ]);
 
     // 2. Fetch alert flags from MongoDB
     const mongoSubmissions = await db.collection('surveys_flags')
@@ -346,11 +398,12 @@ app.post('/api/admin/refresh-enumerator-stats', async (req, res) => {
     const mongoDataMap = new Map(
       mongoSubmissions.map(doc => [doc.submission_id, doc])
     );
-    
+
     // 4. Group by enumerator
     const enumeratorStats = {};
-    
-    koboResponse.data.results.forEach(submission => {
+
+    const allSubmissions = [...koboResponse1.data.results, ...koboResponse2.data.results];
+    allSubmissions.forEach(submission => {
       const enumerator = submission.submitted_by || submission._submitted_by || 'Unknown';
       const mongoData = mongoDataMap.get(submission._id);
       const alertFlag = mongoData?.alert_flag || '';
