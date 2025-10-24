@@ -2,7 +2,7 @@ const express = require('express');
 const { MongoClient } = require('mongodb');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const path = require('path');
+// const path = require('path'); // Currently unused
 const axios = require('axios');
 
 // Load .env file from parent directory
@@ -41,22 +41,36 @@ app.get('/api/kobo/submissions', async (req, res) => {
     const koboAssetIdV2 = process.env.KOBO_ASSET_ID_V2;
     const koboToken = process.env.KOBO_API_TOKEN;
 
-    // 1. Fetch submissions from both KoboToolbox assets
-    const koboUrl1 = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/`;
-    const koboUrl2 = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetIdV2}/data/`;
+    if (!koboAssetId || !koboToken) {
+      return res.status(500).json({ error: 'Missing KoboToolbox configuration' });
+    }
 
-    const [koboResponse1, koboResponse2] = await Promise.all([
+    // 1. Fetch submissions from KoboToolbox assets (V2 is optional for backward compatibility)
+    const koboUrl1 = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/`;
+    
+    const requests = [
       axios.get(koboUrl1, {
         headers: {
           Authorization: `Token ${koboToken}`
         }
-      }),
-      axios.get(koboUrl2, {
-        headers: {
-          Authorization: `Token ${koboToken}`
-        }
       })
-    ]);
+    ];
+    
+    // Only fetch from second asset if V2 ID is configured
+    if (koboAssetIdV2) {
+      const koboUrl2 = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetIdV2}/data/`;
+      requests.push(
+        axios.get(koboUrl2, {
+          headers: {
+            Authorization: `Token ${koboToken}`
+          }
+        })
+      );
+    }
+
+    const responses = await Promise.all(requests);
+    const koboResponse1 = responses[0];
+    const koboResponse2 = responses[1]; // Will be undefined if V2 not configured
 
     // 2. Fetch alert flags from MongoDB
     const mongoSubmissions = await db.collection('surveys_flags')
@@ -91,11 +105,18 @@ app.get('/api/kobo/submissions', async (req, res) => {
     };
 
     const combinedData1 = processSubmissions(koboResponse1.data.results, koboAssetId);
-    const combinedData2 = processSubmissions(koboResponse2.data.results, koboAssetIdV2);
-    const allSubmissions = [...combinedData1, ...combinedData2];
+    let allSubmissions = [...combinedData1];
+    let totalCount = koboResponse1.data.count;
+    
+    // Only process second asset if it exists
+    if (koboResponse2) {
+      const combinedData2 = processSubmissions(koboResponse2.data.results, koboAssetIdV2);
+      allSubmissions = [...combinedData1, ...combinedData2];
+      totalCount = koboResponse1.data.count + koboResponse2.data.count;
+    }
 
     res.json({
-      count: koboResponse1.data.count + koboResponse2.data.count,
+      count: totalCount,
       next: null,
       previous: null,
       results: allSubmissions
@@ -185,7 +206,7 @@ app.patch('/api/kobo/validation_status/:id', async (req, res) => {
     const formData = new URLSearchParams();
     formData.append('validation_status.uid', validation_status);
 
-    const response = await axios.patch(url, formData.toString(), {
+    await axios.patch(url, formData.toString(), {
       headers: {
         Authorization: `Token ${koboToken}`,
         'Content-Type': 'application/x-www-form-urlencoded'
@@ -213,24 +234,40 @@ app.get('/api/enumerator-stats', async (req, res) => {
     const koboAssetIdV2 = process.env.KOBO_ASSET_ID_V2;
     const koboToken = process.env.KOBO_API_TOKEN;
 
-    // Fetch submissions from both KoboToolbox assets
-    const koboUrl1 = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/`;
-    const koboUrl2 = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetIdV2}/data/`;
+    if (!koboAssetId || !koboToken) {
+      return res.status(500).json({ error: 'Missing KoboToolbox configuration' });
+    }
 
-    const [koboResponse1, koboResponse2] = await Promise.all([
+    // Fetch submissions from KoboToolbox assets (V2 is optional for backward compatibility)
+    const koboUrl1 = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/`;
+    
+    const requests = [
       axios.get(koboUrl1, {
         headers: {
           Authorization: `Token ${koboToken}`
         }
-      }),
-      axios.get(koboUrl2, {
-        headers: {
-          Authorization: `Token ${koboToken}`
-        }
       })
-    ]);
+    ];
+    
+    // Only fetch from second asset if V2 ID is configured
+    if (koboAssetIdV2) {
+      const koboUrl2 = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetIdV2}/data/`;
+      requests.push(
+        axios.get(koboUrl2, {
+          headers: {
+            Authorization: `Token ${koboToken}`
+          }
+        })
+      );
+    }
 
-    const submissions = [...koboResponse1.data.results, ...koboResponse2.data.results];
+    const responses = await Promise.all(requests);
+    let submissions = responses[0].data.results;
+    
+    // Add second asset data if available
+    if (responses[1]) {
+      submissions = [...submissions, ...responses[1].data.results];
+    }
     
     // Group by enumerator
     const enumeratorStats = {};
@@ -368,26 +405,36 @@ app.post('/api/admin/refresh-enumerator-stats', async (req, res) => {
     const koboAssetIdV2 = process.env.KOBO_ASSET_ID_V2;
     const koboToken = process.env.KOBO_API_TOKEN;
 
-    if (!koboAssetId || !koboAssetIdV2 || !koboToken) {
+    if (!koboAssetId || !koboToken) {
       return res.status(500).json({ error: 'Missing KoboToolbox configuration' });
     }
 
-    // 1. Fetch submissions from both KoboToolbox assets
+    // 1. Fetch submissions from KoboToolbox assets (V2 is optional for backward compatibility)
     const koboUrl1 = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetId}/data/`;
-    const koboUrl2 = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetIdV2}/data/`;
-
-    const [koboResponse1, koboResponse2] = await Promise.all([
+    
+    const requests = [
       axios.get(koboUrl1, {
         headers: {
           Authorization: `Token ${koboToken}`
         }
-      }),
-      axios.get(koboUrl2, {
-        headers: {
-          Authorization: `Token ${koboToken}`
-        }
       })
-    ]);
+    ];
+    
+    // Only fetch from second asset if V2 ID is configured
+    if (koboAssetIdV2) {
+      const koboUrl2 = `https://eu.kobotoolbox.org/api/v2/assets/${koboAssetIdV2}/data/`;
+      requests.push(
+        axios.get(koboUrl2, {
+          headers: {
+            Authorization: `Token ${koboToken}`
+          }
+        })
+      );
+    }
+
+    const responses = await Promise.all(requests);
+    const koboResponse1 = responses[0];
+    const koboResponse2 = responses[1]; // Will be undefined if V2 not configured
 
     // 2. Fetch alert flags from MongoDB
     const mongoSubmissions = await db.collection('surveys_flags')
@@ -402,7 +449,12 @@ app.post('/api/admin/refresh-enumerator-stats', async (req, res) => {
     // 4. Group by enumerator
     const enumeratorStats = {};
 
-    const allSubmissions = [...koboResponse1.data.results, ...koboResponse2.data.results];
+    let allSubmissions = [...koboResponse1.data.results];
+    
+    // Add second asset data if available
+    if (koboResponse2) {
+      allSubmissions = [...allSubmissions, ...koboResponse2.data.results];
+    }
     allSubmissions.forEach(submission => {
       const enumerator = submission.submitted_by || submission._submitted_by || 'Unknown';
       const mongoData = mongoDataMap.get(submission._id);

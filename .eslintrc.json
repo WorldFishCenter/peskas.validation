@@ -22,7 +22,23 @@
   },
   "overrides": [
     {
-      "files": ["api/**/*.js"],
+      "files": ["**/*.ts", "**/*.tsx"],
+      "parser": "@typescript-eslint/parser",
+      "plugins": ["@typescript-eslint"],
+      "rules": {
+        "no-unused-vars": "off",
+        "no-undef": "off",
+        "no-console": ["warn", { "allow": ["warn", "error", "log"] }]
+      }
+    },
+    {
+      "files": ["api/**/*.js", "server/**/*.js"],
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
+      "files": ["src/utils/debug.ts"],
       "rules": {
         "no-console": "off"
       }
@@ -30,8 +46,6 @@
   ],
   "ignorePatterns": [
     "dist/",
-    "node_modules/",
-    "server/",
-    "src/"
+    "node_modules/"
   ]
 }
