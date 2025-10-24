@@ -26,7 +26,7 @@ export default async function handler(req, res) {
       .find({})
       .toArray();
     
-    console.log(`Fetched ${stats.length} enumerator stats records from MongoDB`);
+    // Successfully fetched enumerator stats
     
     // Return the data
     res.status(200).json(stats);

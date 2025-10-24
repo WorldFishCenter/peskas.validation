@@ -10,6 +10,7 @@ export interface Submission {
   validated_at: string;
   alert_flag?: string;
   alert_flags?: string[];
+  asset_id?: string;
 }
 
 export type ValidationStatus =

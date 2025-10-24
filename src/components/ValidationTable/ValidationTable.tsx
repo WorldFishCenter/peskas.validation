@@ -89,20 +89,6 @@ const ValidationTable: React.FC = () => {
     if (submissions && submissions.length > 0) {
       logData('Submissions data received:', submissions.slice(0, 3));
       
-      // Log more details in production
-      if (import.meta.env.PROD) {
-        console.log('ENVIRONMENT:', import.meta.env.MODE);
-        console.log('Total submissions:', submissions.length);
-        
-        // Check the first few submitted_by values
-        const submittedByValues = submissions.slice(0, 5).map((s, i) => ({
-          index: i,
-          submission_id: s.submission_id,
-          submitted_by: s.submitted_by || 'MISSING',
-          validation_status: s.validation_status
-        }));
-        console.log('Sample submitted_by values:', submittedByValues);
-      }
       
       const withAlerts = submissions.filter(
         s => s.alert_flag && s.alert_flag.trim() !== ''
@@ -144,16 +130,6 @@ const ValidationTable: React.FC = () => {
           const row = info.row.original;
           const value = info.getValue();
           
-          // Add detailed debug information in production
-          if (import.meta.env.PROD) {
-            console.log(`Cell rendering for row ${row.submission_id}:`, {
-              accessorValue: value,
-              directRowValue: row.submitted_by,
-              valueType: typeof value,
-              rowValueType: typeof row.submitted_by,
-              isEmpty: !value || value === ''
-            });
-          }
           
           // Try multiple ways to get the value
           let displayValue = value;
@@ -284,10 +260,10 @@ const ValidationTable: React.FC = () => {
 
   const handleUpdateStatus = async () => {
     if (!selectedRow) return;
-    
+
     setIsUpdating(true);
     try {
-      const result = await updateValidationStatus(selectedRow.submission_id, statusToUpdate);
+      const result = await updateValidationStatus(selectedRow.submission_id, statusToUpdate, selectedRow.asset_id);
       setUpdateMessage(result.message);
       
       if (result.success) {

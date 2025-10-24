@@ -9,6 +9,7 @@ interface Submission {
   alert_number?: string;
   validation_status: string;
   validated_at: string;
+  asset_id?: string;
 }
 
 interface StatusUpdateFormProps {
@@ -50,13 +51,13 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
   // Function to generate the URL when explicitly requested - with proper safeguards
   const handleGenerateEditUrl = async () => {
     if (!selectedSubmission?.submission_id) return;
-    
+
     // Prevent multiple clicks
     if (isLoadingUrl) return;
-    
+
     setIsLoadingUrl(true);
     try {
-      const url = await generateEditUrl(selectedSubmission.submission_id);
+      const url = await generateEditUrl(selectedSubmission.submission_id, selectedSubmission.asset_id);
       
       // Set the URL regardless of loading state (remove the problematic check)
       setEditUrl(url);

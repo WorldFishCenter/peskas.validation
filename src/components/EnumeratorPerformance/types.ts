@@ -1,5 +1,5 @@
 export interface SubmissionData {
-  submission_id: number;
+  submission_id: string;
   submitted_by: string;
   submission_date: string;
   alert_flag: string | null;
