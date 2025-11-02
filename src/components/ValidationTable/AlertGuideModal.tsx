@@ -3,9 +3,12 @@ import { ALERT_FLAG_DESCRIPTIONS } from '../../types/validation';
 
 interface AlertGuideModalProps {
   onClose: () => void;
+  alertCodes?: Record<string, string>;
 }
 
-const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose }) => {
+const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose, alertCodes }) => {
+  // Use provided alert codes or fall back to default hardcoded ones
+  const displayCodes = alertCodes && Object.keys(alertCodes).length > 0 ? alertCodes : ALERT_FLAG_DESCRIPTIONS;
   return (
     <div className="modal modal-blur show d-block" tabIndex={-1} role="dialog">
       <div className="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -39,7 +42,7 @@ const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.entries(ALERT_FLAG_DESCRIPTIONS).map(([code, description]) => (
+                  {Object.entries(displayCodes).map(([code, description]) => (
                     <tr key={code}>
                       <td className="align-middle text-center">
                         <span

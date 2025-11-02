@@ -32,4 +32,11 @@ yarn-error.log*
 
 # OS files
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Documentation - ignore all .md files except NEWS.md
+*.md
+!NEWS.md
+
+# Scripts - ignore all scripts (contain sensitive setup/migration tools)
+scripts/

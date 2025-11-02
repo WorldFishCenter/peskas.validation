@@ -11,6 +11,8 @@ export interface Submission {
   alert_flag?: string;
   alert_flags?: string[];
   asset_id?: string;
+  survey_name?: string;
+  survey_country?: string;
 }
 
 export type ValidationStatus =

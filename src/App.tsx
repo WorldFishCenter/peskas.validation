@@ -6,6 +6,7 @@ import ValidationTable from './components/ValidationTable/ValidationTable';
 import MainLayout from './components/Layout/MainLayout';
 import ErrorBoundary from './components/ErrorBoundary';
 import EnumeratorPerformance from './components/EnumeratorPerformance/EnumeratorPerformance';
+import AdminUsers from './components/Admin/AdminUsers';
 
 // Remove or fix these imports
 // import '@tabler/core/dist/css/tabler.min.css';
@@ -26,6 +27,11 @@ const AppRoutes: React.FC = () => {
       <Route path="/enumerators" element={
         <ErrorBoundary>
           <EnumeratorPerformance />
+        </ErrorBoundary>
+      } />
+      <Route path="/admin/users" element={
+        <ErrorBoundary>
+          <AdminUsers />
         </ErrorBoundary>
       } />
     </Routes>

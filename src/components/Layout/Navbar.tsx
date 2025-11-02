@@ -47,6 +47,23 @@ const Navbar: React.FC = () => {
                   <span className="nav-link-title">Enumerator Performance</span>
                 </Link>
               </li>
+              {/* Admin-only Users Management Link */}
+              {user?.role === 'admin' && (
+                <li className="nav-item">
+                  <Link to="/admin/users" className={`nav-link px-3 ${location.pathname === '/admin/users' ? 'active font-weight-bold' : ''}`}>
+                    <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-users" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        <path d="M21 21v-2a4 4 0 0 0 -3 -3.85"></path>
+                      </svg>
+                    </span>
+                    <span className="nav-link-title">Users</span>
+                  </Link>
+                </li>
+              )}
             </ul>
           </div>
         </div>
@@ -70,8 +87,8 @@ const Navbar: React.FC = () => {
           <div className="nav-item dropdown">
             <a href="#" className="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="Open user menu">
               <div className="d-none d-xl-block ps-2">
-                <div>{user}</div>
-                <div className="mt-1 small text-muted">Administrator</div>
+                <div>{user?.username}</div>
+                <div className="mt-1 small text-muted">{user?.role === 'admin' ? 'Administrator' : 'User'}</div>
               </div>
             </a>
             <div className="dropdown-menu dropdown-menu-end dropdown-menu-arrow">

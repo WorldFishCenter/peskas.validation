@@ -6,9 +6,15 @@ interface StatusBadgeProps {
 }
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-  // Use exact status or default
-  const style = STATUS_STYLES[(status || 'default') as ValidationStatus];
-  
+  // Normalize status and fallback to default if not found
+  const normalizedStatus = (status || 'default') as ValidationStatus;
+  const style = STATUS_STYLES[normalizedStatus] || STATUS_STYLES['default'];
+
+  // Debug log for unexpected statuses
+  if (!STATUS_STYLES[normalizedStatus] && status) {
+    console.warn(`Unknown validation status: "${status}". Using default style.`);
+  }
+
   return (
     <span
       style={{

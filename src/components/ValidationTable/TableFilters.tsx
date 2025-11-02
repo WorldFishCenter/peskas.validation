@@ -1,3 +1,4 @@
+import React from 'react';
 import { Table } from '@tanstack/react-table';
 import { VALIDATION_STATUS_OPTIONS } from '../../types/validation';
 
@@ -14,10 +15,10 @@ interface TableFiltersProps<T> {
   maxDate: string;
 }
 
-const TableFilters = <T,>({ 
-  table, 
-  globalFilter, 
-  setGlobalFilter, 
+const TableFilters = <T,>({
+  table,
+  globalFilter,
+  setGlobalFilter,
   resetFilters,
   fromDate,
   toDate,
@@ -29,6 +30,17 @@ const TableFilters = <T,>({
   // Get columns with defensive access
   const statusColumn = table.getColumn('validation_status');
   const alertColumn = table.getColumn('alert_flag');
+  const surveyColumn = table.getColumn('survey_name');
+
+  // Get unique surveys from table data
+  const uniqueSurveys = React.useMemo(() => {
+    const surveys = new Set<string>();
+    table.getRowModel().rows.forEach(row => {
+      const surveyName = (row.original as any).survey_name;
+      if (surveyName) surveys.add(surveyName);
+    });
+    return Array.from(surveys).sort();
+  }, [table]);
 
   return (
     <div className="d-flex flex-row flex-nowrap gap-2 mt-2">
@@ -58,7 +70,29 @@ const TableFilters = <T,>({
           </button>
         )}
       </div>
-      
+
+      {/* Survey Filter */}
+      {uniqueSurveys.length > 1 && (
+        <div className="input-group" style={{ maxWidth: '250px' }}>
+          <span className="input-group-text">Survey</span>
+          <select
+            className="form-select"
+            value={(surveyColumn?.getFilterValue() as string) || ''}
+            onChange={e =>
+              surveyColumn?.setFilterValue(e.target.value || undefined)
+            }
+            disabled={!surveyColumn}
+          >
+            <option value="">All Surveys</option>
+            {uniqueSurveys.map(survey => (
+              <option key={survey} value={survey}>
+                {survey}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Status Filter - with defensive checks */}
       <div className="input-group" style={{ maxWidth: '230px' }}>
         <span className="input-group-text">Status</span>

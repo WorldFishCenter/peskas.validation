@@ -1,9 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { login as apiLogin } from '../../api/auth';
 
+interface User {
+  username: string;
+  role: 'admin' | 'user';
+  name?: string;
+  country?: string[];
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: string | null;
+  user: User | null;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   loading: boolean;
@@ -21,15 +28,21 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     // Check if user is already logged in
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUser(storedUser);
-      setIsAuthenticated(true);
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setIsAuthenticated(true);
+      } catch (error) {
+        // Invalid stored user, clear it
+        localStorage.removeItem('user');
+      }
     }
     setLoading(false);
   }, []);
@@ -38,12 +51,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       // Call login API
-      const success = await apiLogin(username, password);
-      
-      if (success) {
-        setUser(username);
+      const result = await apiLogin(username, password);
+
+      if (result.success && result.user) {
+        const userData: User = {
+          username: result.user.username,
+          role: result.user.role as 'admin' | 'user',
+          name: result.user.name,
+          country: result.user.country
+        };
+        setUser(userData);
         setIsAuthenticated(true);
-        localStorage.setItem('user', username);
+        localStorage.setItem('user', JSON.stringify(userData));
         return true;
       }
       return false;

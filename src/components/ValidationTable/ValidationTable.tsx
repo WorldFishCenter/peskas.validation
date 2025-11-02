@@ -14,7 +14,7 @@ import {
 } from '@tanstack/react-table';
 import { rankItem } from '@tanstack/match-sorter-utils';
 import StatusUpdateForm from './StatusUpdateForm';
-import { useFetchSubmissions } from '../../api/api';
+import { useFetchSubmissions, useFetchAlertCodes } from '../../api/api';
 import { logData } from '../../utils/debug';
 import { updateValidationStatus } from '../../api/koboToolbox';
 import { Submission } from '../../types/validation';
@@ -85,6 +85,10 @@ const ValidationTable: React.FC = () => {
   const [toDate, setToDate] = useState('');
   const [minDate, maxDate] = getMinMaxDate(submissions);
 
+  // Get asset_id from first submission to fetch alert codes
+  const assetId = submissions && submissions.length > 0 ? submissions[0].asset_id : null;
+  const { alertCodes } = useFetchAlertCodes(assetId || null);
+
   useEffect(() => {
     if (submissions && submissions.length > 0) {
       logData('Submissions data received:', submissions.slice(0, 3));
@@ -119,6 +123,28 @@ const ValidationTable: React.FC = () => {
         accessorKey: 'submission_id',
         header: () => 'SUBMISSION ID',
         cell: info => info.getValue(),
+        enableSorting: true,
+        enableColumnFilter: true,
+        filterFn: fuzzyFilter,
+      },
+      {
+        accessorKey: 'survey_name',
+        header: () => 'SURVEY',
+        cell: info => {
+          const row = info.row.original;
+          const surveyName = row.survey_name || 'Unknown';
+          const country = row.survey_country || '';
+          return (
+            <div>
+              <div className="text-truncate" style={{ maxWidth: '200px' }} title={surveyName}>
+                {surveyName}
+              </div>
+              {country && (
+                <small className="text-muted">{country}</small>
+              )}
+            </div>
+          );
+        },
         enableSorting: true,
         enableColumnFilter: true,
         filterFn: fuzzyFilter,
@@ -510,7 +536,10 @@ const ValidationTable: React.FC = () => {
       
       {/* Alert Guide Modal */}
       {showAlertGuide && (
-        <AlertGuideModal onClose={() => setShowAlertGuide(false)} />
+        <AlertGuideModal
+          onClose={() => setShowAlertGuide(false)}
+          alertCodes={alertCodes}
+        />
       )}
     </div>
   );

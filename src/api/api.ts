@@ -65,15 +65,16 @@ export const useUpdateValidationStatus = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
 
-  const updateStatus = async (submissionId: string, status: string) => {
+  const updateStatus = async (submissionId: string, status: string, assetId?: string) => {
     try {
       setIsUpdating(true);
       setUpdateMessage(null);
-      
+
       const response = await axios.patch(`${API_BASE_URL}/submissions/${submissionId}/validation_status`, {
-        validation_status: status
+        validation_status: status,
+        asset_id: assetId
       });
-      
+
       setUpdateMessage(response.data.message || `Validation status correctly updated for submission ${submissionId}`);
       return true;
     } catch (err) {
@@ -174,4 +175,46 @@ export const refreshEnumeratorStats = async (adminToken: string) => {
       message: (error as any).response?.data?.error || 'Failed to refresh enumerator statistics'
     };
   }
+};
+
+// Hook to fetch survey-specific alert codes
+export const useFetchAlertCodes = (assetId: string | null) => {
+  const [alertCodes, setAlertCodes] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!assetId) return;
+
+    const fetchAlertCodes = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await axios.get(`${API_BASE_URL}/surveys/${assetId}/alert-codes`);
+        setAlertCodes(response.data.alert_codes);
+      } catch (err) {
+        console.error('Error fetching alert codes:', err);
+        setError('Failed to fetch alert codes');
+        // Set default alert codes on error
+        setAlertCodes({
+          "1": "A catch was reported, but no taxon was specified",
+          "2": "A taxon was specified, but no information was provided",
+          "3": "Length is smaller than minimum length threshold",
+          "4": "Length exceeds maximum length threshold",
+          "5": "Bucket weight exceeds maximum (50kg)",
+          "6": "Number of buckets exceeds maximum (300)",
+          "7": "Number of individuals exceeds maximum (100)",
+          "8": "Price per kg exceeds threshold",
+          "9": "Catch per unit effort exceeds maximum",
+          "10": "Revenue per unit effort exceeds threshold"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAlertCodes();
+  }, [assetId]);
+
+  return { alertCodes, isLoading, error };
 }; 

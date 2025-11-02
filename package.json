@@ -1,7 +1,7 @@
 {
   "name": "validation-zanzibar",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev:frontend": "vite",
@@ -22,6 +22,7 @@
     "@tanstack/react-table": "^8.10.7",
     "@types/highcharts": "^5.0.44",
     "axios": "^1.6.2",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
