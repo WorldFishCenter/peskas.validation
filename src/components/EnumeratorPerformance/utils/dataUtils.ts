@@ -127,9 +127,7 @@ export const applyTimeFiltering = (
   timeframe: TimeframeType
 ): EnumeratorData[] => {
   if (enumerators.length === 0) return [];
-  
-  console.log(`Applying timeframe filter: ${timeframe}`);
-  
+
   // Recalculate stats based on time filter
   return enumerators.map(enumerator => {
     try {
@@ -156,19 +154,10 @@ export const applyTimeFiltering = (
       ).length;
       
       // Calculate new error rate based on filtered data
-      const errorRate = filteredSubmissions.length > 0 
-        ? (submissionsWithAlerts / filteredSubmissions.length) * 100 
+      const errorRate = filteredSubmissions.length > 0
+        ? (submissionsWithAlerts / filteredSubmissions.length) * 100
         : 0;
-      
-      // Debug information when all submissions show 100% quality
-      if (filteredSubmissions.length > 0 && submissionsWithAlerts === 0 && timeframe !== 'all') {
-        console.log(`Enumerator ${enumerator.name} has ${filteredSubmissions.length} submissions in timeframe ${timeframe} with 0 alerts`);
-        // Log a sample submission date to verify filtering logic
-        if (filteredSubmissions.length > 0) {
-          console.log('Sample submission date:', filteredSubmissions[0].submission_date);
-        }
-      }
-      
+
       return {
         ...enumerator,
         filteredSubmissions,

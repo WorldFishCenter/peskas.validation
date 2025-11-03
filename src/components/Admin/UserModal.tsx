@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { IconInfoCircle } from '@tabler/icons-react';
 import { createUser, updateUser, CreateUserPayload, User, Survey } from '../../api/admin';
 
 interface UserModalProps {
@@ -90,7 +91,7 @@ const UserModal: React.FC<UserModalProps> = ({ mode, user, surveys, onClose, onS
       <div className="modal-backdrop fade show" onClick={onClose}></div>
 
       {/* Modal */}
-      <div className="modal modal-blur fade show" style={{ display: 'block' }} tabIndex={-1}>
+      <div className="modal modal-blur fade show d-block" tabIndex={-1}>
         <div className="modal-dialog modal-lg modal-dialog-centered">
           <div className="modal-content">
             <div className="modal-header">
@@ -188,12 +189,7 @@ const UserModal: React.FC<UserModalProps> = ({ mode, user, surveys, onClose, onS
                 </div>
 
                 <div className="alert alert-info">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="icon alert-icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                    <circle cx="12" cy="12" r="9"></circle>
-                    <line x1="12" y1="8" x2="12" y2="12"></line>
-                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                  </svg>
+                  <IconInfoCircle className="icon alert-icon" size={24} stroke={2} />
                   <div>
                     <strong>Survey Permissions:</strong> Survey assignments are managed through Airtable and synced automatically.
                     {role === 'admin' && ' Administrators have access to all surveys.'}

@@ -18,9 +18,6 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = ({
     return total > 0; // Only include enumerators with at least 1 submission
   });
 
-  // Log what we're actually displaying
-  console.log(`Volume chart showing ${filteredEnumerators.length} enumerators with submissions in selected date range`);
-
   // Generate chart options for submission volume by enumerator
   const chartOptions: Highcharts.Options = {
     chart: {

@@ -1,6 +1,8 @@
 import React from 'react';
 import { Table } from '@tanstack/react-table';
+import { IconSearch } from '@tabler/icons-react';
 import { VALIDATION_STATUS_OPTIONS } from '../../types/validation';
+import { getCountryFlag, getCountryName } from '../../utils/countryMetadata';
 
 interface TableFiltersProps<T> {
   table: Table<T>;
@@ -31,6 +33,7 @@ const TableFilters = <T,>({
   const statusColumn = table.getColumn('validation_status');
   const alertColumn = table.getColumn('alert_flag');
   const surveyColumn = table.getColumn('survey_name');
+  const countryColumn = table.getColumn('survey_country');
 
   // Get unique surveys from table data
   const uniqueSurveys = React.useMemo(() => {
@@ -42,118 +45,154 @@ const TableFilters = <T,>({
     return Array.from(surveys).sort();
   }, [table]);
 
+  // Get unique countries from table data
+  const uniqueCountries = React.useMemo(() => {
+    const countries = new Set<string>();
+    table.getRowModel().rows.forEach(row => {
+      const countryCode = (row.original as any).survey_country;
+      if (countryCode) countries.add(countryCode);
+    });
+    return Array.from(countries).sort();
+  }, [table]);
+
   return (
-    <div className="d-flex flex-row flex-nowrap gap-2 mt-2">
+    <div className="d-flex flex-wrap gap-2 align-items-end">
       {/* Global Search */}
-      <div className="input-group" style={{ maxWidth: '300px' }}>
-        <span className="input-group-text">
-          <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-            <circle cx="10" cy="10" r="7" />
-            <line x1="21" y1="21" x2="15" y2="15" />
-          </svg>
-        </span>
-        <input
-          type="text"
-          className="form-control"
-          placeholder="Search all columns..."
-          value={globalFilter ?? ''}
-          onChange={e => setGlobalFilter(e.target.value)}
-        />
-        {globalFilter && (
-          <button
-            className="btn btn-outline-secondary"
-            type="button"
-            onClick={() => setGlobalFilter('')}
-          >
-            ×
-          </button>
-        )}
+      <div className="flex-fill">
+        <div className="input-group">
+          <span className="input-group-text">
+            <IconSearch className="icon" size={24} stroke={2} />
+          </span>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Search all columns..."
+            value={globalFilter ?? ''}
+            onChange={e => setGlobalFilter(e.target.value)}
+          />
+          {globalFilter && (
+            <button
+              className="btn btn-outline-secondary"
+              type="button"
+              onClick={() => setGlobalFilter('')}
+            >
+              ×
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Survey Filter */}
       {uniqueSurveys.length > 1 && (
-        <div className="input-group" style={{ maxWidth: '250px' }}>
-          <span className="input-group-text">Survey</span>
+        <div>
+          <div className="input-group">
+            <span className="input-group-text">Survey</span>
+            <select
+              className="form-select"
+              value={(surveyColumn?.getFilterValue() as string) || ''}
+              onChange={e =>
+                surveyColumn?.setFilterValue(e.target.value || undefined)
+              }
+              disabled={!surveyColumn}
+            >
+              <option value="">All Surveys</option>
+              {uniqueSurveys.map(survey => (
+                <option key={survey} value={survey}>
+                  {survey}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* Country Filter */}
+      {uniqueCountries.length > 1 && (
+        <div>
+          <div className="input-group">
+            <span className="input-group-text">Country</span>
+            <select
+              className="form-select"
+              value={(countryColumn?.getFilterValue() as string) || ''}
+              onChange={e =>
+                countryColumn?.setFilterValue(e.target.value || undefined)
+              }
+              disabled={!countryColumn}
+            >
+              <option value="">All Countries</option>
+              {uniqueCountries.map(countryCode => (
+                <option key={countryCode} value={countryCode}>
+                  {getCountryFlag(countryCode)} {getCountryName(countryCode)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* Status Filter */}
+      <div>
+        <div className="input-group">
+          <span className="input-group-text">Status</span>
           <select
             className="form-select"
-            value={(surveyColumn?.getFilterValue() as string) || ''}
+            value={(statusColumn?.getFilterValue() as string) || ''}
             onChange={e =>
-              surveyColumn?.setFilterValue(e.target.value || undefined)
+              statusColumn?.setFilterValue(e.target.value || undefined)
             }
-            disabled={!surveyColumn}
+            disabled={!statusColumn}
           >
-            <option value="">All Surveys</option>
-            {uniqueSurveys.map(survey => (
-              <option key={survey} value={survey}>
-                {survey}
+            <option value="">All Statuses</option>
+            {VALIDATION_STATUS_OPTIONS.map(status => (
+              <option key={status} value={status}>
+                {status === 'validation_status_approved' && 'APPROVED'}
+                {status === 'validation_status_not_approved' && 'NOT APPROVED'}
+                {status === 'validation_status_on_hold' && 'ON HOLD'}
               </option>
             ))}
           </select>
         </div>
-      )}
+      </div>
 
-      {/* Status Filter - with defensive checks */}
-      <div className="input-group" style={{ maxWidth: '230px' }}>
-        <span className="input-group-text">Status</span>
-        <select
-          className="form-select"
-          value={(statusColumn?.getFilterValue() as string) || ''}
-          onChange={e =>
-            statusColumn?.setFilterValue(e.target.value || undefined)
-          }
-          disabled={!statusColumn}
-        >
-          <option value="">All Statuses</option>
-          {VALIDATION_STATUS_OPTIONS.map(status => (
-            <option key={status} value={status}>
-              {status === 'validation_status_approved' && 'APPROVED'}
-              {status === 'validation_status_not_approved' && 'NOT APPROVED'}
-              {status === 'validation_status_on_hold' && 'ON HOLD'}
-            </option>
-          ))}
-        </select>
+      {/* Alert Filter */}
+      <div>
+        <div className="input-group">
+          <span className="input-group-text">Alert</span>
+          <select
+            className="form-select"
+            value={(alertColumn?.getFilterValue() as string) || 'all'}
+            onChange={e =>
+              alertColumn?.setFilterValue(e.target.value)
+            }
+            disabled={!alertColumn}
+          >
+            <option value="all">All Items</option>
+            <option value="with-alerts">With Alerts</option>
+            <option value="no-alerts">No Alerts</option>
+          </select>
+        </div>
       </div>
-      
-      {/* Alert Filter - with defensive checks */}
-      <div className="input-group" style={{ maxWidth: '200px' }}>
-        <span className="input-group-text">Alert</span>
-        <select
-          className="form-select"
-          value={(alertColumn?.getFilterValue() as string) || 'all'}
-          onChange={e =>
-            alertColumn?.setFilterValue(e.target.value)
-          }
-          disabled={!alertColumn}
-        >
-          <option value="all">All Items</option>
-          <option value="with-alerts">With Alerts</option>
-          <option value="no-alerts">No Alerts</option>
-        </select>
-      </div>
-      
+
       {/* Date Range Filter */}
-      <div className="d-flex align-items-center gap-2" style={{ minWidth: 320 }}>
-        <div className="d-flex flex-column align-items-start" style={{ minWidth: 120 }}>
-          <label htmlFor="from-date" className="form-label mb-0" style={{ fontSize: '0.85em' }}>From</label>
+      <div className="d-flex gap-2">
+        <div>
+          <label htmlFor="from-date" className="form-label mb-1 small">From</label>
           <input
             id="from-date"
             type="date"
             className="form-control"
-            style={{ minWidth: 120, maxWidth: 160 }}
             value={fromDate}
             min={minDate}
             max={toDate || maxDate}
             onChange={e => setFromDate(e.target.value)}
           />
         </div>
-        <div className="d-flex flex-column align-items-start" style={{ minWidth: 120 }}>
-          <label htmlFor="to-date" className="form-label mb-0" style={{ fontSize: '0.85em' }}>To</label>
+        <div>
+          <label htmlFor="to-date" className="form-label mb-1 small">To</label>
           <input
             id="to-date"
             type="date"
             className="form-control"
-            style={{ minWidth: 120, maxWidth: 160 }}
             value={toDate}
             min={fromDate || minDate}
             max={maxDate}
@@ -161,15 +200,17 @@ const TableFilters = <T,>({
           />
         </div>
       </div>
-      
+
       {/* Reset Filters Button */}
       {(globalFilter || (table.getState().columnFilters.length > 0)) && (
-        <button
-          className="btn btn-outline-secondary"
-          onClick={resetFilters}
-        >
-          Reset Filters
-        </button>
+        <div>
+          <button
+            className="btn btn-outline-secondary"
+            onClick={resetFilters}
+          >
+            Reset Filters
+          </button>
+        </div>
       )}
     </div>
   );

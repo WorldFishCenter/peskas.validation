@@ -1,3 +1,77 @@
+# validation-zanzibar 1.1.0
+
+## New Features
+
+- **Survey and Country Filtering in Enumerator Performance Dashboard**
+  - Added survey filter dropdown (shown when 2+ surveys available)
+  - Added country filter dropdown (shown when 2+ countries available)
+  - Country flags displayed in filter options for better visual identification
+  - Filters work seamlessly with existing date range filtering
+  - Backend API enriches enumerator stats with survey_name and survey_country
+
+- **Multi-Country Support in ValidationTable**
+  - Country filter dropdown in table filters (shown when 2+ countries available)
+  - Country flags displayed throughout the interface
+  - Country metadata utilities for consistent flag and name display
+
+## UI/UX Improvements
+
+- **Tabler UI Design System Compliance**
+  - Fixed badge styling in AdminUsers table with proper `text-{color}-fg` classes
+  - Fixed action button responsiveness using `d-none d-xl-inline` classes
+  - Added sort indicator for unsorted state (neutral chevron icon)
+  - Consistent button colors across the application (btn-outline-primary)
+  - Updated pagination button styling for consistency
+
+- **Primary Color Customization**
+  - Changed primary color to cyan (#0891b2) using CSS custom properties
+  - Added Tabler color override system in index.css
+  - Documented process for easy future color changes
+
+- **Navbar Enhancements**
+  - Added country/flag display in navbar based on user permissions
+  - Shows single country flag for single-country users
+  - Shows "Multi-Country" badge for multi-country users
+  - "Alert Codes" button for quick access to validation guide
+
+## Code Quality & Production Readiness
+
+- **Debug Code Removal**
+  - Removed 45+ console.log statements from frontend code
+  - Deleted debug utility file (src/utils/debug.ts) and all usages
+  - Cleaned up Login.tsx (8 console.log statements)
+  - Cleaned up chart components (3 files)
+  - Cleaned up data processing utilities (2 files)
+  - Removed commented code from App.tsx
+
+- **Security Improvements**
+  - Removed .env.production from git tracking (security issue fixed)
+  - Added countryMetadata.ts to git (was untracked)
+
+- **Development Tools**
+  - Installed prettier as devDependency for code formatting
+  - All code follows consistent formatting standards
+
+## Technical Improvements
+
+- **Backend Enhancements**
+  - Enhanced `/api/enumerators-stats` endpoint to include survey metadata
+  - Added survey name and country enrichment for filtering support
+  - Improved data structure for multi-survey/multi-country operations
+
+- **TypeScript Type Definitions**
+  - Updated SubmissionData interface with survey_name and survey_country
+  - Updated EnumeratorData interface for comprehensive filtering support
+  - Better type safety across the application
+
+## Bug Fixes
+
+- Fixed sort indicators in AdminUsers table showing only up/down states
+- Fixed responsive layout issues with action buttons on small screens
+- Improved error handling in data processing utilities
+
+---
+
 # validation-zanzibar 1.0.0
 
 ## New features

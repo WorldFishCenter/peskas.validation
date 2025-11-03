@@ -1,7 +1,7 @@
 {
   "name": "validation-zanzibar",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "dev:frontend": "vite",
@@ -16,7 +16,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@tabler/core": "^1.0.0-beta20",
+    "@tabler/core": "^1.4.0",
     "@tabler/icons-react": "^3.30.0",
     "@tanstack/match-sorter-utils": "^8.19.4",
     "@tanstack/react-table": "^8.10.7",
@@ -44,6 +44,7 @@
     "eslint": "^8.45.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
+    "prettier": "^3.6.2",
     "typescript": "^5.0.2",
     "vite": "^4.4.5"
   }

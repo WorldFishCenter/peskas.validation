@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { IconInfoCircle } from '@tabler/icons-react';
 import { generateEditUrl } from '../../api/koboToolbox';
 
 interface Submission {
@@ -97,15 +98,10 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
   return (
     <div>
       {!hideSubmissionInfo && (
-        <div className="alert alert-info py-2 mb-3" style={{ maxWidth: '400px', borderLeft: '4px solid #0d6efd' }}>
+        <div className="alert alert-info py-2 mb-3 border-start border-blue border-4">
           <div className="d-flex align-items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-info-circle" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-              <circle cx="12" cy="12" r="9" />
-              <line x1="12" y1="8" x2="12.01" y2="8" />
-              <polyline points="11 12 12 12 12 16 13 16" />
-            </svg>
-            <div style={{ fontSize: '0.875rem' }}>
+            <IconInfoCircle className="icon" size={14} stroke={2} />
+            <div className="small">
               Selected submission: {selectedSubmission.submission_id}
             </div>
           </div>
@@ -116,23 +112,20 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
         <div className="col-auto">
           <div className="form-group mb-0">
             <label className="form-label">Assign Status</label>
-            <div style={{ width: '200px' }}>
-              <select 
-                className="form-select"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                <option value="validation_status_approved">Approved</option>
-                <option value="validation_status_not_approved">Not Approved</option>
-                <option value="validation_status_on_hold">On Hold</option>
-              </select>
-            </div>
+            <select
+              className="form-select"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+            >
+              <option value="validation_status_approved">Approved</option>
+              <option value="validation_status_not_approved">Not Approved</option>
+              <option value="validation_status_on_hold">On Hold</option>
+            </select>
           </div>
         </div>
         <div className="col-auto d-flex align-items-end">
-          <button 
+          <button
             className="btn btn-primary"
-            style={{ height: '38px' }}
             onClick={onUpdate}
             disabled={isUpdating}
           >
@@ -143,7 +136,6 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
           <button
             onClick={handleGenerateEditUrl}
             className="btn btn-secondary"
-            style={{ height: '38px' }}
             disabled={isLoadingUrl}
           >
             {isLoadingUrl ? 'Generating Link...' : 'Go to Submission'}
@@ -155,13 +147,13 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
         <div className="alert alert-success mt-3">
           <div className="d-flex justify-content-between align-items-center">
             <div>
-              <strong>Edit link opened in new tab.</strong> 
+              <strong>Edit link opened in new tab.</strong>
             </div>
             {editUrl && (
-              <a 
-                href={editUrl} 
-                target="_blank" 
-                className="btn btn-sm btn-success"
+              <a
+                href={editUrl}
+                target="_blank"
+                className="btn btn-sm btn-green"
                 rel="noreferrer"
               >
                 Open Again
@@ -172,7 +164,7 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
       )}
 
       {updateMessage && (
-        <div className="alert alert-primary mt-3">
+        <div className="alert alert-info mt-3">
           {updateMessage}
         </div>
       )}

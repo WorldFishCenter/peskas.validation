@@ -1548,13 +1548,32 @@ app.get('/api/enumerators-stats', authenticateUser, async (req, res) => {
       return res.json([]);
     }
 
+    // Get survey metadata for enrichment
+    const surveys = await database.collection('surveys').find({
+      asset_id: { $in: accessibleAssetIds }
+    }).toArray();
+
+    const surveyMap = {};
+    surveys.forEach(survey => {
+      surveyMap[survey.asset_id] = {
+        name: survey.name,
+        country_id: survey.country_id
+      };
+    });
+
     // Fetch stats from each survey's collection
     const statsPromises = accessibleAssetIds.map(async (assetId) => {
       const collectionName = getEnumeratorStatsCollection(assetId);
       try {
         const stats = await database.collection(collectionName).find({}).toArray();
-        // Add asset_id to each stat record for frontend filtering
-        return stats.map(stat => ({ ...stat, asset_id: assetId }));
+        // Add asset_id, survey name, and country to each stat record for frontend filtering
+        const surveyInfo = surveyMap[assetId] || { name: 'Unknown', country_id: null };
+        return stats.map(stat => ({
+          ...stat,
+          asset_id: assetId,
+          survey_name: surveyInfo.name,
+          survey_country: surveyInfo.country_id
+        }));
       } catch (error) {
         console.log(`No stats collection for survey ${assetId}`);
         return [];

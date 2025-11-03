@@ -2,6 +2,14 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+
+  /* Tabler Primary Color Customization */
+  /* Change these values to customize your primary color */
+  --tblr-primary: #0891b2;  /* Cyan-600 */
+  --tblr-primary-rgb: 8, 145, 178;
+  --tblr-primary-fg: #ffffff;
+  --tblr-primary-darken: #1a5aa8;  /* Darker shade for hover states */
+  --tblr-primary-lighten: #4d8dd6;  /* Lighter shade */
 }
 
 body {

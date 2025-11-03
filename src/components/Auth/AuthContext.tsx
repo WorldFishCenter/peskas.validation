@@ -11,7 +11,7 @@ interface User {
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   loading: boolean;
 }
@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setLoading(true);
       // Call login API
@@ -63,12 +63,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(userData);
         setIsAuthenticated(true);
         localStorage.setItem('user', JSON.stringify(userData));
-        return true;
+        return { success: true };
       }
-      return false;
+      return { success: false, error: result.error || 'Invalid username or password' };
     } catch (error) {
       console.error('Login error:', error);
-      return false;
+      return { success: false, error: 'An unexpected error occurred. Please try again.' };
     } finally {
       setLoading(false);
     }

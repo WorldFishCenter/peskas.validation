@@ -9,6 +9,7 @@ import {
   ColumnDef,
   SortingState,
 } from '@tanstack/react-table';
+import { IconKey, IconTrash, IconRefresh, IconChevronUp, IconChevronDown } from '@tabler/icons-react';
 import { useFetchUsers, useFetchSurveys, deleteUser, User } from '../../api/admin';
 import ResetPasswordModal from './ResetPasswordModal';
 import { getApiBaseUrl } from '../../utils/apiConfig';
@@ -53,7 +54,7 @@ const AdminUsers: React.FC = () => {
         cell: info => {
           const role = info.getValue() as string;
           return (
-            <span className={`badge ${role === 'admin' ? 'bg-primary' : 'bg-secondary'}`}>
+            <span className={`badge ${role === 'admin' ? 'bg-primary text-primary-fg' : 'bg-secondary text-secondary-fg'}`}>
               {role === 'admin' ? 'Administrator' : 'User'}
             </span>
           );
@@ -67,7 +68,7 @@ const AdminUsers: React.FC = () => {
           const surveyIds = user.permissions?.surveys || [];
 
           if (user.role === 'admin') {
-            return <span className="badge bg-success">All Surveys (Admin)</span>;
+            return <span className="badge bg-success text-success-fg">All Surveys (Admin)</span>;
           }
 
           if (surveyIds.length === 0) {
@@ -78,13 +79,13 @@ const AdminUsers: React.FC = () => {
           const assignedSurveys = surveys?.filter(s => surveyIds.includes(s.asset_id)) || [];
 
           if (assignedSurveys.length === 0) {
-            return <span className="badge bg-warning">{surveyIds.length} unknown survey(s)</span>;
+            return <span className="badge bg-warning text-warning-fg">{surveyIds.length} unknown survey(s)</span>;
           }
 
           // Show first survey name + count if there are more
           if (assignedSurveys.length === 1) {
             return (
-              <span className="badge bg-info" title={assignedSurveys[0].name}>
+              <span className="badge bg-info text-info-fg" title={assignedSurveys[0].name}>
                 {assignedSurveys[0].name}
               </span>
             );
@@ -94,7 +95,7 @@ const AdminUsers: React.FC = () => {
           return (
             <div className="dropdown">
               <button
-                className="btn btn-sm btn-info dropdown-toggle"
+                className="btn btn-sm btn-outline-info dropdown-toggle"
                 type="button"
                 data-bs-toggle="dropdown"
                 aria-expanded="false"
@@ -127,28 +128,15 @@ const AdminUsers: React.FC = () => {
                 className="btn btn-sm btn-outline-primary"
                 onClick={() => handleResetPassword(user)}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-key" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                  <circle cx="8" cy="15" r="4"></circle>
-                  <line x1="10.85" y1="12.15" x2="19" y2="4"></line>
-                  <line x1="18" y1="5" x2="20" y2="7"></line>
-                  <line x1="15" y1="8" x2="17" y2="10"></line>
-                </svg>
-                Reset Password
+                <IconKey size={16} stroke={2} />
+                <span className="d-none d-xl-inline ms-1">Reset Password</span>
               </button>
               <button
                 className="btn btn-sm btn-outline-danger"
                 onClick={() => handleDeleteUser(user)}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-trash" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                  <line x1="4" y1="7" x2="20" y2="7"></line>
-                  <line x1="10" y1="11" x2="10" y2="17"></line>
-                  <line x1="14" y1="11" x2="14" y2="17"></line>
-                  <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"></path>
-                  <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"></path>
-                </svg>
-                Delete
+                <IconTrash size={16} stroke={2} />
+                <span className="d-none d-xl-inline ms-1">Delete</span>
               </button>
             </div>
           );
@@ -280,11 +268,7 @@ const AdminUsers: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-refresh" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                    <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"></path>
-                    <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"></path>
-                  </svg>
+                  <IconRefresh className="icon me-1" size={20} stroke={2} />
                   Sync from Airtable
                 </>
               )}
@@ -304,14 +288,17 @@ const AdminUsers: React.FC = () => {
                       <th key={header.id}>
                         {header.isPlaceholder ? null : (
                           <div
-                            className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
+                            className={header.column.getCanSort() ? 'cursor-pointer select-none d-flex align-items-center gap-1' : ''}
                             onClick={header.column.getToggleSortingHandler()}
                           >
                             {flexRender(header.column.columnDef.header, header.getContext())}
-                            {{
-                              asc: ' 🔼',
-                              desc: ' 🔽',
-                            }[header.column.getIsSorted() as string] ?? null}
+                            {header.column.getCanSort() && (
+                              <>
+                                {!header.column.getIsSorted() && <IconChevronDown className="icon text-muted" size={14} stroke={2} />}
+                                {header.column.getIsSorted() === 'asc' && <IconChevronUp className="icon" size={14} stroke={2} />}
+                                {header.column.getIsSorted() === 'desc' && <IconChevronDown className="icon" size={14} stroke={2} />}
+                              </>
+                            )}
                           </div>
                         )}
                       </th>
@@ -354,14 +341,14 @@ const AdminUsers: React.FC = () => {
               </div>
               <div className="btn-list">
                 <button
-                  className="btn btn-outline-secondary"
+                  className="btn btn-outline-primary"
                   onClick={() => table.previousPage()}
                   disabled={!table.getCanPreviousPage()}
                 >
                   Previous
                 </button>
                 <button
-                  className="btn btn-outline-secondary"
+                  className="btn btn-outline-primary"
                   onClick={() => table.nextPage()}
                   disabled={!table.getCanNextPage()}
                 >

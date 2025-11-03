@@ -8,14 +8,6 @@ import ErrorBoundary from './components/ErrorBoundary';
 import EnumeratorPerformance from './components/EnumeratorPerformance/EnumeratorPerformance';
 import AdminUsers from './components/Admin/AdminUsers';
 
-// Remove or fix these imports
-// import '@tabler/core/dist/css/tabler.min.css';
-// import '@tabler/core/dist/js/tabler.min.js';
-
-// Add a direct link to Tabler CSS in your index.html instead
-// Or use these alternative imports if available:
-// import '@tabler/core/css/tabler.min.css';
-
 const AppRoutes: React.FC = () => {
   return (
     <Routes>
@@ -46,7 +38,7 @@ const AppContent: React.FC = () => {
       <div className="page page-center">
         <div className="container container-slim py-4">
           <div className="text-center">
-            <div className="spinner-border text-primary" role="status"></div>
+            <div className="spinner-border text-blue" role="status"></div>
             <div className="mt-3">Loading...</div>
           </div>
         </div>

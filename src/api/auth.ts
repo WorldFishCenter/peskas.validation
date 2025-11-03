@@ -11,6 +11,7 @@ interface LoginResponse {
     name?: string;
     country?: string[];
   };
+  error?: string;
 }
 
 export const login = async (username: string, password: string): Promise<LoginResponse> => {
@@ -18,7 +19,15 @@ export const login = async (username: string, password: string): Promise<LoginRe
     const response = await axios.post(`${API_BASE_URL}/auth/login`, { username, password });
     return response.data;
   } catch (error) {
-    console.error('Login error:', error);
-    return { success: false };
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 401) {
+        return { success: false, error: 'Invalid username or password' };
+      }
+      if (error.code === 'ERR_NETWORK' || !error.response) {
+        return { success: false, error: 'Unable to connect to server. Please check your connection.' };
+      }
+      return { success: false, error: error.response?.data?.error || 'Login failed. Please try again.' };
+    }
+    return { success: false, error: 'An unexpected error occurred. Please try again.' };
   }
-}; 
+};

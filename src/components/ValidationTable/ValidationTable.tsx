@@ -15,13 +15,13 @@ import {
 import { rankItem } from '@tanstack/match-sorter-utils';
 import StatusUpdateForm from './StatusUpdateForm';
 import { useFetchSubmissions, useFetchAlertCodes } from '../../api/api';
-import { logData } from '../../utils/debug';
 import { updateValidationStatus } from '../../api/koboToolbox';
 import { Submission } from '../../types/validation';
 import AlertBadge from './AlertBadge';
 import TableFilters from './TableFilters';
 import AlertGuideModal from './AlertGuideModal';
 import StatusBadge from './StatusBadge';
+import { getCountryFlag, getCountryName } from '../../utils/countryMetadata';
 
 // Define a fuzzy filter function using rankItem
 const fuzzyFilter: FilterFn<Submission> = (row, columnId, value, addMeta) => {
@@ -90,18 +90,7 @@ const ValidationTable: React.FC = () => {
   const { alertCodes } = useFetchAlertCodes(assetId || null);
 
   useEffect(() => {
-    if (submissions && submissions.length > 0) {
-      logData('Submissions data received:', submissions.slice(0, 3));
-      
-      
-      const withAlerts = submissions.filter(
-        s => s.alert_flag && s.alert_flag.trim() !== ''
-      );
-      logData('Items with alerts:', withAlerts.length);
-      if (withAlerts.length > 0) {
-        logData('Sample alert item:', withAlerts[0]);
-      }
-    }
+    // No-op: submissions are loaded and ready for display
   }, [submissions]);
 
   useEffect(() => {
@@ -133,14 +122,18 @@ const ValidationTable: React.FC = () => {
         cell: info => {
           const row = info.row.original;
           const surveyName = row.survey_name || 'Unknown';
-          const country = row.survey_country || '';
+          const countryCode = row.survey_country || '';
+          const countryFlag = getCountryFlag(countryCode);
+          const countryName = getCountryName(countryCode);
           return (
             <div>
-              <div className="text-truncate" style={{ maxWidth: '200px' }} title={surveyName}>
+              <div className="text-truncate" style={{ maxWidth: '12rem' }} title={surveyName}>
                 {surveyName}
               </div>
-              {country && (
-                <small className="text-muted">{country}</small>
+              {countryCode && (
+                <small className="text-muted">
+                  {countryFlag} {countryName}
+                </small>
               )}
             </div>
           );
@@ -148,6 +141,14 @@ const ValidationTable: React.FC = () => {
         enableSorting: true,
         enableColumnFilter: true,
         filterFn: fuzzyFilter,
+      },
+      {
+        accessorKey: 'survey_country',
+        header: () => '',
+        cell: () => null,
+        enableSorting: false,
+        enableColumnFilter: true,
+        filterFn: 'equals',
       },
       {
         accessorKey: 'submitted_by',
@@ -228,6 +229,8 @@ const ValidationTable: React.FC = () => {
         enableSorting: true,
         enableColumnFilter: true,
         filterFn: 'equals',
+        size: 150,
+        minSize: 150,
       },
       {
         accessorKey: 'validated_at',
@@ -307,7 +310,7 @@ const ValidationTable: React.FC = () => {
   if (isLoading)
     return (
       <div className="d-flex justify-content-center my-4">
-        <div className="spinner-border text-primary"></div>
+        <div className="spinner-border text-blue"></div>
       </div>
     );
   if (error) return <div className="alert alert-danger">{error}</div>;
@@ -352,19 +355,13 @@ const ValidationTable: React.FC = () => {
                         key={header.id}
                         scope="col"
                         onClick={header.column.getToggleSortingHandler()}
+                        className="text-center text-uppercase fw-semibold"
                         style={{
                           cursor: header.column.getCanSort() ? 'pointer' : 'default',
-                          textAlign: 'center',
-                          borderBottom: '2px solid #e9ecef',
-                          padding: '12px 8px',
-                          fontSize: '0.85rem',
-                          fontWeight: '600',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
                         }}
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
-                        <span style={{ marginLeft: '4px' }}>
+                        <span className="ms-1">
                           {{
                             asc: ' ↑',
                             desc: ' ↓',
@@ -387,19 +384,12 @@ const ValidationTable: React.FC = () => {
                           ? 'table-active'
                           : ''
                       }
-                      style={{ 
-                        cursor: 'pointer',
-                        transition: 'background-color 0.15s ease-in-out'
-                      }}
+                      style={{ cursor: 'pointer' }}
                     >
                       {row.getVisibleCells().map(cell => (
-                        <td 
-                          key={cell.id} 
-                          style={{ 
-                            textAlign: 'center',
-                            padding: '12px 8px',
-                            verticalAlign: 'middle'
-                          }}
+                        <td
+                          key={cell.id}
+                          className="text-center align-middle"
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
@@ -460,10 +450,10 @@ const ValidationTable: React.FC = () => {
       
       {/* Offcanvas Sidebar */}
       {selectedRow && (
-        <div className={`offcanvas offcanvas-end ${sidebarOpen ? 'show' : ''}`} 
-             tabIndex={-1} 
-             id="submissionSidebar" 
-             style={{ width: '400px', visibility: sidebarOpen ? 'visible' : 'hidden' }}>
+        <div className={`offcanvas offcanvas-end ${sidebarOpen ? 'show' : ''}`}
+             tabIndex={-1}
+             id="submissionSidebar"
+             style={{ visibility: sidebarOpen ? 'visible' : 'hidden' }}>
           <div className="offcanvas-header border-bottom">
             <h5 className="offcanvas-title">Submission Details</h5>
             <button type="button" className="btn-close text-reset" onClick={() => setSidebarOpen(false)} aria-label="Close"></button>

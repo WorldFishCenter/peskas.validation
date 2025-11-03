@@ -1,4 +1,5 @@
 import React from 'react';
+import { IconAlertTriangle } from '@tabler/icons-react';
 import { ALERT_FLAG_DESCRIPTIONS } from '../../types/validation';
 
 interface AlertGuideModalProps {
@@ -13,18 +14,14 @@ const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose, alertCodes }
     <div className="modal modal-blur show d-block" tabIndex={-1} role="dialog">
       <div className="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div className="modal-content">
-          <div className="modal-header bg-warning-subtle">
+          <div className="modal-header bg-yellow-lt">
             <h5 className="modal-title">
-              <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-triangle me-2" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                <path d="M12 9v2m0 4v.01" />
-                <path d="M5 19h14a2 2 0 0 0 1.84 -2.75l-7.1 -12.25a2 2 0 0 0 -3.5 0l-7.1 12.25a2 2 0 0 0 1.75 2.75" />
-              </svg>
+              <IconAlertTriangle className="icon me-2" size={24} stroke={2} />
               Alert Codes Reference
             </h5>
-            <button 
-              type="button" 
-              className="btn-close" 
+            <button
+              type="button"
+              className="btn-close"
               onClick={onClose}
               aria-label="Close"
             ></button>
@@ -35,9 +32,9 @@ const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose, alertCodes }
             </div>
             <div className="table-responsive">
               <table className="table table-bordered">
-                <thead className="table-light">
+                <thead>
                   <tr>
-                    <th style={{width: "20%"}}>Alert Code</th>
+                    <th className="w-25">Alert Code</th>
                     <th>Description</th>
                   </tr>
                 </thead>
@@ -45,15 +42,7 @@ const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose, alertCodes }
                   {Object.entries(displayCodes).map(([code, description]) => (
                     <tr key={code}>
                       <td className="align-middle text-center">
-                        <span
-                          className="badge bg-danger-subtle text-danger"
-                          style={{
-                            fontSize: '1rem',
-                            padding: '6px 12px',
-                            borderRadius: '4px',
-                            fontWeight: '600'
-                          }}
-                        >
+                        <span className="badge bg-red-lt text-red fs-5 fw-semibold px-3 py-2">
                           Code {code}
                         </span>
                       </td>

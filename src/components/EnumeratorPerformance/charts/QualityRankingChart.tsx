@@ -15,10 +15,7 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
     const total = e.filteredTotal !== undefined ? e.filteredTotal : e.totalSubmissions;
     return total > 0; // Only include enumerators with at least 1 submission
   });
-  
-  // Log what we're actually displaying
-  console.log(`Quality chart showing ${filteredEnumerators.length} enumerators with submissions in selected date range`);
-  
+
   // Generate enumerator quality ranking chart
   const chartOptions: Highcharts.Options = {
     chart: {

@@ -39,13 +39,28 @@ const EnumeratorPerformance: React.FC = () => {
   const [minDate, setMinDate] = useState<string>('');
   const [maxDate, setMaxDate] = useState<string>('');
 
+  // Survey and country filter state
+  const [selectedSurvey, setSelectedSurvey] = useState<string>('');
+  const [selectedCountry, setSelectedCountry] = useState<string>('');
+  const [availableSurveys, setAvailableSurveys] = useState<string[]>([]);
+  const [availableCountries, setAvailableCountries] = useState<string[]>([]);
+
   // Process the raw data into the format needed for the charts - do this only once
   useEffect(() => {
     if (rawData && rawData.length > 0) {
-      console.log('Processing raw data...', rawData.length, 'records');
       const processed = processEnumeratorData(rawData);
       setProcessedData(processed);
-      
+
+      // Extract unique surveys and countries
+      const surveys = new Set<string>();
+      const countries = new Set<string>();
+      rawData.forEach((item: any) => {
+        if (item.survey_name) surveys.add(item.survey_name);
+        if (item.survey_country) countries.add(item.survey_country);
+      });
+      setAvailableSurveys(Array.from(surveys).sort());
+      setAvailableCountries(Array.from(countries).sort());
+
       // Set default selected enumerator
       if (processed.length > 0 && !selectedEnumerator) {
         setSelectedEnumerator(processed[0].name);
@@ -76,7 +91,7 @@ const EnumeratorPerformance: React.FC = () => {
     }
   }, [processedData]);
 
-  // Apply date range filtering to data when processed data or date range changes
+  // Apply date range, survey, and country filtering to data
   useEffect(() => {
     if (processedData.length === 0) return;
     const filterByDateRange = (date: string) => {
@@ -88,13 +103,23 @@ const EnumeratorPerformance: React.FC = () => {
     const filteredEnumerators = processedData.map(enumerator => {
       const filteredSubmissions = enumerator.submissions.filter(submission => {
         if (!submission.submission_date) return false;
-        return filterByDateRange(submission.submission_date);
+
+        // Date filter
+        if (!filterByDateRange(submission.submission_date)) return false;
+
+        // Survey filter
+        if (selectedSurvey && submission.survey_name !== selectedSurvey) return false;
+
+        // Country filter
+        if (selectedCountry && submission.survey_country !== selectedCountry) return false;
+
+        return true;
       });
       const submissionsWithAlerts = filteredSubmissions.filter(
         s => s.alert_flag && s.alert_flag !== "NA"
       ).length;
-      const errorRate = filteredSubmissions.length > 0 
-        ? (submissionsWithAlerts / filteredSubmissions.length) * 100 
+      const errorRate = filteredSubmissions.length > 0
+        ? (submissionsWithAlerts / filteredSubmissions.length) * 100
         : 0;
       return {
         ...enumerator,
@@ -105,7 +130,7 @@ const EnumeratorPerformance: React.FC = () => {
       };
     });
     setEnumerators(filteredEnumerators);
-  }, [processedData, fromDate, toDate]);
+  }, [processedData, fromDate, toDate, selectedSurvey, selectedCountry]);
 
   // Check for admin token
   useEffect(() => {
@@ -156,7 +181,7 @@ const EnumeratorPerformance: React.FC = () => {
       <div className="container-xl">
         <div className="card">
           <div className="card-body text-center py-5">
-            <div className="spinner-border text-primary" role="status"></div>
+            <div className="spinner-border text-blue" role="status"></div>
             <div className="mt-3">Loading data...</div>
           </div>
         </div>
@@ -237,7 +262,7 @@ const EnumeratorPerformance: React.FC = () => {
   return (
     <div className="container-xl">
       {/* Page header with actions */}
-      <PageHeader 
+      <PageHeader
         // timeframe and setTimeframe removed
         isRefreshing={isRefreshing}
         isAdmin={isAdmin}
@@ -248,6 +273,12 @@ const EnumeratorPerformance: React.FC = () => {
         setToDate={setToDate}
         minDate={minDate}
         maxDate={maxDate}
+        selectedSurvey={selectedSurvey}
+        setSelectedSurvey={setSelectedSurvey}
+        selectedCountry={selectedCountry}
+        setSelectedCountry={setSelectedCountry}
+        availableSurveys={availableSurveys}
+        availableCountries={availableCountries}
       />
 
       {refreshMessage && (
