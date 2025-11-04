@@ -66,7 +66,8 @@ async function connectToMongo() {
     // Create indexes for users collection (if not exists)
     try {
       await db.collection('users').createIndex({ username: 1 }, { unique: true });
-      await db.collection('users').createIndex({ email: 1 }, { unique: true });
+      // Note: email index removed because many users have null email values
+      // and MongoDB unique indexes don't allow multiple null values
       console.log('User collection indexes verified');
     } catch (error) {
       if (error.code === 86) {
@@ -218,28 +219,40 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
 
     const surveySubmissions = await Promise.all(submissionsPromises);
 
+    // Determine if user has enumerator restrictions
+    const allowedEnumerators = user.permissions?.enumerators || [];
+    const hasEnumeratorRestrictions = allowedEnumerators.length > 0;
+
     // Process and combine all submissions from all accessible surveys
     let allSubmissions = [];
     let totalCount = 0;
 
     surveySubmissions.forEach(surveyData => {
-      const processedSubmissions = surveyData.submissions.map(mongoDoc => {
-        return {
-          submission_id: mongoDoc.submission_id,
-          submission_date: mongoDoc.submission_date,
-          vessel_number: mongoDoc.vessel_number || '',
-          catch_number: mongoDoc.catch_number || '',
-          submitted_by: mongoDoc.submitted_by || '',
-          validation_status: mongoDoc.validation_status || 'validation_status_on_hold',
-          validated_at: mongoDoc.validated_at || mongoDoc.submission_date,
-          validated_by: mongoDoc.validated_by || '',
-          alert_flag: mongoDoc.alert_flag || '',
-          alert_flags: mongoDoc.alert_flag ? mongoDoc.alert_flag.split(', ') : [],
-          asset_id: surveyData.asset_id,
-          survey_name: surveyData.survey_name || 'Unknown Survey',
-          survey_country: surveyData.survey_country || ''
-        };
-      });
+      const processedSubmissions = surveyData.submissions
+        .map(mongoDoc => {
+          return {
+            submission_id: mongoDoc.submission_id,
+            submission_date: mongoDoc.submission_date,
+            vessel_number: mongoDoc.vessel_number || '',
+            catch_number: mongoDoc.catch_number || '',
+            submitted_by: mongoDoc.submitted_by || '',
+            validation_status: mongoDoc.validation_status || 'validation_status_on_hold',
+            validated_at: mongoDoc.validated_at || mongoDoc.submission_date,
+            validated_by: mongoDoc.validated_by || '',
+            alert_flag: mongoDoc.alert_flag || '',
+            alert_flags: mongoDoc.alert_flag ? mongoDoc.alert_flag.split(', ') : [],
+            asset_id: surveyData.asset_id,
+            survey_name: surveyData.survey_name || 'Unknown Survey',
+            survey_country: surveyData.survey_country || ''
+          };
+        })
+        .filter(submission => {
+          // Apply enumerator filtering if user has restrictions
+          if (hasEnumeratorRestrictions) {
+            return allowedEnumerators.includes(submission.submitted_by);
+          }
+          return true; // No restrictions, include all
+        });
 
       allSubmissions = [...allSubmissions, ...processedSubmissions];
       totalCount += processedSubmissions.length;
@@ -1561,6 +1574,10 @@ app.get('/api/enumerators-stats', authenticateUser, async (req, res) => {
       };
     });
 
+    // Determine if user has enumerator restrictions
+    const allowedEnumerators = user.permissions?.enumerators || [];
+    const hasEnumeratorRestrictions = allowedEnumerators.length > 0;
+
     // Fetch stats from each survey's collection
     const statsPromises = accessibleAssetIds.map(async (assetId) => {
       const collectionName = getEnumeratorStatsCollection(assetId);
@@ -1568,12 +1585,25 @@ app.get('/api/enumerators-stats', authenticateUser, async (req, res) => {
         const stats = await database.collection(collectionName).find({}).toArray();
         // Add asset_id, survey name, and country to each stat record for frontend filtering
         const surveyInfo = surveyMap[assetId] || { name: 'Unknown', country_id: null };
-        return stats.map(stat => ({
-          ...stat,
-          asset_id: assetId,
-          survey_name: surveyInfo.name,
-          survey_country: surveyInfo.country_id
-        }));
+        return stats
+          .map(stat => ({
+            ...stat,
+            asset_id: assetId,
+            survey_name: surveyInfo.name,
+            survey_country: surveyInfo.country_id
+          }))
+          .filter(stat => {
+            // Skip metadata records (type: "metadata")
+            if (stat.type && stat.type.includes('metadata')) {
+              return false;
+            }
+            // Apply enumerator filtering if user has restrictions
+            // Note: stats collection contains raw submissions with submitted_by field, not aggregated data
+            if (hasEnumeratorRestrictions) {
+              return allowedEnumerators.includes(stat.submitted_by);
+            }
+            return true; // No restrictions, include all
+          });
       } catch (error) {
         console.log(`No stats collection for survey ${assetId}`);
         return [];
@@ -1583,7 +1613,7 @@ app.get('/api/enumerators-stats', authenticateUser, async (req, res) => {
     const allStats = await Promise.all(statsPromises);
     const flattenedStats = allStats.flat();
 
-    console.log(`Fetched ${flattenedStats.length} enumerator stats records for ${accessibleAssetIds.length} surveys`);
+    console.log(`Fetched ${flattenedStats.length} enumerator stats records for ${accessibleAssetIds.length} surveys (filtered by enumerator permissions: ${hasEnumeratorRestrictions})`);
     res.json(flattenedStats);
   } catch (error) {
     console.error('Error fetching enumerator statistics:', error);

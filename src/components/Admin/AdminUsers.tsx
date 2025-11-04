@@ -118,6 +118,52 @@ const AdminUsers: React.FC = () => {
         },
       },
       {
+        id: 'enumerators',
+        header: 'Assigned Enumerators',
+        cell: info => {
+          const user = info.row.original;
+          const enumerators = user.permissions?.enumerators || [];
+
+          if (user.role === 'admin') {
+            return <span className="badge bg-success text-success-fg">All Enumerators (Admin)</span>;
+          }
+
+          if (enumerators.length === 0) {
+            return <span className="text-muted">All enumerators</span>;
+          }
+
+          // Show first enumerator name + count if there are more
+          if (enumerators.length === 1) {
+            return (
+              <span className="badge bg-cyan text-cyan-fg" title={enumerators[0]}>
+                {enumerators[0]}
+              </span>
+            );
+          }
+
+          // Multiple enumerators - show expandable list
+          return (
+            <div className="dropdown">
+              <button
+                className="btn btn-sm btn-outline-cyan dropdown-toggle"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                {enumerators.length} enumerator(s)
+              </button>
+              <ul className="dropdown-menu">
+                {enumerators.map(enumerator => (
+                  <li key={enumerator}>
+                    <span className="dropdown-item-text">{enumerator}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        },
+      },
+      {
         id: 'actions',
         header: 'Actions',
         cell: info => {

@@ -1,6 +1,32 @@
+# validation-zanzibar 1.2.0
+
+## Features
+
+- **Manager-Level Filtering Now Fully Operational**
+  - Managers now see only data from enumerators assigned to them in both ValidationTable and EnumeratorPerformance dashboard
+  - Automatic enumerator assignment from Airtable during user sync
+  - Admin users continue to see all data without restrictions
+
+## Bug Fixes
+
+- **Fixed enumerator filtering implementation**
+  - Corrected Airtable field mapping to use "Kobo Username" codes instead of full names
+  - Fixed backend filtering to properly match enumerator codes in submission data
+  - Resolved MongoDB unique email index conflict that prevented server startup
+
+---
+
 # validation-zanzibar 1.1.0
 
 ## New Features
+
+- **Manager-Level Enumerator Filtering**
+  - Managers can now be assigned specific enumerators they supervise
+  - ValidationTable automatically filters submissions by assigned enumerators
+  - EnumeratorPerformance dashboard shows only stats for assigned enumerators
+  - Admin users see all data (no filtering applied)
+  - Airtable sync automatically populates enumerator assignments
+  - AdminUsers table displays assigned enumerators per user
 
 - **Survey and Country Filtering in Enumerator Performance Dashboard**
   - Added survey filter dropdown (shown when 2+ surveys available)
@@ -55,11 +81,15 @@
 ## Technical Improvements
 
 - **Backend Enhancements**
-  - Enhanced `/api/enumerators-stats` endpoint to include survey metadata
+  - Added enumerator-based filtering to `/api/kobo/submissions` endpoint
+  - Added enumerator-based filtering to `/api/enumerators-stats` endpoint
+  - Enhanced Airtable sync script to fetch and map enumerator assignments
   - Added survey name and country enrichment for filtering support
   - Improved data structure for multi-survey/multi-country operations
+  - Removed problematic unique email index from MongoDB users collection
 
 - **TypeScript Type Definitions**
+  - Added `enumerators` field to User permissions interface
   - Updated SubmissionData interface with survey_name and survey_country
   - Updated EnumeratorData interface for comprehensive filtering support
   - Better type safety across the application

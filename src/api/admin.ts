@@ -12,6 +12,7 @@ export interface User {
   role: 'admin' | 'user';
   permissions?: {
     surveys?: string[];
+    enumerators?: string[];
   };
   created_at?: string;
 }
@@ -36,6 +37,7 @@ export interface CreateUserPayload {
   role: 'admin' | 'user';
   permissions?: {
     surveys?: string[];
+    enumerators?: string[];
   };
 }
 
@@ -45,6 +47,7 @@ export interface UpdateUserPayload {
   role?: 'admin' | 'user';
   permissions?: {
     surveys?: string[];
+    enumerators?: string[];
   };
 }
 
