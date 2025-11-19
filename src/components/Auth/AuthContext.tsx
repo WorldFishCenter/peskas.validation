@@ -32,17 +32,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Check if user is already logged in
+    // Check if user is already logged in (check for JWT token)
+    const authToken = localStorage.getItem('authToken');
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+
+    if (authToken && storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
         setIsAuthenticated(true);
       } catch (error) {
-        // Invalid stored user, clear it
+        // Invalid stored user, clear everything
         localStorage.removeItem('user');
+        localStorage.removeItem('authToken');
       }
+    } else {
+      // If token or user is missing, clear both
+      localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
     }
     setLoading(false);
   }, []);
@@ -53,7 +60,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Call login API
       const result = await apiLogin(username, password);
 
-      if (result.success && result.user) {
+      if (result.success && result.user && result.token) {
+        // Store JWT token separately
+        localStorage.setItem('authToken', result.token);
+
+        // Store user data
         const userData: User = {
           username: result.user.username,
           role: result.user.role as 'admin' | 'user',
@@ -63,6 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(userData);
         setIsAuthenticated(true);
         localStorage.setItem('user', JSON.stringify(userData));
+
         return { success: true };
       }
       return { success: false, error: result.error || 'Invalid username or password' };
@@ -77,7 +89,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
+    // Clear both user data and JWT token
     localStorage.removeItem('user');
+    localStorage.removeItem('authToken');
   };
 
   return (

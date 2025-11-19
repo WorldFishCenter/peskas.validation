@@ -2,6 +2,20 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 📚 Documentation
+
+All detailed documentation is organized in the **[docs/](docs/)** folder:
+
+- **[docs/DEPLOYMENT_CHECKLIST.md](docs/DEPLOYMENT_CHECKLIST.md)** - Production deployment guide ⭐
+- **[docs/SECURITY_FIXES_COMPLETED.md](docs/SECURITY_FIXES_COMPLETED.md)** - Security hardening details ⭐
+- **[docs/README.md](docs/README.md)** - Complete documentation index
+
+For full documentation index, see [docs/README.md](docs/README.md)
+
+---
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 ## Development Commands
 
 ### Frontend Development

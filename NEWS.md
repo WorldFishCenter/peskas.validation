@@ -9,10 +9,52 @@
 
 ## Bug Fixes
 
+- **Fixed admin access logic in serverless API endpoints**
+  - Admin users now see ALL active surveys regardless of assigned surveys in permissions
+  - Fixed in serverless endpoints: `/api/kobo/submissions` and `/api/enumerators-stats`
+  - Server endpoint (`server/index.js`) was already correct
+  - Ensures consistent admin behavior across all deployment environments
+
+- **Fixed user schema data type mismatches**
+  - Corrected `permissions.enumerators` from object `{}` to array `[]` for 2 users
+  - Corrected `country` from object `{}` to array `[]` for 2 users
+  - Created migration script `scripts/fix_user_schema.js` to automatically fix existing data
+  - Prevents filtering errors when checking enumerator permissions
+
+- **Fixed hardcoded database name in R scripts**
+  - `update_single_survey.R` now reads `MONGODB_VALIDATION_DB` from environment
+  - Falls back to "validation-dev" with warning if not set
+  - Ensures scripts work correctly in both dev and production environments
+
 - **Fixed enumerator filtering implementation**
   - Corrected Airtable field mapping to use "Kobo Username" codes instead of full names
-  - Fixed backend filtering to properly match enumerator codes in submission data
-  - Resolved MongoDB unique email index conflict that prevented server startup
+  - Fixed backend filtering to properly match enumerator codes in submission data using `submitted_by` field
+  - Added filtering to skip metadata records in stats collections
+
+- **Resolved MongoDB unique email index conflict**
+  - Removed unique email index creation from server startup
+  - Allows multiple users with null email values (common in Airtable sync)
+
+## Code Cleanup
+
+- **Removed development debug code**
+  - Removed all console.log statements from frontend code (src/)
+  - Removed all console.log statements from serverless API endpoints (api/)
+  - Removed debug console.log statements from server code (server/index.js)
+  - Kept only essential logging (console.error for errors, server startup messages)
+
+- **Removed test and temporary files**
+  - Deleted 10 .cjs test files from root and scripts directories
+  - Deleted api/debug directory with debug endpoints
+  - Removed all .DS_Store system files
+
+## Migration Tools
+
+- **fix_user_schema.js** - Automatically fix user data schema mismatches
+  - Converts `permissions.enumerators` from object to array
+  - Converts `country` from object to array
+  - Safe to run multiple times (idempotent)
+  - Usage: `node scripts/fix_user_schema.js`
 
 ---
 

@@ -1,20 +1,14 @@
 import axios from 'axios';
 
-// Add request interceptor to include authentication token
+// Add request interceptor to include JWT authentication token
 axios.interceptors.request.use(
   (config) => {
-    // Get user from localStorage
-    const userStr = localStorage.getItem('user');
+    // Get JWT token from localStorage
+    const token = localStorage.getItem('authToken');
 
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        // Add Authorization header with username as token
-        // Backend uses username as a simple auth token
-        config.headers.Authorization = `Bearer ${user.username}`;
-      } catch (error) {
-        console.error('Failed to parse user from localStorage:', error);
-      }
+    if (token) {
+      // Add Authorization header with JWT token
+      config.headers.Authorization = `Bearer ${token}`;
     }
 
     return config;
@@ -24,12 +18,20 @@ axios.interceptors.request.use(
   }
 );
 
-// Add response interceptor to handle 401 errors
+// Add response interceptor to handle authentication errors
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear localStorage and redirect to login on 401
+      // Check if it's a token expiry
+      const errorCode = error.response?.data?.code;
+
+      if (errorCode === 'TOKEN_EXPIRED') {
+        console.warn('JWT token expired. Please log in again.');
+      }
+
+      // Clear authentication data and redirect to login on any 401 error
+      localStorage.removeItem('authToken');
       localStorage.removeItem('user');
       window.location.href = '/';
     }

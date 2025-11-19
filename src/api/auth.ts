@@ -5,12 +5,14 @@ const API_BASE_URL = getApiBaseUrl();
 
 interface LoginResponse {
   success: boolean;
+  token?: string;
   user?: {
     username: string;
     role: string;
     name?: string;
     country?: string[];
   };
+  expiresIn?: string;
   error?: string;
 }
 

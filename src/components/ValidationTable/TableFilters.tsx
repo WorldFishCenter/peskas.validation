@@ -2,7 +2,6 @@ import React from 'react';
 import { Table } from '@tanstack/react-table';
 import { IconSearch } from '@tabler/icons-react';
 import { VALIDATION_STATUS_OPTIONS } from '../../types/validation';
-import { getCountryFlag, getCountryName } from '../../utils/countryMetadata';
 
 interface TableFiltersProps<T> {
   table: Table<T>;
@@ -15,6 +14,7 @@ interface TableFiltersProps<T> {
   setToDate: (date: string) => void;
   minDate: string;
   maxDate: string;
+  accessibleSurveys: any[];
 }
 
 const TableFilters = <T,>({
@@ -27,33 +27,28 @@ const TableFilters = <T,>({
   setFromDate,
   setToDate,
   minDate,
-  maxDate
+  maxDate,
+  accessibleSurveys
 }: TableFiltersProps<T>) => {
   // Get columns with defensive access
   const statusColumn = table.getColumn('validation_status');
   const alertColumn = table.getColumn('alert_flag');
   const surveyColumn = table.getColumn('survey_name');
-  const countryColumn = table.getColumn('survey_country');
 
-  // Get unique surveys from table data
+  // Get unique surveys from accessible surveys metadata (not from displayed rows)
+  // This ensures all assigned surveys appear in dropdown, even if they have 0 submissions
   const uniqueSurveys = React.useMemo(() => {
+    if (accessibleSurveys && accessibleSurveys.length > 0) {
+      return accessibleSurveys.map(s => s.name).sort();
+    }
+    // Fallback to parsing displayed rows if metadata not available
     const surveys = new Set<string>();
     table.getRowModel().rows.forEach(row => {
       const surveyName = (row.original as any).survey_name;
       if (surveyName) surveys.add(surveyName);
     });
     return Array.from(surveys).sort();
-  }, [table]);
-
-  // Get unique countries from table data
-  const uniqueCountries = React.useMemo(() => {
-    const countries = new Set<string>();
-    table.getRowModel().rows.forEach(row => {
-      const countryCode = (row.original as any).survey_country;
-      if (countryCode) countries.add(countryCode);
-    });
-    return Array.from(countries).sort();
-  }, [table]);
+  }, [accessibleSurveys, table]);
 
   return (
     <div className="d-flex flex-wrap gap-2 align-items-end">
@@ -99,30 +94,6 @@ const TableFilters = <T,>({
               {uniqueSurveys.map(survey => (
                 <option key={survey} value={survey}>
                   {survey}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      )}
-
-      {/* Country Filter */}
-      {uniqueCountries.length > 1 && (
-        <div>
-          <div className="input-group">
-            <span className="input-group-text">Country</span>
-            <select
-              className="form-select"
-              value={(countryColumn?.getFilterValue() as string) || ''}
-              onChange={e =>
-                countryColumn?.setFilterValue(e.target.value || undefined)
-              }
-              disabled={!countryColumn}
-            >
-              <option value="">All Countries</option>
-              {uniqueCountries.map(countryCode => (
-                <option key={countryCode} value={countryCode}>
-                  {getCountryFlag(countryCode)} {getCountryName(countryCode)}
                 </option>
               ))}
             </select>

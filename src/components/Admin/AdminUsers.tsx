@@ -221,16 +221,20 @@ const AdminUsers: React.FC = () => {
 
     setIsSyncing(true);
     try {
-      // Get auth token from localStorage
-      const userStr = localStorage.getItem('user');
-      const user = userStr ? JSON.parse(userStr) : null;
+      // Get JWT token from localStorage
+      const token = localStorage.getItem('authToken');
+
+      if (!token) {
+        alert('Authentication token not found. Please log in again.');
+        return;
+      }
 
       const API_BASE_URL = getApiBaseUrl();
       const response = await fetch(`${API_BASE_URL}/admin/sync-users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user?.username || ''}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 

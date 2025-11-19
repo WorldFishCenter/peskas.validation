@@ -69,7 +69,7 @@ const getMinMaxDate = (subs: Submission[] | undefined): [string, string] => {
 };
 
 const ValidationTable: React.FC = () => {
-  const { data: submissions, isLoading, error, refetch } = useFetchSubmissions();
+  const { data: submissions, accessibleSurveys, isLoading, error, refetch } = useFetchSubmissions();
   const [selectedRow, setSelectedRow] = useState<Submission | null>(null);
   const [statusToUpdate, setStatusToUpdate] = useState<string>('validation_status_approved');
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -141,14 +141,6 @@ const ValidationTable: React.FC = () => {
         enableSorting: true,
         enableColumnFilter: true,
         filterFn: fuzzyFilter,
-      },
-      {
-        accessorKey: 'survey_country',
-        header: () => '',
-        cell: () => null,
-        enableSorting: false,
-        enableColumnFilter: true,
-        filterFn: 'equals',
       },
       {
         accessorKey: 'submitted_by',
@@ -342,6 +334,7 @@ const ValidationTable: React.FC = () => {
             }}
             minDate={minDate}
             maxDate={maxDate}
+            accessibleSurveys={accessibleSurveys}
           />
         </div>
         <div className="card-body">

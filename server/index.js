@@ -16,7 +16,17 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
 const MONGODB_VALIDATION_URI = process.env.MONGODB_VALIDATION_URI;
-const MONGODB_VALIDATION_DB = process.env.MONGODB_VALIDATION_DB || 'validation-dev';
+const MONGODB_VALIDATION_DB = process.env.MONGODB_VALIDATION_DB;
+
+if (!MONGODB_VALIDATION_URI) {
+  console.error('Error: MONGODB_VALIDATION_URI not set in environment variables');
+  process.exit(1);
+}
+
+if (!MONGODB_VALIDATION_DB) {
+  console.error('Error: MONGODB_VALIDATION_DB not set in environment variables. Please set it in your .env file.');
+  process.exit(1);
+}
 
 let db;
 
@@ -58,21 +68,17 @@ async function connectToMongo() {
     // Connect to unified validation database
     const client = new MongoClient(MONGODB_VALIDATION_URI);
     await client.connect();
-    console.log(`Connected to MongoDB cluster`);
 
     db = client.db(MONGODB_VALIDATION_DB);
-    console.log(`Using database: ${MONGODB_VALIDATION_DB}`);
 
     // Create indexes for users collection (if not exists)
     try {
       await db.collection('users').createIndex({ username: 1 }, { unique: true });
       // Note: email index removed because many users have null email values
       // and MongoDB unique indexes don't allow multiple null values
-      console.log('User collection indexes verified');
     } catch (error) {
       if (error.code === 86) {
         // Index already exists - this is fine
-        console.log('User collection indexes already exist');
       } else {
         throw error;
       }
@@ -81,7 +87,6 @@ async function connectToMongo() {
     // Note: surveys_flags, countries, surveys, and enumerators_stats indexes
     // are created by the migration script (scripts/migrate_to_multi_country.js)
     // No need to recreate them here
-    console.log('Database indexes ready');
 
     return db;
   } catch (error) {
@@ -165,8 +170,8 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
     // Determine which surveys the user has access to
     let accessibleSurveys;
 
-    if (user.role === 'admin' && (!user.permissions?.surveys || user.permissions.surveys.length === 0)) {
-      // Admin with full access - get all active surveys
+    if (user.role === 'admin') {
+      // Admin users get full access to ALL active surveys, regardless of permissions.surveys
       accessibleSurveys = await database.collection('surveys')
         .find({ active: true })
         .toArray();
@@ -207,7 +212,6 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
           survey_country: survey.country_id
         };
       } catch (error) {
-        console.log(`No submissions collection for survey ${survey.asset_id}:`, error.message);
         return {
           asset_id: survey.asset_id,
           submissions: [],
@@ -262,7 +266,14 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
       count: totalCount,
       next: null,
       previous: null,
-      results: allSubmissions
+      results: allSubmissions,
+      metadata: {
+        accessible_surveys: accessibleSurveys.map(s => ({
+          asset_id: s.asset_id,
+          name: s.name,
+          country_id: s.country_id
+        }))
+      }
     });
   } catch (error) {
     console.error('Error fetching combined data:', error);
@@ -749,8 +760,6 @@ app.patch('/api/users/:id/reset-password', authenticateUser, requireAdmin, async
 // Sync users from Airtable (Admin only)
 app.post('/api/admin/sync-users', authenticateUser, requireAdmin, async (req, res) => {
   try {
-    console.log('Starting Airtable user sync...');
-
     // Execute the sync script
     const syncScript = spawn('node', ['scripts/sync_users_from_airtable.js'], {
       cwd: process.cwd(),
@@ -763,7 +772,6 @@ app.post('/api/admin/sync-users', authenticateUser, requireAdmin, async (req, re
     syncScript.stdout.on('data', (data) => {
       const message = data.toString();
       output += message;
-      console.log(message);
     });
 
     syncScript.stderr.on('data', (data) => {
@@ -1271,11 +1279,19 @@ app.delete('/api/countries/:code', authenticateUser, requireAdmin, async (req, r
 });
 
 // Proxy route for getting edit URL
-app.get('/api/kobo/edit_url/:id', async (req, res) => {
+app.get('/api/kobo/edit-url/:id', authenticateUser, async (req, res) => {
   try {
     const { id } = req.params;
     const { asset_id } = req.query;
     const koboAssetId = asset_id || process.env.KOBO_ASSET_ID;
+
+    if (!id) {
+      return res.status(400).json({ error: 'Submission ID is required' });
+    }
+
+    if (!koboAssetId) {
+      return res.status(400).json({ error: 'asset_id parameter or KOBO_ASSET_ID env var is required' });
+    }
 
     // Fetch survey configuration to get the correct API URL
     const database = getDb();
@@ -1284,11 +1300,20 @@ app.get('/api/kobo/edit_url/:id', async (req, res) => {
     }
 
     const survey = await database.collection('surveys').findOne({ asset_id: koboAssetId });
-    if (!survey || !survey.kobo_config) {
-      return res.status(404).json({ error: 'Survey configuration not found' });
+    if (!survey) {
+      return res.status(404).json({ error: `Survey with asset_id '${koboAssetId}' not found in database` });
+    }
+
+    if (!survey.kobo_config) {
+      return res.status(500).json({ error: `Survey '${survey.name}' (${koboAssetId}) has no kobo_config. Run update_single_survey.R to configure.` });
     }
 
     const { api_url, token } = survey.kobo_config;
+
+    if (!api_url || !token) {
+      return res.status(500).json({ error: `Survey '${survey.name}' kobo_config is missing api_url or token` });
+    }
+
     const url = `${api_url}/assets/${koboAssetId}/data/${id}/enketo/edit/?return_url=false`;
 
     const response = await axios.get(url, {
@@ -1297,19 +1322,40 @@ app.get('/api/kobo/edit_url/:id', async (req, res) => {
       }
     });
 
+    if (!response.data.url) {
+      return res.status(500).json({ error: 'KoboToolbox API did not return an edit URL' });
+    }
+
     res.json({ url: response.data.url });
   } catch (error) {
     console.error('Error generating edit URL:', error);
+    if (error.isAxiosError) {
+      return res.status(error.response?.status || 500).json({
+        error: `KoboToolbox API error: ${error.response?.status} ${error.response?.statusText || error.message}`
+      });
+    }
     res.status(500).json({ error: 'Failed to generate edit URL' });
   }
 });
 
 // Proxy route for updating validation status
-app.patch('/api/kobo/validation_status/:id', async (req, res) => {
+app.patch('/api/kobo/validation-status/:id', authenticateUser, async (req, res) => {
   try {
     const { id } = req.params;
     const { validation_status, asset_id } = req.body;
     const koboAssetId = asset_id || process.env.KOBO_ASSET_ID;
+
+    if (!id) {
+      return res.status(400).json({ error: 'Submission ID is required' });
+    }
+
+    if (!validation_status) {
+      return res.status(400).json({ error: 'validation_status is required' });
+    }
+
+    if (!koboAssetId) {
+      return res.status(400).json({ error: 'asset_id parameter or KOBO_ASSET_ID env var is required' });
+    }
 
     // Fetch survey configuration to get the correct API URL
     const database = getDb();
@@ -1318,11 +1364,20 @@ app.patch('/api/kobo/validation_status/:id', async (req, res) => {
     }
 
     const survey = await database.collection('surveys').findOne({ asset_id: koboAssetId });
-    if (!survey || !survey.kobo_config) {
-      return res.status(404).json({ error: 'Survey configuration not found' });
+    if (!survey) {
+      return res.status(404).json({ error: `Survey with asset_id '${koboAssetId}' not found in database` });
+    }
+
+    if (!survey.kobo_config) {
+      return res.status(500).json({ error: `Survey '${survey.name}' (${koboAssetId}) has no kobo_config. Run update_single_survey.R to configure.` });
     }
 
     const { api_url, token } = survey.kobo_config;
+
+    if (!api_url || !token) {
+      return res.status(500).json({ error: `Survey '${survey.name}' kobo_config is missing api_url or token` });
+    }
+
     const url = `${api_url}/assets/${koboAssetId}/data/${id}/validation_status/`;
 
     // Create form data
@@ -1342,6 +1397,12 @@ app.patch('/api/kobo/validation_status/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating validation status:', error);
+    if (error.isAxiosError) {
+      return res.status(error.response?.status || 500).json({
+        success: false,
+        error: `KoboToolbox API error: ${error.response?.status} ${error.response?.statusText || error.message}`
+      });
+    }
     res.status(500).json({
       success: false,
       error: 'Failed to update validation status',
@@ -1547,9 +1608,8 @@ app.get('/api/enumerators-stats', authenticateUser, async (req, res) => {
     // Determine which asset_ids the user has access to
     let accessibleAssetIds;
 
-    // Determine which asset_ids the user has access to
-    if (user.role === 'admin' && (!user.permissions?.surveys || user.permissions.surveys.length === 0)) {
-      // Admin with full access - get all active surveys
+    if (user.role === 'admin') {
+      // Admin users get full access to ALL active surveys, regardless of permissions.surveys
       const surveys = await database.collection('surveys').find({ active: true }).toArray();
       accessibleAssetIds = surveys.map(s => s.asset_id);
     } else {
@@ -1605,7 +1665,6 @@ app.get('/api/enumerators-stats', authenticateUser, async (req, res) => {
             return true; // No restrictions, include all
           });
       } catch (error) {
-        console.log(`No stats collection for survey ${assetId}`);
         return [];
       }
     });
@@ -1613,7 +1672,6 @@ app.get('/api/enumerators-stats', authenticateUser, async (req, res) => {
     const allStats = await Promise.all(statsPromises);
     const flattenedStats = allStats.flat();
 
-    console.log(`Fetched ${flattenedStats.length} enumerator stats records for ${accessibleAssetIds.length} surveys (filtered by enumerator permissions: ${hasEnumeratorRestrictions})`);
     res.json(flattenedStats);
   } catch (error) {
     console.error('Error fetching enumerator statistics:', error);

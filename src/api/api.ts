@@ -28,6 +28,7 @@ const normalizeSubmissionData = (item: any): any => {
 // Hook to fetch submissions
 export const useFetchSubmissions = () => {
   const [data, setData] = useState<Submission[]>([]);
+  const [accessibleSurveys, setAccessibleSurveys] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,19 +36,25 @@ export const useFetchSubmissions = () => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      
+
+
       const response = await axios.get(`${API_BASE_URL}/kobo/submissions`);
-      
-      
+
+
       // Process and normalize all data
       const processedData = response.data.results.map(normalizeSubmissionData);
-      
+
       setData(processedData);
+
+      // Store accessible surveys metadata
+      if (response.data.metadata?.accessible_surveys) {
+        setAccessibleSurveys(response.data.metadata.accessible_surveys);
+      }
     } catch (err) {
       console.error('Error fetching submissions:', err);
       setError('Failed to load submissions');
       setData([]);
+      setAccessibleSurveys([]);
     } finally {
       setIsLoading(false);
     }
@@ -57,7 +64,7 @@ export const useFetchSubmissions = () => {
     fetchData();
   }, [fetchData]);
 
-  return { data, isLoading, error, refetch: fetchData };
+  return { data, accessibleSurveys, isLoading, error, refetch: fetchData };
 };
 
 // Hook to update validation status
@@ -100,22 +107,20 @@ export const useFetchEnumeratorStats = () => {
   const fetchEnumeratorStats = useCallback(async () => {
     setIsLoading(true);
     try {
-      console.log('Fetching enumerator statistics...');
-      const response = await axios.get(`${API_BASE_URL}/enumerators-stats`, { 
+      const response = await axios.get(`${API_BASE_URL}/enumerators-stats`, {
         timeout: 10000 // 10 second timeout
       });
-      
+
       if (!response.data) {
         throw new Error('Empty response received from server');
       }
-      
-      console.log(`Received ${response.data.length} enumerator records`);
+
       setData(response.data);
       setError(null);
       setRetryCount(0); // Reset retry count on success
     } catch (error: any) {
       console.error('Error fetching enumerator stats:', error);
-      
+
       // Extract the most useful error message
       let errorMessage = 'Failed to load enumerator statistics.';
       if (error.response?.data?.error) {
@@ -123,12 +128,11 @@ export const useFetchEnumeratorStats = () => {
       } else if (error.message) {
         errorMessage = `Error: ${error.message}`;
       }
-      
+
       setError(errorMessage);
-      
+
       // Auto-retry logic for certain types of errors
       if (retryCount < maxRetries && (error.code === 'ECONNABORTED' || error.response?.status === 500)) {
-        console.log(`Retrying (${retryCount + 1}/${maxRetries})...`);
         setRetryCount(prev => prev + 1);
         setTimeout(() => {
           fetchEnumeratorStats();
