@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { IconInfoCircle } from '@tabler/icons-react';
-import { createUser, updateUser, CreateUserPayload, User, Survey } from '../../api/admin';
+import { createUser, updateUser, CreateUserPayload, User } from '../../api/admin';
 
 interface UserModalProps {
   mode: 'create' | 'edit';
   user?: User;
-  surveys: Survey[];
   onClose: () => void;
   onSuccess: () => void;
 }
 
-const UserModal: React.FC<UserModalProps> = ({ mode, user, surveys, onClose, onSuccess }) => {
+const UserModal: React.FC<UserModalProps> = ({ mode, user, onClose, onSuccess }) => {
   const [username, setUsername] = useState('');
   const [name, setName] = useState('');
   const [country, setCountry] = useState<string[]>([]);
