@@ -87,6 +87,13 @@ const ValidationTable: React.FC = () => {
   const [minDate, maxDate] = getMinMaxDate(submissions);
   const [contextualSubmissions, setContextualSubmissions] = useState<Submission[]>(submissions || []);
 
+  // Sync contextualSubmissions when submissions first load
+  useEffect(() => {
+    if (submissions && submissions.length > 0 && contextualSubmissions.length === 0) {
+      setContextualSubmissions(submissions);
+    }
+  }, [submissions, contextualSubmissions.length]);
+
   // Get contextual alert codes based on currently visible/filtered data
   const { surveyAlertCodes } = useContextualAlertCodes(contextualSubmissions);
 
