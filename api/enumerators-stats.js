@@ -53,6 +53,19 @@ async function handler(req, res) {
       return res.json([]);
     }
 
+    // Get survey metadata for enrichment
+    const surveys = await database.collection('surveys').find({
+      asset_id: { $in: accessibleAssetIds }
+    }).toArray();
+
+    const surveyMap = {};
+    surveys.forEach(survey => {
+      surveyMap[survey.asset_id] = {
+        name: survey.name,
+        country_id: survey.country_id
+      };
+    });
+
     // Determine if user has enumerator restrictions
     const allowedEnumerators = user.permissions?.enumerators || [];
     const hasEnumeratorRestrictions = allowedEnumerators.length > 0;
@@ -66,8 +79,22 @@ async function handler(req, res) {
           .find({})
           .toArray();
 
+        // Add asset_id, survey name, and country to each stat record for frontend filtering
+        const surveyInfo = surveyMap[assetId] || { name: 'Unknown', country_id: null };
+        const enrichedStats = stats.map(stat => ({
+          ...stat,
+          asset_id: assetId,
+          survey_name: surveyInfo.name,
+          survey_country: surveyInfo.country_id
+        }));
+
         // Apply enumerator filtering if user has restrictions
-        return stats.filter(stat => {
+        return enrichedStats.filter(stat => {
+          // Skip metadata records (type: "metadata")
+          if (stat.type && stat.type.includes('metadata')) {
+            return false;
+          }
+          // Apply enumerator filtering
           if (hasEnumeratorRestrictions) {
             return allowedEnumerators.includes(stat.submitted_by);
           }

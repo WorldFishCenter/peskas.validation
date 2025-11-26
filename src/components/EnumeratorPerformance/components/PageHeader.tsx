@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconDatabase } from '@tabler/icons-react';
+import { IconDatabase, IconInfoCircle } from '@tabler/icons-react';
 import { useAuth } from '../../Auth/AuthContext';
 import { getCountryFlag, getCountryName } from '../../../utils/countryMetadata';
 
@@ -19,6 +19,7 @@ interface PageHeaderProps {
   setSelectedCountry: (country: string) => void;
   availableSurveys: string[];
   availableCountries: string[];
+  onShowAlertGuide?: () => void;
 }
 
 const PageHeader: React.FC<PageHeaderProps> = ({
@@ -36,7 +37,8 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   selectedCountry,
   setSelectedCountry,
   availableSurveys,
-  availableCountries
+  availableCountries,
+  onShowAlertGuide
 }) => {
   const { user } = useAuth();
 
@@ -73,81 +75,99 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             </div>
           </div>
           <div className="col-auto ms-auto d-print-none">
-            <div className="d-flex align-items-center gap-2 flex-wrap">
-              {/* Survey Filter */}
+            <div className="row g-2 align-items-end">
+              {/* Survey Filter - Always show if multiple surveys, one must be selected */}
               {availableSurveys.length > 1 && (
-                <div className="input-group" style={{ width: 'auto' }}>
-                  <span className="input-group-text">Survey</span>
-                  <select
-                    className="form-select"
-                    value={selectedSurvey}
-                    onChange={e => setSelectedSurvey(e.target.value)}
-                  >
-                    <option value="">All Surveys</option>
-                    {availableSurveys.map(survey => (
-                      <option key={survey} value={survey}>
-                        {survey}
-                      </option>
-                    ))}
-                  </select>
+                <div className="col-auto">
+                  <div className="input-group">
+                    <span className="input-group-text">Survey</span>
+                    <select
+                      className="form-select"
+                      value={selectedSurvey}
+                      onChange={e => setSelectedSurvey(e.target.value)}
+                      style={{ minWidth: '200px' }}
+                    >
+                      {availableSurveys.map(survey => (
+                        <option key={survey} value={survey}>
+                          {survey}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               )}
 
               {/* Country Filter */}
               {availableCountries.length > 1 && (
-                <div className="input-group" style={{ width: 'auto' }}>
-                  <span className="input-group-text">Country</span>
-                  <select
-                    className="form-select"
-                    value={selectedCountry}
-                    onChange={e => setSelectedCountry(e.target.value)}
-                  >
-                    <option value="">All Countries</option>
-                    {availableCountries.map(countryCode => (
-                      <option key={countryCode} value={countryCode}>
-                        {getCountryFlag(countryCode)} {getCountryName(countryCode)}
-                      </option>
-                    ))}
-                  </select>
+                <div className="col-auto">
+                  <div className="input-group">
+                    <span className="input-group-text">Country</span>
+                    <select
+                      className="form-select"
+                      value={selectedCountry}
+                      onChange={e => setSelectedCountry(e.target.value)}
+                    >
+                      <option value="">All Countries</option>
+                      {availableCountries.map(countryCode => (
+                        <option key={countryCode} value={countryCode}>
+                          {getCountryFlag(countryCode)} {getCountryName(countryCode)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               )}
 
               {/* Date Range Filter */}
-              <div className="d-flex align-items-center gap-2">
-                <div className="d-flex flex-column align-items-start">
-                  <label htmlFor="from-date" className="form-label mb-0 small">From</label>
+              <div className="col-auto">
+                <div className="input-group">
                   <input
-                    id="from-date"
                     type="date"
                     className="form-control"
                     value={fromDate}
                     min={minDate}
                     max={toDate || maxDate}
                     onChange={e => setFromDate(e.target.value)}
+                    aria-label="From date"
                   />
-                </div>
-                <div className="d-flex flex-column align-items-start">
-                  <label htmlFor="to-date" className="form-label mb-0 small">To</label>
+                  <span className="input-group-text">to</span>
                   <input
-                    id="to-date"
                     type="date"
                     className="form-control"
                     value={toDate}
                     min={fromDate || minDate}
                     max={maxDate}
                     onChange={e => setToDate(e.target.value)}
+                    aria-label="To date"
                   />
                 </div>
               </div>
+
+              {/* Alert Guide Button */}
+              {onShowAlertGuide && (
+                <div className="col-auto">
+                  <button
+                    className="btn btn-primary"
+                    onClick={onShowAlertGuide}
+                  >
+                    <IconInfoCircle className="icon me-1" size={20} stroke={2} />
+                    Alert Guide
+                  </button>
+                </div>
+              )}
+
+              {/* Refresh Data Button */}
               {isAdmin && (
-                <button
-                  className="btn btn-outline-secondary d-flex align-items-center"
-                  onClick={handleAdminRefresh}
-                  disabled={isRefreshing}
-                >
-                  <IconDatabase className="icon me-1" size={20} stroke={2} />
-                  Refresh Data
-                </button>
+                <div className="col-auto">
+                  <button
+                    className="btn btn-outline-secondary"
+                    onClick={handleAdminRefresh}
+                    disabled={isRefreshing}
+                  >
+                    <IconDatabase className="icon me-1" size={20} stroke={2} />
+                    Refresh Data
+                  </button>
+                </div>
               )}
             </div>
           </div>

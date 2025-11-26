@@ -1,6 +1,6 @@
 import React from 'react';
 import { Table } from '@tanstack/react-table';
-import { IconSearch } from '@tabler/icons-react';
+import { IconSearch, IconInfoCircle } from '@tabler/icons-react';
 import { VALIDATION_STATUS_OPTIONS } from '../../types/validation';
 
 interface TableFiltersProps<T> {
@@ -15,6 +15,7 @@ interface TableFiltersProps<T> {
   minDate: string;
   maxDate: string;
   accessibleSurveys: any[];
+  onShowAlertGuide?: () => void;
 }
 
 const TableFilters = <T,>({
@@ -28,7 +29,8 @@ const TableFilters = <T,>({
   setToDate,
   minDate,
   maxDate,
-  accessibleSurveys
+  accessibleSurveys,
+  onShowAlertGuide
 }: TableFiltersProps<T>) => {
   // Get columns with defensive access
   const statusColumn = table.getColumn('validation_status');
@@ -51,37 +53,63 @@ const TableFilters = <T,>({
   }, [accessibleSurveys, table]);
 
   return (
-    <div className="d-flex flex-wrap gap-2 align-items-end">
-      {/* Global Search */}
-      <div className="flex-fill">
-        <div className="input-group">
-          <span className="input-group-text">
-            <IconSearch className="icon" size={24} stroke={2} />
-          </span>
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Search all columns..."
-            value={globalFilter ?? ''}
-            onChange={e => setGlobalFilter(e.target.value)}
-          />
-          {globalFilter && (
+    <div className="d-flex flex-column gap-3">
+      {/* Row 1: Search Bar + Alert Guide */}
+      <div className="row g-2">
+        <div className="col-md-8">
+          <div className="input-group">
+            <span className="input-group-text">
+              <IconSearch className="icon" size={18} />
+            </span>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Search submissions..."
+              value={globalFilter ?? ''}
+              onChange={e => setGlobalFilter(e.target.value)}
+            />
+            {globalFilter && (
+              <button
+                className="btn"
+                type="button"
+                onClick={() => setGlobalFilter('')}
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="col-md-4 d-flex gap-2">
+          {/* Alert Guide Button */}
+          {onShowAlertGuide && (
             <button
-              className="btn btn-outline-secondary"
-              type="button"
-              onClick={() => setGlobalFilter('')}
+              className="btn btn-primary flex-fill"
+              onClick={onShowAlertGuide}
             >
-              ×
+              <IconInfoCircle className="icon me-2" size={18} />
+              Alert Guide
+            </button>
+          )}
+
+          {/* Reset Filters Button */}
+          {(globalFilter || (table.getState().columnFilters.length > 0)) && (
+            <button
+              className="btn flex-fill"
+              onClick={resetFilters}
+            >
+              Reset Filters
             </button>
           )}
         </div>
       </div>
 
-      {/* Survey Filter */}
-      {uniqueSurveys.length > 1 && (
-        <div>
-          <div className="input-group">
-            <span className="input-group-text">Survey</span>
+      {/* Row 2: Filters Grid */}
+      <div className="row g-2">
+        {/* Survey Filter - only show if multiple surveys */}
+        {uniqueSurveys.length > 1 && (
+          <div className="col-md-3">
             <select
               className="form-select"
               value={(surveyColumn?.getFilterValue() as string) || ''}
@@ -98,13 +126,10 @@ const TableFilters = <T,>({
               ))}
             </select>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Status Filter */}
-      <div>
-        <div className="input-group">
-          <span className="input-group-text">Status</span>
+        {/* Status Filter */}
+        <div className={uniqueSurveys.length > 1 ? 'col-md-3' : 'col-md-4'}>
           <select
             className="form-select"
             value={(statusColumn?.getFilterValue() as string) || ''}
@@ -116,19 +141,16 @@ const TableFilters = <T,>({
             <option value="">All Statuses</option>
             {VALIDATION_STATUS_OPTIONS.map(status => (
               <option key={status} value={status}>
-                {status === 'validation_status_approved' && 'APPROVED'}
-                {status === 'validation_status_not_approved' && 'NOT APPROVED'}
-                {status === 'validation_status_on_hold' && 'ON HOLD'}
+                {status === 'validation_status_approved' && 'Approved'}
+                {status === 'validation_status_not_approved' && 'Not Approved'}
+                {status === 'validation_status_on_hold' && 'On Hold'}
               </option>
             ))}
           </select>
         </div>
-      </div>
 
-      {/* Alert Filter */}
-      <div>
-        <div className="input-group">
-          <span className="input-group-text">Alert</span>
+        {/* Alert Filter */}
+        <div className={uniqueSurveys.length > 1 ? 'col-md-2' : 'col-md-4'}>
           <select
             className="form-select"
             value={(alertColumn?.getFilterValue() as string) || 'all'}
@@ -142,47 +164,32 @@ const TableFilters = <T,>({
             <option value="no-alerts">No Alerts</option>
           </select>
         </div>
-      </div>
 
-      {/* Date Range Filter */}
-      <div className="d-flex gap-2">
-        <div>
-          <label htmlFor="from-date" className="form-label mb-1 small">From</label>
-          <input
-            id="from-date"
-            type="date"
-            className="form-control"
-            value={fromDate}
-            min={minDate}
-            max={toDate || maxDate}
-            onChange={e => setFromDate(e.target.value)}
-          />
-        </div>
-        <div>
-          <label htmlFor="to-date" className="form-label mb-1 small">To</label>
-          <input
-            id="to-date"
-            type="date"
-            className="form-control"
-            value={toDate}
-            min={fromDate || minDate}
-            max={maxDate}
-            onChange={e => setToDate(e.target.value)}
-          />
+        {/* Date Range */}
+        <div className={uniqueSurveys.length > 1 ? 'col-md-4' : 'col-md-4'}>
+          <div className="input-group">
+            <input
+              type="date"
+              className="form-control"
+              value={fromDate}
+              min={minDate}
+              max={toDate || maxDate}
+              onChange={e => setFromDate(e.target.value)}
+              aria-label="From date"
+            />
+            <span className="input-group-text">to</span>
+            <input
+              type="date"
+              className="form-control"
+              value={toDate}
+              min={fromDate || minDate}
+              max={maxDate}
+              onChange={e => setToDate(e.target.value)}
+              aria-label="To date"
+            />
+          </div>
         </div>
       </div>
-
-      {/* Reset Filters Button */}
-      {(globalFilter || (table.getState().columnFilters.length > 0)) && (
-        <div>
-          <button
-            className="btn btn-outline-secondary"
-            onClick={resetFilters}
-          >
-            Reset Filters
-          </button>
-        </div>
-      )}
     </div>
   );
 };

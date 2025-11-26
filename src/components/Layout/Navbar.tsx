@@ -1,14 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { IconCheck, IconChartBar, IconUsers, IconAlertCircle } from '@tabler/icons-react';
+import { IconCheck, IconChartBar, IconUsers } from '@tabler/icons-react';
 import { useAuth } from '../Auth/AuthContext';
-import AlertGuideModal from '../ValidationTable/AlertGuideModal';
 import { getCountryFlag, getCountryName } from '../../utils/countryMetadata';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const [showAlertGuide, setShowAlertGuide] = React.useState(false);
 
   // Determine country display for navbar
   const getCountryDisplay = () => {
@@ -44,14 +42,6 @@ const Navbar: React.FC = () => {
           </Link>
         </h1>
         <div className="navbar-nav flex-row order-md-last">
-          <button
-            className="btn btn-outline-warning me-3"
-            onClick={() => setShowAlertGuide(true)}
-            title="View Alert Codes Reference"
-          >
-            <IconAlertCircle className="icon me-1" size={20} stroke={2} />
-            Alert Codes
-          </button>
           <div className="nav-item dropdown">
             <a href="#" className="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="Open user menu">
               <div className="d-none d-xl-block ps-2">
@@ -98,10 +88,6 @@ const Navbar: React.FC = () => {
           </div>
         </div>
       </div>
-      {/* Alert Guide Modal */}
-      {showAlertGuide && (
-        <AlertGuideModal onClose={() => setShowAlertGuide(false)} />
-      )}
     </header>
   );
 };

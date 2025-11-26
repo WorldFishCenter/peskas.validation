@@ -92,7 +92,8 @@ export const useFetchSurveys = () => {
       setError(null);
 
       const response = await axios.get(`${API_BASE_URL}/surveys`);
-      setData(response.data);
+      // API returns { success: true, surveys: [...] }
+      setData(response.data.surveys || []);
     } catch (err: any) {
       console.error('Error fetching surveys:', err);
       setError(err.response?.data?.error || 'Failed to load surveys');

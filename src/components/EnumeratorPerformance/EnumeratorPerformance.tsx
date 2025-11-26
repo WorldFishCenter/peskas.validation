@@ -3,12 +3,14 @@ import { useFetchEnumeratorStats } from '../../api/api';
 import { ChartTabType, DetailTabType, EnumeratorData } from './types';
 import { processEnumeratorData, findBestEnumerator } from './utils/dataUtils';
 import { refreshEnumeratorStats } from './utils/apiUtils';
+import { useContextualAlertCodes } from '../../hooks/useContextualAlertCodes';
 
 // Components
 import PageHeader from './components/PageHeader';
 import SummaryCards from './components/SummaryCards';
 import ChartTabs from './components/ChartTabs';
 import EnumeratorDetail from './components/EnumeratorDetail';
+import AlertGuideModal from '../ValidationTable/AlertGuideModal';
 
 // Add extended Highcharts types to fix TypeScript errors
 declare module 'highcharts' {
@@ -45,6 +47,12 @@ const EnumeratorPerformance: React.FC = () => {
   const [availableSurveys, setAvailableSurveys] = useState<string[]>([]);
   const [availableCountries, setAvailableCountries] = useState<string[]>([]);
 
+  // Alert Guide modal state
+  const [showAlertGuide, setShowAlertGuide] = useState(false);
+
+  // Use the same hook as ValidationTable - rawData is already in the correct format
+  const { surveyAlertCodes } = useContextualAlertCodes(rawData as any);
+
   // Process the raw data into the format needed for the charts - do this only once
   useEffect(() => {
     if (rawData && rawData.length > 0) {
@@ -58,8 +66,16 @@ const EnumeratorPerformance: React.FC = () => {
         if (item.survey_name) surveys.add(item.survey_name);
         if (item.survey_country) countries.add(item.survey_country);
       });
-      setAvailableSurveys(Array.from(surveys).sort());
-      setAvailableCountries(Array.from(countries).sort());
+      const surveysArray = Array.from(surveys).sort();
+      const countriesArray = Array.from(countries).sort();
+
+      setAvailableSurveys(surveysArray);
+      setAvailableCountries(countriesArray);
+
+      // Auto-select first survey if multiple surveys and none selected
+      if (surveysArray.length > 1 && !selectedSurvey) {
+        setSelectedSurvey(surveysArray[0]);
+      }
 
       // Set default selected enumerator
       if (processed.length > 0 && !selectedEnumerator) {
@@ -279,6 +295,7 @@ const EnumeratorPerformance: React.FC = () => {
         setSelectedCountry={setSelectedCountry}
         availableSurveys={availableSurveys}
         availableCountries={availableCountries}
+        onShowAlertGuide={() => setShowAlertGuide(true)}
       />
 
       {refreshMessage && (
@@ -306,13 +323,21 @@ const EnumeratorPerformance: React.FC = () => {
 
       {/* Detailed enumerator analysis section */}
       {selectedEnumeratorData && (
-        <EnumeratorDetail 
+        <EnumeratorDetail
           selectedEnumeratorData={selectedEnumeratorData}
           selectedEnumerator={selectedEnumerator}
           setSelectedEnumerator={setSelectedEnumerator}
           enumerators={enumerators}
           detailActiveTab={detailActiveTab}
           setDetailActiveTab={setDetailActiveTab}
+        />
+      )}
+
+      {/* Alert Guide Modal */}
+      {showAlertGuide && (
+        <AlertGuideModal
+          onClose={() => setShowAlertGuide(false)}
+          surveyAlertCodes={surveyAlertCodes}
         />
       )}
     </div>

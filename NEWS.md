@@ -1,3 +1,51 @@
+# validation-zanzibar 1.2.1
+
+## Features
+
+- **Alert Guide in Enumerator Performance Dashboard**
+  - Added "Alert Guide" button to Enumerator Performance page header
+  - Modal displays survey-specific alert codes from MongoDB `surveys` collection
+  - Supports multi-survey selection when multiple surveys are present
+  - Uses shared `AlertGuideModal` component and `useContextualAlertCodes` hook for consistency
+  - Works identically to ValidationTable's Alert Guide feature
+
+- **Survey Filter in Enumerator Performance Dashboard**
+  - Added mandatory survey filter when multiple surveys are available
+  - Only one survey can be selected at a time (no "All Surveys" option)
+  - Auto-selects first survey when multiple surveys exist
+  - Filters all charts and statistics by selected survey
+  - Clean integration using Tabler's grid system
+
+## UI/UX Improvements
+
+- **Improved Filter Layout in ValidationTable**
+  - Restructured to clean two-row layout using Tabler grid system
+  - Row 1: Search bar (66% width) + Alert Guide and Reset buttons (33% width)
+  - Row 2: Survey, Status, Alert, and Date Range filters with responsive columns
+  - Consistent spacing and sizing across all filter elements
+  - Proper grid alignment with no floating elements
+  - Better proportioned and more visually balanced
+
+## Backend Enhancements
+
+- **Enumerator Stats API Enrichment**
+  - `/api/enumerators-stats` endpoint now enriches each submission record with survey metadata
+  - Adds `asset_id`, `survey_name`, and `survey_country` fields to every record
+  - Fetches survey information from MongoDB `surveys` collection
+  - Enables frontend Alert Guide and filtering features to work correctly
+  - Filters out metadata records (type: "metadata") from results
+
+## Code Quality
+
+- **Production-Ready Code**
+  - No debug console.log statements in production code
+  - No TODO/FIXME comments
+  - Clean TypeScript compilation with no warnings
+  - Reusable components and hooks across ValidationTable and EnumeratorPerformance
+  - Consistent Tabler UI framework usage throughout
+
+---
+
 # validation-zanzibar 1.2.0
 
 ## Features

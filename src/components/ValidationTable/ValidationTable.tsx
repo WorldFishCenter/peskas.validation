@@ -14,7 +14,8 @@ import {
 } from '@tanstack/react-table';
 import { rankItem } from '@tanstack/match-sorter-utils';
 import StatusUpdateForm from './StatusUpdateForm';
-import { useFetchSubmissions, useFetchAlertCodes } from '../../api/api';
+import { useFetchSubmissions } from '../../api/api';
+import { useContextualAlertCodes } from '../../hooks/useContextualAlertCodes';
 import { updateValidationStatus } from '../../api/koboToolbox';
 import { Submission } from '../../types/validation';
 import AlertBadge from './AlertBadge';
@@ -84,14 +85,10 @@ const ValidationTable: React.FC = () => {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [minDate, maxDate] = getMinMaxDate(submissions);
+  const [contextualSubmissions, setContextualSubmissions] = useState<Submission[]>(submissions || []);
 
-  // Get asset_id from first submission to fetch alert codes
-  const assetId = submissions && submissions.length > 0 ? submissions[0].asset_id : null;
-  const { alertCodes } = useFetchAlertCodes(assetId || null);
-
-  useEffect(() => {
-    // No-op: submissions are loaded and ready for display
-  }, [submissions]);
+  // Get contextual alert codes based on currently visible/filtered data
+  const { surveyAlertCodes } = useContextualAlertCodes(contextualSubmissions);
 
   useEffect(() => {
     setFromDate(minDate);
@@ -273,6 +270,16 @@ const ValidationTable: React.FC = () => {
     table.getColumn('submission_date')?.setFilterValue([fromDate, toDate]);
   }, [fromDate, toDate, table]);
 
+  // Update contextual submissions when filters change
+  useEffect(() => {
+    const filtered = table.getFilteredRowModel().rows.map(row => row.original);
+    if (filtered.length > 0) {
+      setContextualSubmissions(filtered);
+    } else {
+      setContextualSubmissions(submissions || []);
+    }
+  }, [table.getState().columnFilters, table.getState().globalFilter, submissions]);
+
   const handleRowClick = (row: Row<Submission>) => {
     setSelectedRow(row.original);
     setSidebarOpen(true);
@@ -335,6 +342,7 @@ const ValidationTable: React.FC = () => {
             minDate={minDate}
             maxDate={maxDate}
             accessibleSurveys={accessibleSurveys}
+            onShowAlertGuide={() => setShowAlertGuide(true)}
           />
         </div>
         <div className="card-body">
@@ -521,7 +529,7 @@ const ValidationTable: React.FC = () => {
       {showAlertGuide && (
         <AlertGuideModal
           onClose={() => setShowAlertGuide(false)}
-          alertCodes={alertCodes}
+          surveyAlertCodes={surveyAlertCodes}
         />
       )}
     </div>
