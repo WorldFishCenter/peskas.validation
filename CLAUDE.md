@@ -158,15 +158,20 @@ Required environment variables (see `.env.example`):
 - **MongoDB**:
   - `MONGODB_VALIDATION_URI` - MongoDB connection string to validation cluster
   - `MONGODB_VALIDATION_DB` - Database name (validation-dev or validation-prod)
-- **Server**: `PORT` - Express server port (default: 3001)
-- **JWT**: `JWT_SECRET` - Secret key for JWT token signing
-- **Admin**: `ADMIN_TOKEN` - Token for admin-only endpoints (stats refresh)
-- **Frontend**: `VITE_API_URL` - API base URL for production (optional, defaults to relative /api)
+- **Server**:
+  - `PORT` - Express server port (default: 3001)
+  - `NODE_ENV` - Node environment (development or production)
+- **JWT**:
+  - `JWT_SECRET` - Secret key for JWT token signing (generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)
+  - `JWT_EXPIRY` - Token expiry duration (default: 7d, optional)
 - **Airtable** (optional, for sync scripts):
-  - `AIRTABLE_API_KEY` - Airtable personal access token
+  - `AIRTABLE_TOKEN` - Airtable personal access token
   - `AIRTABLE_BASE_ID` - Base ID for user/survey management
 
-**Note**: KoboToolbox configuration is now stored per-survey in MongoDB (not env vars)
+**Notes**:
+- KoboToolbox configuration is now stored per-survey in MongoDB (not env vars)
+- CORS is auto-configured: development allows all origins, production allows `*.vercel.app` domains
+- Only set `ALLOWED_ORIGINS` if you need additional custom domains in production
 
 ### Key Development Notes
 
