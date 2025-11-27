@@ -1,12 +1,34 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { IconCheck, IconChartBar, IconUsers } from '@tabler/icons-react';
 import { useAuth } from '../Auth/AuthContext';
-import AlertGuideModal from '../ValidationTable/AlertGuideModal';
+import { getCountryFlag, getCountryName } from '../../utils/countryMetadata';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const [showAlertGuide, setShowAlertGuide] = React.useState(false);
+
+  // Determine country display for navbar
+  const getCountryDisplay = () => {
+    if (!user?.country || user.country.length === 0) {
+      // Admin with access to all countries
+      return { flag: '', name: '' };
+    }
+
+    if (user.country.length === 1) {
+      // Single country user
+      const countryCode = user.country[0];
+      return {
+        flag: getCountryFlag(countryCode),
+        name: getCountryName(countryCode)
+      };
+    }
+
+    // Multi-country user
+    return { flag: '', name: 'Multi-Country' };
+  };
+
+  const countryDisplay = getCountryDisplay();
   
   return (
     <header className="navbar navbar-expand-md navbar-light d-print-none">
@@ -16,62 +38,15 @@ const Navbar: React.FC = () => {
         </button>
         <h1 className="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
           <Link to="/">
-            🇹🇿 PESKAS | <span className="text-muted">validation portal</span>
+            {countryDisplay.flag && `${countryDisplay.flag} `}PESKAS{countryDisplay.name && ` | ${countryDisplay.name}`} | <span className="text-muted">validation portal</span>
           </Link>
         </h1>
-        <div className="collapse navbar-collapse" id="navbar-menu">
-          <div className="d-flex flex-column flex-md-row flex-fill align-items-stretch align-items-md-center">
-            <ul className="navbar-nav">
-              <li className="nav-item">
-                <Link to="/" className={`nav-link px-3 ${location.pathname === '/' ? 'active font-weight-bold' : ''}`}>
-                  <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-checkbox" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                      <path d="M9 11l3 3l8 -8"></path>
-                      <path d="M20 12v6a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h9"></path>
-                    </svg>
-                  </span>
-                  <span className="nav-link-title">Validation</span>
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link to="/enumerators" className={`nav-link px-3 ${location.pathname === '/enumerators' ? 'active font-weight-bold' : ''}`}>
-                  <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-chart-bar" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                      <path d="M3 12m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path>
-                      <path d="M9 8m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path>
-                      <path d="M15 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path>
-                    </svg>
-                  </span>
-                  <span className="nav-link-title">Enumerator Performance</span>
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div className="navbar-nav flex-row order-md-last align-items-center">
-          {/* Alert Codes Button */}
-          <button
-            className="btn btn-outline-warning me-3"
-            style={{ fontWeight: 500 }}
-            onClick={() => setShowAlertGuide(true)}
-            title="View Alert Codes Reference"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-circle" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, verticalAlign: 'middle' }}>
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-              <circle cx="12" cy="12" r="9" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            Alert Codes
-          </button>
-          {/* User Dropdown */}
+        <div className="navbar-nav flex-row order-md-last">
           <div className="nav-item dropdown">
             <a href="#" className="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="Open user menu">
               <div className="d-none d-xl-block ps-2">
-                <div>{user}</div>
-                <div className="mt-1 small text-muted">Administrator</div>
+                <div>{user?.username}</div>
+                <div className="mt-1 small text-muted">{user?.role === 'admin' ? 'Administrator' : 'User'}</div>
               </div>
             </a>
             <div className="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
@@ -79,11 +54,40 @@ const Navbar: React.FC = () => {
             </div>
           </div>
         </div>
+        <div className="collapse navbar-collapse" id="navbar-menu">
+          <div className="d-flex flex-column flex-md-row flex-fill align-items-stretch align-items-md-center">
+            <ul className="navbar-nav">
+              <li className={`nav-item ${location.pathname === '/' ? 'active' : ''}`}>
+                <Link to="/" className="nav-link">
+                  <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
+                    <IconCheck className="icon" size={24} stroke={2} />
+                  </span>
+                  <span className="nav-link-title">Validation</span>
+                </Link>
+              </li>
+              <li className={`nav-item ${location.pathname === '/enumerators' ? 'active' : ''}`}>
+                <Link to="/enumerators" className="nav-link">
+                  <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
+                    <IconChartBar className="icon" size={24} stroke={2} />
+                  </span>
+                  <span className="nav-link-title">Enumerator Performance</span>
+                </Link>
+              </li>
+              {/* Admin-only Users Management Link */}
+              {user?.role === 'admin' && (
+                <li className={`nav-item ${location.pathname === '/admin/users' ? 'active' : ''}`}>
+                  <Link to="/admin/users" className="nav-link">
+                    <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
+                      <IconUsers className="icon" size={24} stroke={2} />
+                    </span>
+                    <span className="nav-link-title">Users</span>
+                  </Link>
+                </li>
+              )}
+            </ul>
+          </div>
+        </div>
       </div>
-      {/* Alert Guide Modal */}
-      {showAlertGuide && (
-        <AlertGuideModal onClose={() => setShowAlertGuide(false)} />
-      )}
     </header>
   );
 };

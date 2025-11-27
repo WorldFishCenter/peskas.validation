@@ -1,103 +1,156 @@
-import axios from 'axios';
-import { MongoClient } from 'mongodb';
+/**
+ * GET /api/kobo/submissions
+ *
+ * Fetch submissions from MongoDB filtered by user permissions
+ * Supports multi-survey architecture and enumerator filtering
+ * Requires authentication
+ */
 
-// Cache the database connection
-let cachedDb = null;
+const { withMiddleware, authenticateUser } = require('../../lib/middleware');
+const { getDb } = require('../../lib/db');
+const { getSurveyFlagsCollection } = require('../../lib/helpers');
+const { sendSuccess, sendUnauthorized, sendServerError, setCorsHeaders } = require('../../lib/response');
 
-async function connectToDatabase() {
-  if (cachedDb) {
-    return cachedDb;
+async function handler(req, res) {
+  // Set CORS headers
+  setCorsHeaders(res, req);
+
+  // Handle OPTIONS request for CORS preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
-  const client = new MongoClient(process.env.MONGODB_URI);
-  await client.connect();
-  const db = client.db('zanzibar-prod');
-  
-  cachedDb = db;
-  return db;
-}
+  // Only allow GET method
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-export default async function handler(req, res) {
-  // Debug all environment variables (without revealing values)
-  const envVars = Object.keys(process.env).filter(key => key.includes('KOBO'));
-  console.log('Available environment variables:', envVars);
-  
   try {
-    // Direct access check
-    console.log('Direct KOBO_API_TOKEN check:', typeof process.env.KOBO_API_TOKEN);
-    console.log('Direct KOBO_API_URL check:', typeof process.env.KOBO_API_URL);
-    
-    // Get environment variables using process.env
-    const koboApiUrl = process.env.KOBO_API_URL;
-    const koboApiToken = process.env.KOBO_API_TOKEN;
-    const koboAssetId = process.env.KOBO_ASSET_ID;
-    
-    // Use static test data if environment variables are missing (for debugging)
-    if (!koboApiToken) {
-      return res.status(500).json({ 
-        error: 'Environment Variable Issue',
-        message: 'KOBO_API_TOKEN is not available in the environment',
-        envVars: envVars,
-        availableVars: Object.keys(process.env).length
+    const database = await getDb();
+    if (!database) {
+      return sendServerError(res, 'Database not configured');
+    }
+
+    // Get the authenticated user's full data
+    const user = await database.collection('users').findOne({ username: req.user.username });
+
+    if (!user) {
+      return sendUnauthorized(res, 'User not found');
+    }
+
+    // Determine which surveys the user has access to
+    let accessibleSurveys;
+
+    if (user.role === 'admin') {
+      // Admin users get full access to ALL active surveys, regardless of permissions.surveys
+      accessibleSurveys = await database.collection('surveys')
+        .find({ active: true })
+        .toArray();
+    } else {
+      // Regular user - only their assigned surveys
+      accessibleSurveys = await database.collection('surveys')
+        .find({
+          asset_id: { $in: user.permissions?.surveys || [] },
+          active: true
+        })
+        .toArray();
+    }
+
+    if (accessibleSurveys.length === 0) {
+      return res.json({
+        count: 0,
+        next: null,
+        previous: null,
+        results: []
       });
     }
-    
-    // 1. Fetch KoboToolbox data
-    const apiUrl = `${koboApiUrl}/assets/${koboAssetId}/data`;
-    const response = await axios.get(apiUrl, {
-      headers: {
-        'Authorization': `Token ${koboApiToken}`
+
+    // Fetch submissions from MongoDB for each accessible survey
+    // R pipeline now stores all data including validation_status, validated_at, validated_by
+    const submissionsPromises = accessibleSurveys.map(async (survey) => {
+      const collectionName = getSurveyFlagsCollection(survey.asset_id);
+
+      try {
+        // Fetch all submissions from MongoDB (R pipeline writes everything here)
+        const mongoSubmissions = await database.collection(collectionName)
+          .find({ type: { $ne: 'metadata' } })
+          .toArray();
+
+        return {
+          asset_id: survey.asset_id,
+          submissions: mongoSubmissions,
+          survey_name: survey.name,
+          survey_country: survey.country_id
+        };
+      } catch (error) {
+        return {
+          asset_id: survey.asset_id,
+          submissions: [],
+          survey_name: survey.name,
+          survey_country: survey.country_id
+        };
       }
     });
-    
-    // 2. Connect to MongoDB and fetch alert flags
-    const db = await connectToDatabase();
-    const mongoSubmissions = await db.collection('surveys_flags')
-      .find({})
-      .toArray();
-      
-    // 3. Create a map of MongoDB data for easier lookup
-    const mongoDataMap = new Map(
-      mongoSubmissions.map(doc => [doc.submission_id, doc])
-    );
-    
-    // 4. Combine the data
-    const combinedData = response.data.results.map(koboItem => {
-      const mongoData = mongoDataMap.get(koboItem._id);
-      
-      return {
-        submission_id: koboItem._id,
-        submission_date: koboItem._submission_time,
-        submitted_by: koboItem.submitted_by || koboItem._submitted_by || '',
-        vessel_number: koboItem.vessel_number || '',
-        catch_number: koboItem.catch_number || '',
-        validation_status: koboItem._validation_status?.validation_status?.uid || 
-                         koboItem._validation_status?.uid || 
-                         'validation_status_on_hold',
-        validated_at: koboItem._validation_status?.timestamp || koboItem._submission_time,
-        alert_flag: mongoData?.alert_flag || '',
-        alert_flags: mongoData?.alert_flag ? [mongoData.alert_flag] : []
-      };
+
+    const surveySubmissions = await Promise.all(submissionsPromises);
+
+    // Determine if user has enumerator restrictions
+    const allowedEnumerators = user.permissions?.enumerators || [];
+    const hasEnumeratorRestrictions = allowedEnumerators.length > 0;
+
+    // Process and combine all submissions from all accessible surveys
+    let allSubmissions = [];
+    let totalCount = 0;
+
+    surveySubmissions.forEach(surveyData => {
+      const processedSubmissions = surveyData.submissions
+        .map(mongoDoc => {
+          return {
+            submission_id: mongoDoc.submission_id,
+            submission_date: mongoDoc.submission_date,
+            vessel_number: mongoDoc.vessel_number || '',
+            catch_number: mongoDoc.catch_number || '',
+            submitted_by: mongoDoc.submitted_by || '',
+            validation_status: mongoDoc.validation_status || 'validation_status_on_hold',
+            validated_at: mongoDoc.validated_at || mongoDoc.submission_date,
+            validated_by: mongoDoc.validated_by || '',
+            alert_flag: mongoDoc.alert_flag || '',
+            alert_flags: mongoDoc.alert_flag ? mongoDoc.alert_flag.split(', ') : [],
+            asset_id: surveyData.asset_id,
+            survey_name: surveyData.survey_name || 'Unknown Survey',
+            survey_country: surveyData.survey_country || ''
+          };
+        })
+        .filter(submission => {
+          // Apply enumerator filtering if user has restrictions
+          if (hasEnumeratorRestrictions) {
+            return allowedEnumerators.includes(submission.submitted_by);
+          }
+          return true; // No restrictions, include all
+        });
+
+      allSubmissions = [...allSubmissions, ...processedSubmissions];
+      totalCount += processedSubmissions.length;
     });
-    
-    // Return the combined data
-    res.status(200).json({
-      count: response.data.count,
-      next: response.data.next,
-      previous: response.data.previous,
-      results: combinedData
+
+    return res.json({
+      count: totalCount,
+      next: null,
+      previous: null,
+      results: allSubmissions,
+      metadata: {
+        accessible_surveys: accessibleSurveys.map(s => ({
+          asset_id: s.asset_id,
+          name: s.name,
+          country_id: s.country_id
+        }))
+      }
     });
   } catch (error) {
-    console.error('Error fetching data:', {
-      message: error.message,
-      stack: error.stack
-    });
-    
-    res.status(500).json({ 
-      error: 'Failed to fetch submissions',
-      details: error.message,
-      responseInfo: error.response?.data,
-      envVars: envVars
-    });
+    console.error('Error fetching combined data:', error);
+    return sendServerError(res, 'Failed to fetch submissions');
   }
-} 
+}
+
+// Export with authentication middleware
+module.exports = withMiddleware(handler, authenticateUser);

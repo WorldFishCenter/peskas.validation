@@ -17,12 +17,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     <div className="page">
       <Navbar />
       <div className="page-wrapper">
-        <div className="page-body">
-          <div className="container-xl">
-            {children}
-          </div>
-        </div>
-        <footer className="footer footer-transparent d-print-none">
+        {children}
+        {/* <footer className="footer footer-transparent d-print-none">
           <div className="container-xl">
             <div className="row text-center align-items-center flex-row-reverse">
               <div className="col-lg-auto ms-lg-auto">
@@ -40,7 +36,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               </div>
             </div>
           </div>
-        </footer>
+        </footer> */}
       </div>
     </div>
   );

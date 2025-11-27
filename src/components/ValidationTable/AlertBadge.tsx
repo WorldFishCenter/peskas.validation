@@ -10,30 +10,18 @@ const AlertBadge: React.FC<AlertBadgeProps> = ({ alertFlag, alertFlags }) => {
     return <span className="text-muted">—</span>;
   }
 
+  const tooltipText = alertFlags && alertFlags.length > 0
+    ? `Alerts: ${alertFlags.join(', ')}`
+    : `Alert: ${alertFlag}`;
+
   return (
     <span
-      className="alert-badge"
-      title={
-        alertFlags && alertFlags.length > 0
-          ? `Alerts: ${alertFlags.join(', ')}`
-          : `Alert: ${alertFlag}`
-      }
-      style={{
-        cursor: 'help',
-        textAlign: 'center',
-        display: 'block',
-        backgroundColor: 'rgba(220, 53, 69, 0.15)',
-        color: '#dc3545',
-        border: '1px solid rgba(220, 53, 69, 0.3)',
-        borderRadius: '4px',
-        padding: '2px 8px',
-        fontWeight: '600',
-        fontSize: '0.85rem'
-      }}
+      className="badge bg-red-lt text-red cursor-help"
+      title={tooltipText}
     >
       {alertFlag}
     </span>
   );
 };
 
-export default AlertBadge; 
+export default AlertBadge;

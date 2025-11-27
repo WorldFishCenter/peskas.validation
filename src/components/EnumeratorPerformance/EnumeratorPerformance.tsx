@@ -3,12 +3,14 @@ import { useFetchEnumeratorStats } from '../../api/api';
 import { ChartTabType, DetailTabType, EnumeratorData } from './types';
 import { processEnumeratorData, findBestEnumerator } from './utils/dataUtils';
 import { refreshEnumeratorStats } from './utils/apiUtils';
+import { useContextualAlertCodes } from '../../hooks/useContextualAlertCodes';
 
 // Components
 import PageHeader from './components/PageHeader';
 import SummaryCards from './components/SummaryCards';
 import ChartTabs from './components/ChartTabs';
 import EnumeratorDetail from './components/EnumeratorDetail';
+import AlertGuideModal from '../ValidationTable/AlertGuideModal';
 
 // Add extended Highcharts types to fix TypeScript errors
 declare module 'highcharts' {
@@ -39,13 +41,42 @@ const EnumeratorPerformance: React.FC = () => {
   const [minDate, setMinDate] = useState<string>('');
   const [maxDate, setMaxDate] = useState<string>('');
 
+  // Survey and country filter state
+  const [selectedSurvey, setSelectedSurvey] = useState<string>('');
+  const [selectedCountry, setSelectedCountry] = useState<string>('');
+  const [availableSurveys, setAvailableSurveys] = useState<string[]>([]);
+  const [availableCountries, setAvailableCountries] = useState<string[]>([]);
+
+  // Alert Guide modal state
+  const [showAlertGuide, setShowAlertGuide] = useState(false);
+
+  // Use the same hook as ValidationTable - rawData is already in the correct format
+  const { surveyAlertCodes } = useContextualAlertCodes(rawData as any);
+
   // Process the raw data into the format needed for the charts - do this only once
   useEffect(() => {
     if (rawData && rawData.length > 0) {
-      console.log('Processing raw data...', rawData.length, 'records');
       const processed = processEnumeratorData(rawData);
       setProcessedData(processed);
-      
+
+      // Extract unique surveys and countries
+      const surveys = new Set<string>();
+      const countries = new Set<string>();
+      rawData.forEach((item: any) => {
+        if (item.survey_name) surveys.add(item.survey_name);
+        if (item.survey_country) countries.add(item.survey_country);
+      });
+      const surveysArray = Array.from(surveys).sort();
+      const countriesArray = Array.from(countries).sort();
+
+      setAvailableSurveys(surveysArray);
+      setAvailableCountries(countriesArray);
+
+      // Auto-select first survey if multiple surveys and none selected
+      if (surveysArray.length > 1 && !selectedSurvey) {
+        setSelectedSurvey(surveysArray[0]);
+      }
+
       // Set default selected enumerator
       if (processed.length > 0 && !selectedEnumerator) {
         setSelectedEnumerator(processed[0].name);
@@ -76,7 +107,7 @@ const EnumeratorPerformance: React.FC = () => {
     }
   }, [processedData]);
 
-  // Apply date range filtering to data when processed data or date range changes
+  // Apply date range, survey, and country filtering to data
   useEffect(() => {
     if (processedData.length === 0) return;
     const filterByDateRange = (date: string) => {
@@ -88,13 +119,23 @@ const EnumeratorPerformance: React.FC = () => {
     const filteredEnumerators = processedData.map(enumerator => {
       const filteredSubmissions = enumerator.submissions.filter(submission => {
         if (!submission.submission_date) return false;
-        return filterByDateRange(submission.submission_date);
+
+        // Date filter
+        if (!filterByDateRange(submission.submission_date)) return false;
+
+        // Survey filter
+        if (selectedSurvey && submission.survey_name !== selectedSurvey) return false;
+
+        // Country filter
+        if (selectedCountry && submission.survey_country !== selectedCountry) return false;
+
+        return true;
       });
       const submissionsWithAlerts = filteredSubmissions.filter(
         s => s.alert_flag && s.alert_flag !== "NA"
       ).length;
-      const errorRate = filteredSubmissions.length > 0 
-        ? (submissionsWithAlerts / filteredSubmissions.length) * 100 
+      const errorRate = filteredSubmissions.length > 0
+        ? (submissionsWithAlerts / filteredSubmissions.length) * 100
         : 0;
       return {
         ...enumerator,
@@ -105,7 +146,7 @@ const EnumeratorPerformance: React.FC = () => {
       };
     });
     setEnumerators(filteredEnumerators);
-  }, [processedData, fromDate, toDate]);
+  }, [processedData, fromDate, toDate, selectedSurvey, selectedCountry]);
 
   // Check for admin token
   useEffect(() => {
@@ -153,11 +194,10 @@ const EnumeratorPerformance: React.FC = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="container-xl">
-        <div className="card">
-          <div className="card-body text-center py-5">
-            <div className="spinner-border text-primary" role="status"></div>
-            <div className="mt-3">Loading data...</div>
+      <div className="page-body">
+        <div className="container-xl">
+          <div className="d-flex justify-content-center py-5">
+            <div className="spinner-border text-blue"></div>
           </div>
         </div>
       </div>
@@ -167,23 +207,25 @@ const EnumeratorPerformance: React.FC = () => {
   // Error state
   if (error) {
     return (
-      <div className="container-xl">
-        <div className="alert alert-danger my-4" role="alert">
-          <div className="d-flex">
-            <div>
-              <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
-                <path d="M12 8v4"></path>
-                <path d="M12 16h.01"></path>
-              </svg>
+      <div className="page-body">
+        <div className="container-xl">
+          <div className="alert alert-danger" role="alert">
+            <div className="d-flex">
+              <div>
+                <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                  <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
+                  <path d="M12 8v4"></path>
+                  <path d="M12 16h.01"></path>
+                </svg>
+              </div>
+              <div className="ms-2">{error}</div>
             </div>
-            <div className="ms-2">{error}</div>
-          </div>
-          <div className="mt-3">
-            <button className="btn btn-outline-primary" onClick={refetch}>
-              Try Again
-            </button>
+            <div className="mt-3">
+              <button className="btn btn-outline-primary" onClick={refetch}>
+                Try Again
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -193,18 +235,20 @@ const EnumeratorPerformance: React.FC = () => {
   // No data state
   if (enumerators.length === 0) {
     return (
-      <div className="container-xl">
-        <div className="alert alert-info my-4" role="alert">
-          <div className="d-flex">
-            <div>
-              <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-info-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
-                <path d="M12 8l.01 0"></path>
-                <path d="M11 12h1v4h1"></path>
-              </svg>
+      <div className="page-body">
+        <div className="container-xl">
+          <div className="alert alert-info" role="alert">
+            <div className="d-flex">
+              <div>
+                <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-info-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                  <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
+                  <path d="M12 8l.01 0"></path>
+                  <path d="M11 12h1v4h1"></path>
+                </svg>
+              </div>
+              <div className="ms-2">No enumerator performance data available.</div>
             </div>
-            <div className="ms-2">No enumerator performance data available.</div>
           </div>
         </div>
       </div>
@@ -235,10 +279,9 @@ const EnumeratorPerformance: React.FC = () => {
   const uniqueDates = [...new Set(allDates)].sort();
 
   return (
-    <div className="container-xl">
-      {/* Page header with actions */}
-      <PageHeader 
-        // timeframe and setTimeframe removed
+    <>
+      {/* Page Header */}
+      <PageHeader
         isRefreshing={isRefreshing}
         isAdmin={isAdmin}
         handleAdminRefresh={handleAdminRefresh}
@@ -248,43 +291,63 @@ const EnumeratorPerformance: React.FC = () => {
         setToDate={setToDate}
         minDate={minDate}
         maxDate={maxDate}
+        selectedSurvey={selectedSurvey}
+        setSelectedSurvey={setSelectedSurvey}
+        selectedCountry={selectedCountry}
+        setSelectedCountry={setSelectedCountry}
+        availableSurveys={availableSurveys}
+        availableCountries={availableCountries}
+        onShowAlertGuide={() => setShowAlertGuide(true)}
       />
 
-      {refreshMessage && (
-        <div className={`alert ${refreshMessage.includes('Error') ? 'alert-danger' : 'alert-success'} mb-4`}>
-          {refreshMessage}
+      {/* Page Body */}
+      <div className="page-body">
+        <div className="container-xl">
+          {refreshMessage && (
+            <div className={`alert ${refreshMessage.includes('Error') ? 'alert-danger' : 'alert-success'} mb-3`}>
+              {refreshMessage}
+            </div>
+          )}
+
+          {/* Summary statistics cards */}
+          <SummaryCards
+            totalSubmissions={totalSubmissions}
+            enumerators={enumerators}
+            avgErrorRate={avgErrorRate}
+            bestEnumerator={bestEnumerator}
+          />
+
+          {/* Main content section with tabs */}
+          <ChartTabs
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            enumerators={enumerators}
+            onEnumeratorSelect={setSelectedEnumerator}
+            uniqueDates={uniqueDates}
+          />
+
+          {/* Detailed enumerator analysis section */}
+          {selectedEnumeratorData && (
+            <EnumeratorDetail
+              selectedEnumeratorData={selectedEnumeratorData}
+              selectedEnumerator={selectedEnumerator}
+              setSelectedEnumerator={setSelectedEnumerator}
+              enumerators={enumerators}
+              detailActiveTab={detailActiveTab}
+              setDetailActiveTab={setDetailActiveTab}
+            />
+          )}
+
+          {/* Alert Guide Modal */}
+          {showAlertGuide && (
+            <AlertGuideModal
+              onClose={() => setShowAlertGuide(false)}
+              surveyAlertCodes={surveyAlertCodes}
+            />
+          )}
         </div>
-      )}
-
-      {/* Summary statistics cards */}
-      <SummaryCards 
-        totalSubmissions={totalSubmissions}
-        enumerators={enumerators}
-        avgErrorRate={avgErrorRate}
-        bestEnumerator={bestEnumerator}
-      />
-
-      {/* Main content section with tabs */}
-      <ChartTabs 
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        enumerators={enumerators}
-        onEnumeratorSelect={setSelectedEnumerator}
-        uniqueDates={uniqueDates}
-      />
-
-      {/* Detailed enumerator analysis section */}
-      {selectedEnumeratorData && (
-        <EnumeratorDetail 
-          selectedEnumeratorData={selectedEnumeratorData}
-          selectedEnumerator={selectedEnumerator}
-          setSelectedEnumerator={setSelectedEnumerator}
-          enumerators={enumerators}
-          detailActiveTab={detailActiveTab}
-          setDetailActiveTab={setDetailActiveTab}
-        />
-      )}
-    </div>
+      </div>
+    </>
   );
 };
 

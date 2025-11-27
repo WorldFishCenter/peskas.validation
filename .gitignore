@@ -32,4 +32,14 @@ yarn-error.log*
 
 # OS files
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Documentation
+# Keep CLAUDE.md (for Claude Code) and docs/ folder (for reference)
+# Ignore all other .md files in root
+*.md
+!CLAUDE.md
+!docs/
+
+# Scripts - ignore all scripts (contain sensitive setup/migration tools)
+scripts/

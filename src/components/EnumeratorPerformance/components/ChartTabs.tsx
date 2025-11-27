@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { IconInfoCircle } from '@tabler/icons-react';
 import { ChartTabType, EnumeratorData } from '../types';
 import SubmissionVolumeChart from '../charts/SubmissionVolumeChart';
 import QualityRankingChart from '../charts/QualityRankingChart';
@@ -73,7 +74,7 @@ const ChartTabs: React.FC<ChartTabsProps> = ({
           </li>
         </ul>
       </div>
-      <div className="card-body" style={{ minHeight: '600px' }}>
+      <div className="card-body min-vh-60">
         <div className="tab-content">
           {/* Volume Tab */}
           <div className={`tab-pane ${activeTab === 'volume' ? 'active show' : ''}`}>
@@ -113,12 +114,7 @@ const ChartTabs: React.FC<ChartTabsProps> = ({
                   <strong>Chart:</strong> Green bars show quality score (%), blue bars show submission count.
                 "
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-info-circle text-primary" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                  <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
-                  <path d="M12 8l.01 0"></path>
-                  <path d="M11 12h1v4h1"></path>
-                </svg>
+                <IconInfoCircle className="icon text-blue" size={20} stroke={2} />
                 <span className="ms-1">Click for more info</span>
               </span>
             </div>
@@ -145,12 +141,7 @@ const ChartTabs: React.FC<ChartTabsProps> = ({
                   <strong>Note:</strong> Only shows alert types that occur in the selected time period.
                 "
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-info-circle text-primary" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                  <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
-                  <path d="M12 8l.01 0"></path>
-                  <path d="M11 12h1v4h1"></path>
-                </svg>
+                <IconInfoCircle className="icon text-blue" size={20} stroke={2} />
                 <span className="ms-1">Click for more info</span>
               </span>
             </div>

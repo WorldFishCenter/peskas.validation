@@ -1,70 +1,139 @@
-import React from 'react';
-import { ALERT_FLAG_DESCRIPTIONS } from '../../types/validation';
+import React, { useState, useMemo } from 'react';
+import { IconAlertTriangle } from '@tabler/icons-react';
+import { getCountryFlag, getCountryName } from '../../utils/countryMetadata';
+
+interface SurveyAlertCodes {
+  surveyName: string;
+  surveyCountry: string;
+  assetId: string;
+  alertCodes: Record<string, string>;
+}
 
 interface AlertGuideModalProps {
   onClose: () => void;
+  surveyAlertCodes: SurveyAlertCodes[];
 }
 
-const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose }) => {
+const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose, surveyAlertCodes }) => {
+  const [selectedSurvey, setSelectedSurvey] = useState<string>(
+    surveyAlertCodes.length > 0 ? surveyAlertCodes[0].assetId : ''
+  );
+
+  // Get the currently selected survey's alert codes
+  const currentSurvey = useMemo(() => {
+    return surveyAlertCodes.find(s => s.assetId === selectedSurvey) || surveyAlertCodes[0];
+  }, [selectedSurvey, surveyAlertCodes]);
+
+  if (!currentSurvey) {
+    return (
+      <div className="modal modal-blur show d-block" tabIndex={-1} role="dialog">
+        <div className="modal-dialog modal-dialog-centered" role="document">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">Alert Codes Reference</h5>
+              <button type="button" className="btn-close" onClick={onClose} aria-label="Close"></button>
+            </div>
+            <div className="modal-body">
+              <div className="alert alert-warning">
+                No alert codes available for the current data.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="modal modal-blur show d-block" tabIndex={-1} role="dialog">
-      <div className="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
         <div className="modal-content">
-          <div className="modal-header bg-warning-subtle">
+          <div className="modal-header">
             <h5 className="modal-title">
-              <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-triangle me-2" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                <path d="M12 9v2m0 4v.01" />
-                <path d="M5 19h14a2 2 0 0 0 1.84 -2.75l-7.1 -12.25a2 2 0 0 0 -3.5 0l-7.1 12.25a2 2 0 0 0 1.75 2.75" />
-              </svg>
+              <IconAlertTriangle className="icon text-yellow me-2" size={24} stroke={2} />
               Alert Codes Reference
             </h5>
-            <button 
-              type="button" 
-              className="btn-close" 
+            <button
+              type="button"
+              className="btn-close"
               onClick={onClose}
               aria-label="Close"
             ></button>
           </div>
-          <div className="modal-body p-4">
-            <div className="alert alert-info mb-4">
-              <strong>About Alert Codes:</strong> Alerts identify potential issues with a submission that require validation attention. Use this reference to understand what each alert code signifies.
+          <div className="modal-body">
+            {/* Info Banner */}
+            <div className="alert alert-info d-flex align-items-center mb-3" role="alert">
+              <div>
+                <svg xmlns="http://www.w3.org/2000/svg" className="icon alert-icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  <polyline points="11 12 12 12 12 16 13 16"></polyline>
+                </svg>
+              </div>
+              <div>
+                Alert codes identify potential data quality issues that require validation attention.
+              </div>
             </div>
-            <div className="table-responsive">
-              <table className="table table-bordered">
-                <thead className="table-light">
-                  <tr>
-                    <th style={{width: "20%"}}>Alert Code</th>
-                    <th>Description</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(ALERT_FLAG_DESCRIPTIONS).map(([code, description]) => (
-                    <tr key={code}>
-                      <td className="align-middle text-center">
-                        <span
-                          className="badge bg-danger-subtle text-danger"
-                          style={{
-                            fontSize: '1rem',
-                            padding: '6px 12px',
-                            borderRadius: '4px',
-                            fontWeight: '600'
-                          }}
-                        >
-                          Code {code}
-                        </span>
-                      </td>
-                      <td className="align-middle fs-5 py-3">{description}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+            {/* Survey Selector - only show if multiple surveys */}
+            {surveyAlertCodes.length > 1 && (
+              <div className="mb-3">
+                <label className="form-label">Survey</label>
+                <select
+                  className="form-select"
+                  value={selectedSurvey}
+                  onChange={(e) => setSelectedSurvey(e.target.value)}
+                >
+                  {surveyAlertCodes.map((survey) => {
+                    const flag = getCountryFlag(survey.surveyCountry);
+                    const country = getCountryName(survey.surveyCountry);
+                    return (
+                      <option key={survey.assetId} value={survey.assetId}>
+                        {flag} {survey.surveyName} {country && `(${country})`}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
+
+            {/* Single Survey Header - only show if single survey */}
+            {surveyAlertCodes.length === 1 && (
+              <div className="mb-3">
+                <div className="text-muted small">
+                  Survey: <span className="fw-bold text-dark">
+                    {getCountryFlag(currentSurvey.surveyCountry)} {currentSurvey.surveyName}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Alert Codes List */}
+            <div className="list-group list-group-flush">
+              {Object.entries(currentSurvey.alertCodes).map(([code, description]) => (
+                <div key={code} className="list-group-item px-0">
+                  <div className="row align-items-center">
+                    <div className="col-auto">
+                      <span className="avatar avatar-rounded bg-red-lt text-red">
+                        {code}
+                      </span>
+                    </div>
+                    <div className="col text-truncate">
+                      <div className="text-reset d-block">{description}</div>
+                      <div className="d-block text-muted text-truncate mt-n1">
+                        Alert Code {code}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
           <div className="modal-footer">
-            <button 
-              type="button" 
-              className="btn btn-primary px-4" 
+            <button
+              type="button"
+              className="btn"
               onClick={onClose}
             >
               Close

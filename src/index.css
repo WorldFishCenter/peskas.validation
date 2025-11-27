@@ -2,10 +2,41 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+
+  /* Tabler Primary Color Customization */
+  /* Change these values to customize your primary color */
+  --tblr-primary: #0891b2;  /* Cyan-600 */
+  --tblr-primary-rgb: 8, 145, 178;
+  --tblr-primary-fg: #ffffff;
+  --tblr-primary-darken: #1a5aa8;  /* Darker shade for hover states */
+  --tblr-primary-lighten: #4d8dd6;  /* Lighter shade */
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+}
+
+/* Utility classes */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.mw-12 {
+  max-width: 12rem;
+}
+
+/* Table scrollable container */
+.table-responsive-fixed {
+  max-height: calc(100vh - 400px);
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.table-responsive-fixed thead th {
+  position: sticky;
+  top: 0;
+  background-color: var(--tblr-bg-surface);
+  z-index: 10;
 } 

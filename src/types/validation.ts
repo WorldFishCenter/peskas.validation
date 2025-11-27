@@ -11,6 +11,8 @@ export interface Submission {
   alert_flag?: string;
   alert_flags?: string[];
   asset_id?: string;
+  survey_name?: string;
+  survey_country?: string;
 }
 
 export type ValidationStatus =
@@ -51,14 +53,14 @@ export const STATUS_STYLES: Record<ValidationStatus, StyleConfig> = {
 export const ALERT_FLAG_DESCRIPTIONS = {
   '1': 'A catch was reported, but no taxon was specified',
   '2': 'A taxon was specified, but no information was provided about the number of fish, their size, or their weight',
-  '3': 'Length is smaller than minimum length treshold for the selected catch taxon',
-  '4': 'Length exceeds maximum length treshold for the selected catch taxon',
+  '3': 'Length is smaller than minimum length threshold for the selected catch taxon',
+  '4': 'Length exceeds maximum length threshold for the selected catch taxon',
   '5': 'Bucket weight exceeds maximum (50kg)',
   '6': 'Number of buckets exceeds maximum (300)',
   '7': 'Number of individuals exceeds maximum (100)',
-  '8': 'Price per kg exceeds 81420 TZS',
+  '8': 'Price per kg exceeds maximum threshold',
   '9': 'Catch per unit effort exceeds maximum (30kg per hour per fisher)',
-  '10': 'Revenue per unit effort exceeds maximum (81420 TZS per hour per fisher)'  
+  '10': 'Revenue per unit effort exceeds maximum threshold'
 };
 
 export const VALIDATION_STATUS_OPTIONS = [

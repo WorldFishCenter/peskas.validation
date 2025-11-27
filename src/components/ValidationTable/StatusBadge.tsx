@@ -1,31 +1,41 @@
 import React from 'react';
-import { STATUS_STYLES, ValidationStatus } from '../../types/validation';
+import { ValidationStatus } from '../../types/validation';
 
 interface StatusBadgeProps {
   status: string;
 }
 
+// Map validation statuses to Tabler badge colors with proper text colors
+const getStatusBadgeClass = (status: string): string => {
+  const normalizedStatus = (status || 'default') as ValidationStatus;
+
+  switch (normalizedStatus) {
+    case 'validation_status_approved':
+      return 'badge bg-green text-green-fg';
+    case 'validation_status_not_approved':
+      return 'badge bg-red text-red-fg';
+    case 'validation_status_on_hold':
+      return 'badge bg-yellow text-yellow-fg';
+    default:
+      return 'badge bg-secondary text-secondary-fg';
+  }
+};
+
+// Format status text for display
+const formatStatusText = (status: string): string => {
+  if (!status) return 'Unknown';
+  return status.replace('validation_status_', '').replace(/_/g, ' ');
+};
+
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-  // Use exact status or default
-  const style = STATUS_STYLES[(status || 'default') as ValidationStatus];
-  
+  const badgeClass = getStatusBadgeClass(status);
+  const displayText = formatStatusText(status);
+
   return (
-    <span
-      style={{
-        backgroundColor: style.backgroundColor,
-        color: style.textColor,
-        border: `1px solid ${style.borderColor}`,
-        borderRadius: '4px',
-        padding: '4px 10px',
-        display: 'inline-block',
-        fontWeight: '500',
-        fontSize: '0.875rem',
-        textTransform: 'capitalize',
-      }}
-    >
-      {status ? status.replace('validation_status_', '').replace(/_/g, ' ') : 'Unknown'}
+    <span className={`${badgeClass} text-uppercase text-nowrap`}>
+      {displayText}
     </span>
   );
 };
 
-export default StatusBadge; 
+export default StatusBadge;

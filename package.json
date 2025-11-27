@@ -1,13 +1,14 @@
 {
   "name": "validation-zanzibar",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.2.0",
   "type": "module",
   "scripts": {
     "dev:frontend": "vite",
-    "dev:backend": "node server/index.js",
+    "dev:backend": "node server/dev.js",
+    "dev:backend:legacy": "node server/index.js",
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "server": "node server/index.js",
+    "server": "node server/dev.js",
     "build": "tsc && vite build",
     "lint": "tsc --noEmit && eslint . --ext ts,tsx,js,jsx --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --ext ts,tsx,js,jsx --fix",
@@ -16,17 +17,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@tabler/core": "^1.0.0-beta20",
+    "@tabler/core": "^1.4.0",
     "@tabler/icons-react": "^3.30.0",
     "@tanstack/match-sorter-utils": "^8.19.4",
     "@tanstack/react-table": "^8.10.7",
     "@types/highcharts": "^5.0.44",
     "axios": "^1.6.2",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "highcharts": "^12.2.0",
     "highcharts-react-official": "^3.2.1",
+    "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.13.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -43,6 +46,7 @@
     "eslint": "^8.45.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
+    "prettier": "^3.6.2",
     "typescript": "^5.0.2",
     "vite": "^4.4.5"
   }

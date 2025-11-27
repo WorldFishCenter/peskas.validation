@@ -1,4 +1,7 @@
 import React from 'react';
+import { IconDatabase, IconInfoCircle } from '@tabler/icons-react';
+import { useAuth } from '../../Auth/AuthContext';
+import { getCountryFlag, getCountryName } from '../../../utils/countryMetadata';
 
 interface PageHeaderProps {
   isRefreshing: boolean;
@@ -10,6 +13,13 @@ interface PageHeaderProps {
   setToDate: (date: string) => void;
   minDate: string;
   maxDate: string;
+  selectedSurvey: string;
+  setSelectedSurvey: (survey: string) => void;
+  selectedCountry: string;
+  setSelectedCountry: (country: string) => void;
+  availableSurveys: string[];
+  availableCountries: string[];
+  onShowAlertGuide?: () => void;
 }
 
 const PageHeader: React.FC<PageHeaderProps> = ({
@@ -21,63 +31,142 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   setFromDate,
   setToDate,
   minDate,
-  maxDate
+  maxDate,
+  selectedSurvey,
+  setSelectedSurvey,
+  selectedCountry,
+  setSelectedCountry,
+  availableSurveys,
+  availableCountries,
+  onShowAlertGuide
 }) => {
+  const { user } = useAuth();
+
+  // Get country context for subtitle
+  const getCountryContext = () => {
+    if (!user?.country || user.country.length === 0) {
+      return 'All Countries';
+    }
+
+    if (user.country.length === 1) {
+      const countryCode = user.country[0];
+      const flag = getCountryFlag(countryCode);
+      const name = getCountryName(countryCode);
+      return `${flag} ${name}`;
+    }
+
+    // Multi-country user
+    return user.country.map(code => `${getCountryFlag(code)} ${getCountryName(code)}`).join(', ');
+  };
+
+  const countryContext = getCountryContext();
+
   return (
-    <div className="page-header d-print-none mb-4">
+    <div className="page-header d-print-none">
       <div className="container-xl">
         <div className="row g-2 align-items-center">
           <div className="col">
             <h2 className="page-title">Enumerator Performance Dashboard</h2>
             <div className="text-muted mt-1">
               Monitor and analyze data collection performance metrics
+              {countryContext && (
+                <span className="ms-2 badge bg-blue-lt">{countryContext}</span>
+              )}
             </div>
           </div>
           <div className="col-auto ms-auto d-print-none">
-            <div className="d-flex align-items-center gap-2 flex-wrap">
+            <div className="row g-2 align-items-end">
+              {/* Survey Filter - Always show if multiple surveys, one must be selected */}
+              {availableSurveys.length > 1 && (
+                <div className="col-auto">
+                  <div className="input-group">
+                    <span className="input-group-text">Survey</span>
+                    <select
+                      className="form-select mw-12"
+                      value={selectedSurvey}
+                      onChange={e => setSelectedSurvey(e.target.value)}
+                    >
+                      {availableSurveys.map(survey => (
+                        <option key={survey} value={survey}>
+                          {survey}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Country Filter */}
+              {availableCountries.length > 1 && (
+                <div className="col-auto">
+                  <div className="input-group">
+                    <span className="input-group-text">Country</span>
+                    <select
+                      className="form-select"
+                      value={selectedCountry}
+                      onChange={e => setSelectedCountry(e.target.value)}
+                    >
+                      <option value="">All Countries</option>
+                      {availableCountries.map(countryCode => (
+                        <option key={countryCode} value={countryCode}>
+                          {getCountryFlag(countryCode)} {getCountryName(countryCode)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
               {/* Date Range Filter */}
-              <div className="d-flex align-items-center gap-2" style={{ minWidth: 320 }}>
-                <div className="d-flex flex-column align-items-start" style={{ minWidth: 120 }}>
-                  <label htmlFor="from-date" className="form-label mb-0" style={{ fontSize: '0.85em' }}>From</label>
+              <div className="col-auto">
+                <div className="input-group">
                   <input
-                    id="from-date"
                     type="date"
                     className="form-control"
-                    style={{ minWidth: 120, maxWidth: 160 }}
                     value={fromDate}
                     min={minDate}
                     max={toDate || maxDate}
                     onChange={e => setFromDate(e.target.value)}
+                    aria-label="From date"
                   />
-                </div>
-                <div className="d-flex flex-column align-items-start" style={{ minWidth: 120 }}>
-                  <label htmlFor="to-date" className="form-label mb-0" style={{ fontSize: '0.85em' }}>To</label>
+                  <span className="input-group-text">to</span>
                   <input
-                    id="to-date"
                     type="date"
                     className="form-control"
-                    style={{ minWidth: 120, maxWidth: 160 }}
                     value={toDate}
                     min={fromDate || minDate}
                     max={maxDate}
                     onChange={e => setToDate(e.target.value)}
+                    aria-label="To date"
                   />
                 </div>
               </div>
+
+              {/* Alert Guide Button */}
+              {onShowAlertGuide && (
+                <div className="col-auto">
+                  <button
+                    className="btn btn-primary"
+                    onClick={onShowAlertGuide}
+                  >
+                    <IconInfoCircle className="icon me-1" size={20} stroke={2} />
+                    Alert Guide
+                  </button>
+                </div>
+              )}
+
+              {/* Refresh Data Button */}
               {isAdmin && (
-                <button 
-                  className="btn btn-outline-secondary d-flex align-items-center"
-                  onClick={handleAdminRefresh}
-                  disabled={isRefreshing}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-database me-1" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                    <path d="M12 6m-8 0a8 3 0 1 0 16 0a8 3 0 1 0 -16 0"></path>
-                    <path d="M4 6v6a8 3 0 0 0 16 0v-6"></path>
-                    <path d="M4 12v6a8 3 0 0 0 16 0v-6"></path>
-                  </svg>
-                  Refresh Data
-                </button>
+                <div className="col-auto">
+                  <button
+                    className="btn btn-outline-secondary"
+                    onClick={handleAdminRefresh}
+                    disabled={isRefreshing}
+                  >
+                    <IconDatabase className="icon me-1" size={20} stroke={2} />
+                    Refresh Data
+                  </button>
+                </div>
               )}
             </div>
           </div>

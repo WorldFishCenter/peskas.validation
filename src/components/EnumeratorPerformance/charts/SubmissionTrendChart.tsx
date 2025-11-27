@@ -24,16 +24,13 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
   // Format dates for better display
   const formattedDates = filteredDates.map(date => {
     const d = new Date(date);
-    return d.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
     });
   });
 
-  // Log what we're actually displaying
-  console.log(`Trend chart showing data for selected date range with ${filteredDates.length} unique dates`);
-  
   // Determine appropriate tick interval based on number of dates
   const tickInterval = Math.max(1, Math.floor(filteredDates.length / 10));
   
