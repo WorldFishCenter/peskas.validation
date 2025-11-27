@@ -28,8 +28,8 @@ export const generateEditUrl = async (submissionId: string, assetId?: string): P
 /**
  * Update the validation status for a submission
  *
- * This function updates both MongoDB (primary) and KoboToolbox (optional sync)
- * according to the architecture: MongoDB is the single source of truth for the portal
+ * This function updates both MongoDB and KoboToolbox to keep them in sync
+ * MongoDB is updated first so the table reflects changes immediately
  */
 export const updateValidationStatus = async (
   submissionId: string,
@@ -37,8 +37,8 @@ export const updateValidationStatus = async (
   assetId?: string
 ): Promise<{ success: boolean; message: string }> => {
   try {
-    // Step 1: Update MongoDB first (primary update - this is what the table displays)
-    const mongoResponse = await axios.patch(`${API_BASE_URL}/submissions/${submissionId}/validation_status`, {
+    // Step 1: Update MongoDB first (so table reflects changes immediately)
+    const mongoResponse = await axios.patch(`${API_BASE_URL}/submissions/${submissionId}/validation-status`, {
       validation_status: status,
       asset_id: assetId
     });
@@ -47,16 +47,14 @@ export const updateValidationStatus = async (
       throw new Error(mongoResponse.data.message || 'Failed to update MongoDB');
     }
 
-    // Step 2: Optionally sync to KoboToolbox (best effort - don't fail if this fails)
-    try {
-      await axios.patch(`${API_BASE_URL}/kobo/validation-status/${submissionId}`, {
-        validation_status: status,
-        asset_id: assetId
-      });
-    } catch (koboError) {
-      console.warn('Failed to sync validation status to KoboToolbox (MongoDB updated successfully):', koboError);
-      // Don't fail the entire operation if KoboToolbox sync fails
-      // The R pipeline will sync it on the next run
+    // Step 2: Update KoboToolbox (must succeed to keep systems in sync)
+    const koboResponse = await axios.patch(`${API_BASE_URL}/kobo/validation-status/${submissionId}`, {
+      validation_status: status,
+      asset_id: assetId
+    });
+
+    if (!koboResponse.data.success) {
+      throw new Error(koboResponse.data.message || 'Failed to update KoboToolbox');
     }
 
     return { success: true, message: mongoResponse.data.message || 'Status updated successfully' };
