@@ -194,11 +194,10 @@ const EnumeratorPerformance: React.FC = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="container-xl">
-        <div className="card">
-          <div className="card-body text-center py-5">
-            <div className="spinner-border text-blue" role="status"></div>
-            <div className="mt-3">Loading data...</div>
+      <div className="page-body">
+        <div className="container-xl">
+          <div className="d-flex justify-content-center py-5">
+            <div className="spinner-border text-blue"></div>
           </div>
         </div>
       </div>
@@ -208,23 +207,25 @@ const EnumeratorPerformance: React.FC = () => {
   // Error state
   if (error) {
     return (
-      <div className="container-xl">
-        <div className="alert alert-danger my-4" role="alert">
-          <div className="d-flex">
-            <div>
-              <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
-                <path d="M12 8v4"></path>
-                <path d="M12 16h.01"></path>
-              </svg>
+      <div className="page-body">
+        <div className="container-xl">
+          <div className="alert alert-danger" role="alert">
+            <div className="d-flex">
+              <div>
+                <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-alert-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                  <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
+                  <path d="M12 8v4"></path>
+                  <path d="M12 16h.01"></path>
+                </svg>
+              </div>
+              <div className="ms-2">{error}</div>
             </div>
-            <div className="ms-2">{error}</div>
-          </div>
-          <div className="mt-3">
-            <button className="btn btn-outline-primary" onClick={refetch}>
-              Try Again
-            </button>
+            <div className="mt-3">
+              <button className="btn btn-outline-primary" onClick={refetch}>
+                Try Again
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -234,18 +235,20 @@ const EnumeratorPerformance: React.FC = () => {
   // No data state
   if (enumerators.length === 0) {
     return (
-      <div className="container-xl">
-        <div className="alert alert-info my-4" role="alert">
-          <div className="d-flex">
-            <div>
-              <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-info-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
-                <path d="M12 8l.01 0"></path>
-                <path d="M11 12h1v4h1"></path>
-              </svg>
+      <div className="page-body">
+        <div className="container-xl">
+          <div className="alert alert-info" role="alert">
+            <div className="d-flex">
+              <div>
+                <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-info-circle" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                  <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
+                  <path d="M12 8l.01 0"></path>
+                  <path d="M11 12h1v4h1"></path>
+                </svg>
+              </div>
+              <div className="ms-2">No enumerator performance data available.</div>
             </div>
-            <div className="ms-2">No enumerator performance data available.</div>
           </div>
         </div>
       </div>

@@ -16,4 +16,13 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+}
+
+/* Utility classes */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.mw-12 {
+  max-width: 12rem;
 } 

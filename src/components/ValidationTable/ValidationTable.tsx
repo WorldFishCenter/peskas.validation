@@ -131,7 +131,7 @@ const ValidationTable: React.FC = () => {
           const countryName = getCountryName(countryCode);
           return (
             <div>
-              <div className="text-truncate" style={{ maxWidth: '12rem' }} title={surveyName}>
+              <div className="text-truncate mw-12" title={surveyName}>
                 {surveyName}
               </div>
               {countryCode && (
@@ -315,142 +315,175 @@ const ValidationTable: React.FC = () => {
 
   if (isLoading)
     return (
-      <div className="d-flex justify-content-center my-4">
-        <div className="spinner-border text-blue"></div>
+      <div className="page-body">
+        <div className="container-xl">
+          <div className="d-flex justify-content-center py-5">
+            <div className="spinner-border text-blue"></div>
+          </div>
+        </div>
       </div>
     );
-  if (error) return <div className="alert alert-danger">{error}</div>;
+
+  if (error)
+    return (
+      <div className="page-body">
+        <div className="container-xl">
+          <div className="alert alert-danger">{error}</div>
+        </div>
+      </div>
+    );
 
   return (
-    <div className="position-relative">
-      <div className="card">
-        <div className="card-header">
-          <TableFilters
-            table={table}
-            globalFilter={globalFilter}
-            setGlobalFilter={setGlobalFilter}
-            resetFilters={() => {
-              setGlobalFilter('');
-              table.resetColumnFilters();
-              setFromDate(minDate);
-              setToDate(maxDate);
-              table.getColumn('submission_date')?.setFilterValue([minDate, maxDate]);
-            }}
-            fromDate={fromDate}
-            toDate={toDate}
-            setFromDate={(date: string) => {
-              setFromDate(date);
-              table.getColumn('submission_date')?.setFilterValue([date, toDate]);
-            }}
-            setToDate={(date: string) => {
-              setToDate(date);
-              table.getColumn('submission_date')?.setFilterValue([fromDate, date]);
-            }}
-            minDate={minDate}
-            maxDate={maxDate}
-            accessibleSurveys={accessibleSurveys}
-            onShowAlertGuide={() => setShowAlertGuide(true)}
-          />
+    <>
+      {/* Page Header */}
+      <div className="page-header d-print-none">
+        <div className="container-xl">
+          <div className="row g-2 align-items-center">
+            <div className="col">
+              <h2 className="page-title">Data Validation</h2>
+              <div className="text-muted mt-1">
+                Review and validate survey submissions
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="card-body">
-          <div className="table-responsive">
-            <table className="table table-vcenter table-hover">
-              <thead>
-                {table.getHeaderGroups().map(headerGroup => (
-                  <tr key={headerGroup.id}>
-                    {headerGroup.headers.map(header => (
-                      <th
-                        key={header.id}
-                        scope="col"
-                        onClick={header.column.getToggleSortingHandler()}
-                        className="text-center text-uppercase fw-semibold"
-                        style={{
-                          cursor: header.column.getCanSort() ? 'pointer' : 'default',
-                        }}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        <span className="ms-1">
-                          {{
-                            asc: ' ↑',
-                            desc: ' ↓',
-                            false: ' ↕',
-                          }[header.column.getIsSorted() as string] ?? ' ↕'}
-                        </span>
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody>
-                {table.getRowModel().rows.length > 0 ? (
-                  table.getRowModel().rows.map(row => (
-                    <tr
-                      key={row.id}
-                      onClick={() => handleRowClick(row)}
-                      className={
-                        selectedRow?.submission_id === row.original.submission_id
-                          ? 'table-active'
-                          : ''
-                      }
-                      style={{ cursor: 'pointer' }}
-                    >
-                      {row.getVisibleCells().map(cell => (
-                        <td
-                          key={cell.id}
-                          className="text-center align-middle"
+      </div>
+
+      {/* Page Body */}
+      <div className="page-body">
+        <div className="container-xl">
+          {/* Filters Card */}
+          <div className="card mb-3">
+            <div className="card-body">
+              <TableFilters
+                table={table}
+                globalFilter={globalFilter}
+                setGlobalFilter={setGlobalFilter}
+                resetFilters={() => {
+                  setGlobalFilter('');
+                  table.resetColumnFilters();
+                  setFromDate(minDate);
+                  setToDate(maxDate);
+                  table.getColumn('submission_date')?.setFilterValue([minDate, maxDate]);
+                }}
+                fromDate={fromDate}
+                toDate={toDate}
+                setFromDate={(date: string) => {
+                  setFromDate(date);
+                  table.getColumn('submission_date')?.setFilterValue([date, toDate]);
+                }}
+                setToDate={(date: string) => {
+                  setToDate(date);
+                  table.getColumn('submission_date')?.setFilterValue([fromDate, date]);
+                }}
+                minDate={minDate}
+                maxDate={maxDate}
+                accessibleSurveys={accessibleSurveys}
+                onShowAlertGuide={() => setShowAlertGuide(true)}
+              />
+            </div>
+          </div>
+
+          {/* Table Card */}
+          <div className="card">
+            <div className="table-responsive">
+              <table className="table table-vcenter table-hover">
+                <thead>
+                  {table.getHeaderGroups().map(headerGroup => (
+                    <tr key={headerGroup.id}>
+                      {headerGroup.headers.map(header => (
+                        <th
+                          key={header.id}
+                          scope="col"
+                          onClick={header.column.getToggleSortingHandler()}
+                          className={`text-center text-uppercase fw-semibold ${header.column.getCanSort() ? 'cursor-pointer' : ''}`}
                         >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                          <span className="ms-1">
+                            {{
+                              asc: ' ↑',
+                              desc: ' ↓',
+                              false: ' ↕',
+                            }[header.column.getIsSorted() as string] ?? ' ↕'}
+                          </span>
+                        </th>
                       ))}
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={columns.length} className="text-center py-4">
-                      No results found. Try adjusting your search criteria.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          
-          <div className="d-flex flex-wrap align-items-center justify-content-between mt-4">
-            <div className="d-flex align-items-center gap-2 mb-2">
-              <select
-                value={table.getState().pagination.pageSize}
-                onChange={e => table.setPageSize(Number(e.target.value))}
-                className="form-select"
-                style={{ width: 'auto' }}
-              >
-                {[5, 10, 20, 25, 50].map(size => (
-                  <option key={size} value={size}>
-                    Show {size}
-                  </option>
-                ))}
-              </select>
-              <span className="text-muted">
-                Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
-              </span>
-              <span className="ms-2 text-muted">
-                {table.getPrePaginationRowModel().rows.length} results
-              </span>
+                  ))}
+                </thead>
+                <tbody>
+                  {table.getRowModel().rows.length > 0 ? (
+                    table.getRowModel().rows.map(row => (
+                      <tr
+                        key={row.id}
+                        onClick={() => handleRowClick(row)}
+                        className={`cursor-pointer ${
+                          selectedRow?.submission_id === row.original.submission_id
+                            ? 'table-active'
+                            : ''
+                        }`}
+                      >
+                        {row.getVisibleCells().map(cell => (
+                          <td
+                            key={cell.id}
+                            className="text-center align-middle"
+                          >
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={columns.length} className="text-center py-4">
+                        No results found. Try adjusting your search criteria.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
-            <div className="d-flex gap-2 mb-2">
-              <button
-                className="btn btn-outline-primary"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                Previous
-              </button>
-              <button
-                className="btn btn-outline-primary"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                Next
-              </button>
+
+            {/* Pagination Footer */}
+            <div className="card-footer d-flex align-items-center">
+              <p className="m-0 text-muted">
+                Showing <span>{table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}</span> to <span>{Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getPrePaginationRowModel().rows.length)}</span> of <span>{table.getPrePaginationRowModel().rows.length}</span> entries
+              </p>
+              <ul className="pagination m-0 ms-auto">
+                <li className={`page-item ${!table.getCanPreviousPage() ? 'disabled' : ''}`}>
+                  <button
+                    className="page-link"
+                    onClick={() => table.previousPage()}
+                    disabled={!table.getCanPreviousPage()}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><polyline points="15 6 9 12 15 18" /></svg>
+                    prev
+                  </button>
+                </li>
+                <li className="page-item">
+                  <select
+                    value={table.getState().pagination.pageSize}
+                    onChange={e => table.setPageSize(Number(e.target.value))}
+                    className="form-select form-select-sm w-auto"
+                  >
+                    {[5, 10, 20, 25, 50].map(size => (
+                      <option key={size} value={size}>
+                        {size} / page
+                      </option>
+                    ))}
+                  </select>
+                </li>
+                <li className={`page-item ${!table.getCanNextPage() ? 'disabled' : ''}`}>
+                  <button
+                    className="page-link"
+                    onClick={() => table.nextPage()}
+                    disabled={!table.getCanNextPage()}
+                  >
+                    next
+                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><polyline points="9 6 15 12 9 18" /></svg>
+                  </button>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
@@ -458,10 +491,12 @@ const ValidationTable: React.FC = () => {
       
       {/* Offcanvas Sidebar */}
       {selectedRow && (
-        <div className={`offcanvas offcanvas-end ${sidebarOpen ? 'show' : ''}`}
-             tabIndex={-1}
-             id="submissionSidebar"
-             style={{ visibility: sidebarOpen ? 'visible' : 'hidden' }}>
+        <div
+          className={`offcanvas offcanvas-end ${sidebarOpen ? 'show' : ''}`}
+          tabIndex={-1}
+          id="submissionSidebar"
+          style={{ visibility: sidebarOpen ? 'visible' : 'hidden' }}
+        >
           <div className="offcanvas-header border-bottom">
             <h5 className="offcanvas-title">Submission Details</h5>
             <button type="button" className="btn-close text-reset" onClick={() => setSidebarOpen(false)} aria-label="Close"></button>
@@ -513,7 +548,7 @@ const ValidationTable: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <StatusUpdateForm
               selectedSubmission={selectedRow}
               status={statusToUpdate}
@@ -526,12 +561,12 @@ const ValidationTable: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {/* Backdrop overlay */}
       {sidebarOpen && (
         <div className="offcanvas-backdrop fade show" onClick={() => setSidebarOpen(false)}></div>
       )}
-      
+
       {/* Alert Guide Modal */}
       {showAlertGuide && (
         <AlertGuideModal
@@ -539,7 +574,7 @@ const ValidationTable: React.FC = () => {
           surveyAlertCodes={surveyAlertCodes}
         />
       )}
-    </div>
+    </>
   );
 };
 
