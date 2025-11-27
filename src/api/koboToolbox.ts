@@ -26,7 +26,10 @@ export const generateEditUrl = async (submissionId: string, assetId?: string): P
 };
 
 /**
- * Update the validation status for a KoboToolbox submission
+ * Update the validation status for a submission
+ *
+ * This function updates both MongoDB (primary) and KoboToolbox (optional sync)
+ * according to the architecture: MongoDB is the single source of truth for the portal
  */
 export const updateValidationStatus = async (
   submissionId: string,
@@ -34,16 +37,29 @@ export const updateValidationStatus = async (
   assetId?: string
 ): Promise<{ success: boolean; message: string }> => {
   try {
-    const response = await axios.patch(`${API_BASE_URL}/kobo/validation-status/${submissionId}`, {
+    // Step 1: Update MongoDB first (primary update - this is what the table displays)
+    const mongoResponse = await axios.patch(`${API_BASE_URL}/submissions/${submissionId}/validation_status`, {
       validation_status: status,
       asset_id: assetId
     });
 
-    if (!response.data.success) {
-      throw new Error(response.data.message || `Error ${response.status}: ${response.statusText}`);
+    if (!mongoResponse.data.success) {
+      throw new Error(mongoResponse.data.message || 'Failed to update MongoDB');
     }
 
-    return { success: true, message: response.data.message || 'Status updated successfully' };
+    // Step 2: Optionally sync to KoboToolbox (best effort - don't fail if this fails)
+    try {
+      await axios.patch(`${API_BASE_URL}/kobo/validation-status/${submissionId}`, {
+        validation_status: status,
+        asset_id: assetId
+      });
+    } catch (koboError) {
+      console.warn('Failed to sync validation status to KoboToolbox (MongoDB updated successfully):', koboError);
+      // Don't fail the entire operation if KoboToolbox sync fails
+      // The R pipeline will sync it on the next run
+    }
+
+    return { success: true, message: mongoResponse.data.message || 'Status updated successfully' };
   } catch (error) {
     console.error('Failed to update status:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
