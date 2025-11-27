@@ -25,4 +25,18 @@ body {
 
 .mw-12 {
   max-width: 12rem;
+}
+
+/* Table scrollable container */
+.table-responsive-fixed {
+  max-height: calc(100vh - 400px);
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.table-responsive-fixed thead th {
+  position: sticky;
+  top: 0;
+  background-color: var(--tblr-bg-surface);
+  z-index: 10;
 } 

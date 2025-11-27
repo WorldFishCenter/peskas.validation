@@ -386,7 +386,7 @@ const ValidationTable: React.FC = () => {
 
           {/* Table Card */}
           <div className="card">
-            <div className="table-responsive">
+            <div className="table-responsive-fixed">
               <table className="table table-vcenter table-hover">
                 <thead>
                   {table.getHeaderGroups().map(headerGroup => (
