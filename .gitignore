@@ -39,6 +39,7 @@ Thumbs.db
 # Ignore all other .md files in root
 *.md
 !CLAUDE.md
+!/README.md
 !docs/
 
 # Scripts - ignore all scripts (contain sensitive setup/migration tools)
