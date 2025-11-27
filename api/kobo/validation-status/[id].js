@@ -91,16 +91,15 @@ async function handler(req, res) {
 
     const url = `${api_url}/assets/${koboAssetId}/data/${id}/validation_status/`;
 
-    // Create form data
-    const formData = new URLSearchParams();
-    formData.append('validation_status.uid', validation_status);
-
     // Use robust API request with rate limiting and retries
+    // Note: KoboToolbox API expects JSON body with "validation_status.uid" key
     await makeKoboRequest(url, token, {
       method: 'PATCH',
-      data: formData.toString(),
+      data: {
+        'validation_status.uid': validation_status
+      },
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/json'
       }
     });
 
