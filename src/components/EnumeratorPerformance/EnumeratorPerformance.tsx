@@ -279,10 +279,9 @@ const EnumeratorPerformance: React.FC = () => {
   const uniqueDates = [...new Set(allDates)].sort();
 
   return (
-    <div className="container-xl">
-      {/* Page header with actions */}
+    <>
+      {/* Page Header */}
       <PageHeader
-        // timeframe and setTimeframe removed
         isRefreshing={isRefreshing}
         isAdmin={isAdmin}
         handleAdminRefresh={handleAdminRefresh}
@@ -301,49 +300,54 @@ const EnumeratorPerformance: React.FC = () => {
         onShowAlertGuide={() => setShowAlertGuide(true)}
       />
 
-      {refreshMessage && (
-        <div className={`alert ${refreshMessage.includes('Error') ? 'alert-danger' : 'alert-success'} mb-4`}>
-          {refreshMessage}
+      {/* Page Body */}
+      <div className="page-body">
+        <div className="container-xl">
+          {refreshMessage && (
+            <div className={`alert ${refreshMessage.includes('Error') ? 'alert-danger' : 'alert-success'} mb-3`}>
+              {refreshMessage}
+            </div>
+          )}
+
+          {/* Summary statistics cards */}
+          <SummaryCards
+            totalSubmissions={totalSubmissions}
+            enumerators={enumerators}
+            avgErrorRate={avgErrorRate}
+            bestEnumerator={bestEnumerator}
+          />
+
+          {/* Main content section with tabs */}
+          <ChartTabs
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            enumerators={enumerators}
+            onEnumeratorSelect={setSelectedEnumerator}
+            uniqueDates={uniqueDates}
+          />
+
+          {/* Detailed enumerator analysis section */}
+          {selectedEnumeratorData && (
+            <EnumeratorDetail
+              selectedEnumeratorData={selectedEnumeratorData}
+              selectedEnumerator={selectedEnumerator}
+              setSelectedEnumerator={setSelectedEnumerator}
+              enumerators={enumerators}
+              detailActiveTab={detailActiveTab}
+              setDetailActiveTab={setDetailActiveTab}
+            />
+          )}
+
+          {/* Alert Guide Modal */}
+          {showAlertGuide && (
+            <AlertGuideModal
+              onClose={() => setShowAlertGuide(false)}
+              surveyAlertCodes={surveyAlertCodes}
+            />
+          )}
         </div>
-      )}
-
-      {/* Summary statistics cards */}
-      <SummaryCards 
-        totalSubmissions={totalSubmissions}
-        enumerators={enumerators}
-        avgErrorRate={avgErrorRate}
-        bestEnumerator={bestEnumerator}
-      />
-
-      {/* Main content section with tabs */}
-      <ChartTabs 
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        enumerators={enumerators}
-        onEnumeratorSelect={setSelectedEnumerator}
-        uniqueDates={uniqueDates}
-      />
-
-      {/* Detailed enumerator analysis section */}
-      {selectedEnumeratorData && (
-        <EnumeratorDetail
-          selectedEnumeratorData={selectedEnumeratorData}
-          selectedEnumerator={selectedEnumerator}
-          setSelectedEnumerator={setSelectedEnumerator}
-          enumerators={enumerators}
-          detailActiveTab={detailActiveTab}
-          setDetailActiveTab={setDetailActiveTab}
-        />
-      )}
-
-      {/* Alert Guide Modal */}
-      {showAlertGuide && (
-        <AlertGuideModal
-          onClose={() => setShowAlertGuide(false)}
-          surveyAlertCodes={surveyAlertCodes}
-        />
-      )}
-    </div>
+      </div>
+    </>
   );
 };
 

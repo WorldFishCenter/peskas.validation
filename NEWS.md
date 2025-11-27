@@ -1,3 +1,86 @@
+# validation-zanzibar 1.3.0
+
+## Architecture & Scalability
+
+- **Scalable Multi-Survey Portal**
+  - Portal now fully supports multiple surveys across different KoboToolbox servers
+  - Dynamic MongoDB collections per survey (`surveys_flags-{asset_id}`, `enumerators_stats-{asset_id}`)
+  - Survey-specific configurations and alert codes stored in MongoDB
+  - User permissions control survey-level access
+  - Automatic survey filtering in UI when multiple surveys are present
+
+- **Airtable Management Backend**
+  - Centralized user management through Airtable synchronization
+  - Automatic survey configuration sync from Airtable base
+  - Enumerator assignment management via Airtable
+  - Consistent data structure between Airtable and MongoDB
+  - Automated sync scripts for users, surveys, and permissions
+
+- **MongoDB as Single Source of Truth**
+  - Simplified data flow: R pipeline → MongoDB → Portal
+  - Removed KoboToolbox API dependencies during page loads (eliminates timeouts)
+  - R pipeline writes validation status, validated_at, validated_by directly to MongoDB
+  - Portal reads exclusively from MongoDB for faster performance
+  - Validation updates sync to both MongoDB (primary) and KoboToolbox (secondary)
+
+## Bug Fixes
+
+- **Fixed KoboToolbox 401 Authentication Error**
+  - Fixed spread operator order in `lib/api-utils.js` to preserve Authorization header
+  - Changed validation status update endpoint to use JSON format instead of form-urlencoded
+  - Matches working R implementation for KoboToolbox API v2 compatibility
+  - Validation status updates to KoboToolbox now work reliably
+
+- **Fixed Validation Status Synchronization**
+  - Validation status updates now sync to BOTH MongoDB and KoboToolbox
+  - MongoDB updated first so table reflects changes immediately
+  - Both updates must succeed to ensure data consistency
+  - Fixed URL from `/validation_status` to `/validation-status` for proper routing
+  - Table refreshes automatically after status updates
+
+## UI/UX Improvements
+
+- **Tabler UI Framework Compliance**
+  - Restructured ValidationTable to follow Tabler page structure (page-header, page-body)
+  - Separated filters into dedicated card with proper spacing
+  - Added Tabler-compliant pagination in card footer
+  - Removed all inline styles in favor of Tabler utility classes
+  - Fixed EnumeratorPerformance dashboard layout structure
+  - Removed double container wrapping in MainLayout and PageHeader components
+  - Added utility classes: `.cursor-pointer` and `.mw-12` in index.css
+
+- **Modernized Alert Codes Reference Modal**
+  - Replaced table layout with Tabler list-group component
+  - Added circular avatar badges for alert codes (red theme)
+  - Improved two-line layout: description on top, subtitle below
+  - Better visual hierarchy and scannability
+  - Added modal-dialog-scrollable for better mobile experience
+  - More intuitive and modern design
+
+- **Page Structure Consistency**
+  - ValidationTable: Added proper page-header with title "Data Validation"
+  - EnumeratorPerformance: Fixed container structure and removed duplicate wrappers
+  - All pages now follow consistent Tabler architecture
+  - Improved loading and error states across all components
+
+## Code Quality
+
+- **Production-Ready Layouts**
+  - No inline styles - all styling uses Tabler utility classes
+  - Consistent spacing and grid system usage throughout
+  - Better responsive design across mobile and desktop
+  - Clean component structure following Tabler best practices
+
+## Deployment
+
+- **Vercel Environment Configuration**
+  - Cleaned up stale environment variables (KOBO_*, ALLOWED_ORIGINS)
+  - Documented JWT_EXPIRY as optional with default 7d
+  - CORS auto-configured: development allows all origins, production allows *.vercel.app
+  - Only set ALLOWED_ORIGINS for additional custom domains in production
+
+---
+
 # validation-zanzibar 1.2.1
 
 ## Features

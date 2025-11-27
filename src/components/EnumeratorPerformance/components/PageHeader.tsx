@@ -62,7 +62,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   const countryContext = getCountryContext();
 
   return (
-    <div className="page-header d-print-none mb-4">
+    <div className="page-header d-print-none">
       <div className="container-xl">
         <div className="row g-2 align-items-center">
           <div className="col">
@@ -82,10 +82,9 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                   <div className="input-group">
                     <span className="input-group-text">Survey</span>
                     <select
-                      className="form-select"
+                      className="form-select mw-12"
                       value={selectedSurvey}
                       onChange={e => setSelectedSurvey(e.target.value)}
-                      style={{ minWidth: '200px' }}
                     >
                       {availableSurveys.map(survey => (
                         <option key={survey} value={survey}>

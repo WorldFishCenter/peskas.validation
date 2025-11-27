@@ -46,11 +46,11 @@ const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose, surveyAlertC
 
   return (
     <div className="modal modal-blur show d-block" tabIndex={-1} role="dialog">
-      <div className="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
         <div className="modal-content">
-          <div className="modal-header bg-yellow-lt">
+          <div className="modal-header">
             <h5 className="modal-title">
-              <IconAlertTriangle className="icon me-2" size={24} stroke={2} />
+              <IconAlertTriangle className="icon text-yellow me-2" size={24} stroke={2} />
               Alert Codes Reference
             </h5>
             <button
@@ -60,17 +60,28 @@ const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose, surveyAlertC
               aria-label="Close"
             ></button>
           </div>
-          <div className="modal-body p-4">
-            <div className="alert alert-info mb-4">
-              <strong>About Alert Codes:</strong> Alerts identify potential issues with a submission that require validation attention. Use this reference to understand what each alert code signifies.
+          <div className="modal-body">
+            {/* Info Banner */}
+            <div className="alert alert-info d-flex align-items-center mb-3" role="alert">
+              <div>
+                <svg xmlns="http://www.w3.org/2000/svg" className="icon alert-icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  <polyline points="11 12 12 12 12 16 13 16"></polyline>
+                </svg>
+              </div>
+              <div>
+                Alert codes identify potential data quality issues that require validation attention.
+              </div>
             </div>
 
             {/* Survey Selector - only show if multiple surveys */}
             {surveyAlertCodes.length > 1 && (
-              <div className="mb-4">
-                <label className="form-label fw-bold">Select Survey:</label>
+              <div className="mb-3">
+                <label className="form-label">Survey</label>
                 <select
-                  className="form-select form-select-lg"
+                  className="form-select"
                   value={selectedSurvey}
                   onChange={(e) => setSelectedSurvey(e.target.value)}
                 >
@@ -89,43 +100,40 @@ const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose, surveyAlertC
 
             {/* Single Survey Header - only show if single survey */}
             {surveyAlertCodes.length === 1 && (
-              <div className="mb-4">
-                <h6 className="text-muted">
-                  Survey: <strong>
+              <div className="mb-3">
+                <div className="text-muted small">
+                  Survey: <span className="fw-bold text-dark">
                     {getCountryFlag(currentSurvey.surveyCountry)} {currentSurvey.surveyName}
-                  </strong>
-                </h6>
+                  </span>
+                </div>
               </div>
             )}
 
-            {/* Alert Codes Table */}
-            <div className="table-responsive">
-              <table className="table table-bordered">
-                <thead>
-                  <tr>
-                    <th className="w-25">Alert Code</th>
-                    <th>Description</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(currentSurvey.alertCodes).map(([code, description]) => (
-                    <tr key={code}>
-                      <td className="align-middle text-center">
-                        <span className="badge bg-red-lt text-red fs-5 fw-semibold px-3 py-2">
-                          Code {code}
-                        </span>
-                      </td>
-                      <td className="align-middle fs-5 py-3">{description}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* Alert Codes List */}
+            <div className="list-group list-group-flush">
+              {Object.entries(currentSurvey.alertCodes).map(([code, description]) => (
+                <div key={code} className="list-group-item px-0">
+                  <div className="row align-items-center">
+                    <div className="col-auto">
+                      <span className="avatar avatar-rounded bg-red-lt text-red">
+                        {code}
+                      </span>
+                    </div>
+                    <div className="col text-truncate">
+                      <div className="text-reset d-block">{description}</div>
+                      <div className="d-block text-muted text-truncate mt-n1">
+                        Alert Code {code}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
           <div className="modal-footer">
             <button
               type="button"
-              className="btn btn-primary px-4"
+              className="btn"
               onClick={onClose}
             >
               Close
