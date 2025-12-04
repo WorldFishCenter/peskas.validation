@@ -33,19 +33,36 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ user, onClose, 
     setIsSubmitting(true);
 
     try {
-      // Get auth token from localStorage
-      const userStr = localStorage.getItem('user');
-      const currentUser = userStr ? JSON.parse(userStr) : null;
+      // Get JWT token from localStorage
+      const token = localStorage.getItem('authToken');
+
+      if (!token) {
+        setError('Authentication token not found. Please log in again.');
+        setIsSubmitting(false);
+        return;
+      }
 
       const API_BASE_URL = getApiBaseUrl();
       const response = await fetch(`${API_BASE_URL}/users/${user._id}/reset-password`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${currentUser?.username || ''}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ newPassword }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to reset password' }));
+        if (response.status === 401) {
+          setError('Authentication failed. Please log in again.');
+        } else if (response.status === 403) {
+          setError('You do not have permission to reset passwords.');
+        } else {
+          setError(errorData.message || errorData.error || 'Failed to reset password');
+        }
+        return;
+      }
 
       const result = await response.json();
 
@@ -54,10 +71,11 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ user, onClose, 
         onSuccess();
         onClose();
       } else {
-        setError(result.message);
+        setError(result.message || 'Failed to reset password');
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      console.error('Reset password error:', err);
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

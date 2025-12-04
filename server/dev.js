@@ -91,9 +91,6 @@ mountServerlessFunction('/api/enumerators-stats', path.join(__dirname, '../api/e
 mountServerlessFunction('/api/admin/sync-users', path.join(__dirname, '../api/admin/sync-users.js'));
 mountServerlessFunction('/api/admin/refresh-enumerator-stats', path.join(__dirname, '../api/admin/refresh-enumerator-stats.js'));
 
-// Debug endpoints
-mountServerlessFunction('/api/debug/survey-collections', path.join(__dirname, '../api/debug/survey-collections.js'));
-
 console.log('\n✅ All endpoints mounted successfully!\n');
 
 // Health check endpoint
@@ -168,6 +165,35 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Helper function to try starting server on a port
+function tryStartServer(port, originalPort = port, maxAttempts = 10) {
+  return new Promise((resolve, reject) => {
+    const server = app.listen(port, () => {
+      console.log(`🚀 Development server running on port ${port}`);
+      console.log(`   http://localhost:${port}`);
+      console.log(`\nBackend ready! Start the frontend with: npm run dev:frontend\n`);
+      resolve(server);
+    });
+
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        server.close();
+        if (maxAttempts > 0) {
+          console.log(`Port ${port} is in use, trying port ${port + 1}...`);
+          tryStartServer(port + 1, originalPort, maxAttempts - 1)
+            .then(resolve)
+            .catch(reject);
+        } else {
+          reject(new Error(`Could not find an available port starting from ${originalPort}`));
+        }
+      } else {
+        server.close();
+        reject(error);
+      }
+    });
+  });
+}
+
 // Start server with MongoDB connection validation
 async function startServer() {
   try {
@@ -176,16 +202,15 @@ async function startServer() {
     const { db } = await connectToDatabase();
     console.log(`✓ MongoDB connected: ${db.databaseName}\n`);
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Development server running on port ${PORT}`);
-      console.log(`   http://localhost:${PORT}`);
-      console.log(`\nBackend ready! Start the frontend with: npm run dev:frontend\n`);
-    });
+    // Try to start server on the specified port, or find an available port
+    await tryStartServer(PORT);
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);
-    console.error('\nPlease check your MongoDB connection settings:');
-    console.error('  - MONGODB_VALIDATION_URI in .env file');
-    console.error('  - MONGODB_VALIDATION_DB in .env file');
+    if (error.message.includes('MongoDB') || error.message.includes('MONGODB')) {
+      console.error('\nPlease check your MongoDB connection settings:');
+      console.error('  - MONGODB_VALIDATION_URI in .env file');
+      console.error('  - MONGODB_VALIDATION_DB in .env file');
+    }
     console.error(`\nError details: ${error.stack}`);
     process.exit(1);
   }
