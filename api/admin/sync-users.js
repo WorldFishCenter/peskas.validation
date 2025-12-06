@@ -11,7 +11,7 @@
 
 const { withMiddleware, authenticateUser, requireAdmin } = require('../../lib/middleware');
 const { setCorsHeaders } = require('../../lib/response');
-const { syncUsersFromAirtable } = require('../../scripts/sync_users_from_airtable.cjs');
+const { syncUsersFromAirtable } = require('../../lib/airtable-sync');
 
 async function handler(req, res) {
   setCorsHeaders(res, req);
