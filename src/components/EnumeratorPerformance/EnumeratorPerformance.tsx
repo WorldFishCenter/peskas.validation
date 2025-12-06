@@ -41,11 +41,10 @@ const EnumeratorPerformance: React.FC = () => {
   const [minDate, setMinDate] = useState<string>('');
   const [maxDate, setMaxDate] = useState<string>('');
 
-  // Survey and country filter state
+  // Survey filter state
   const [selectedSurvey, setSelectedSurvey] = useState<string>('');
-  const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [availableSurveys, setAvailableSurveys] = useState<string[]>([]);
-  const [availableCountries, setAvailableCountries] = useState<string[]>([]);
+  const [surveyCountry, setSurveyCountry] = useState<string>('');
 
   // Alert Guide modal state
   const [showAlertGuide, setShowAlertGuide] = useState(false);
@@ -53,38 +52,60 @@ const EnumeratorPerformance: React.FC = () => {
   // Use the same hook as ValidationTable - rawData is already in the correct format
   const { surveyAlertCodes } = useContextualAlertCodes(rawData as any);
 
-  // Process the raw data into the format needed for the charts - do this only once
+  // Extract available surveys from raw data - do this only once when rawData changes
   useEffect(() => {
     if (rawData && rawData.length > 0) {
-      const processed = processEnumeratorData(rawData);
-      setProcessedData(processed);
-
-      // Extract unique surveys and countries
+      // Extract unique surveys
       const surveys = new Set<string>();
-      const countries = new Set<string>();
       rawData.forEach((item: any) => {
         if (item.survey_name) surveys.add(item.survey_name);
-        if (item.survey_country) countries.add(item.survey_country);
       });
       const surveysArray = Array.from(surveys).sort();
-      const countriesArray = Array.from(countries).sort();
-
       setAvailableSurveys(surveysArray);
-      setAvailableCountries(countriesArray);
 
       // Auto-select first survey if multiple surveys and none selected
       if (surveysArray.length > 1 && !selectedSurvey) {
         setSelectedSurvey(surveysArray[0]);
-      }
-
-      // Set default selected enumerator
-      if (processed.length > 0 && !selectedEnumerator) {
-        setSelectedEnumerator(processed[0].name);
+      } else if (surveysArray.length === 1) {
+        // If only one survey, select it automatically
+        setSelectedSurvey(surveysArray[0]);
       }
     }
-  }, [rawData]); // Remove selectedEnumerator dependency to avoid re-processing
+  }, [rawData]);
 
-  // Compute min/max dates from processedData
+  // Process data filtered by selected survey
+  useEffect(() => {
+    if (rawData && rawData.length > 0) {
+      // Filter raw data by selected survey first
+      let filteredRawData = rawData;
+      if (selectedSurvey) {
+        filteredRawData = rawData.filter((item: any) => item.survey_name === selectedSurvey);
+
+        // Set survey country based on selected survey
+        const surveyItem = filteredRawData.find((item: any) => item.survey_country);
+        setSurveyCountry(surveyItem?.survey_country || '');
+      } else {
+        setSurveyCountry('');
+      }
+
+      // Process only the filtered data
+      const processed = processEnumeratorData(filteredRawData);
+      setProcessedData(processed);
+
+      // Set default selected enumerator from processed data
+      if (processed.length > 0 && !selectedEnumerator) {
+        setSelectedEnumerator(processed[0].name);
+      } else if (processed.length > 0 && selectedEnumerator) {
+        // Check if selected enumerator exists in the new processed data
+        const exists = processed.some(e => e.name === selectedEnumerator);
+        if (!exists) {
+          setSelectedEnumerator(processed[0].name);
+        }
+      }
+    }
+  }, [rawData, selectedSurvey]); // Re-process when survey changes
+
+  // Compute min/max dates from processedData - reset when survey changes
   useEffect(() => {
     if (processedData.length > 0) {
       const allDates = processedData.flatMap(e =>
@@ -100,14 +121,14 @@ const EnumeratorPerformance: React.FC = () => {
         const sorted = allDates.sort();
         setMinDate(sorted[0]);
         setMaxDate(sorted[sorted.length - 1]);
-        // Set defaults if not already set
-        setFromDate(prev => prev || sorted[0]);
-        setToDate(prev => prev || sorted[sorted.length - 1]);
+        // Always reset date range to match the selected survey's data range
+        setFromDate(sorted[0]);
+        setToDate(sorted[sorted.length - 1]);
       }
     }
   }, [processedData]);
 
-  // Apply date range, survey, and country filtering to data
+  // Apply date range filtering to data (survey filtering already done in processedData)
   useEffect(() => {
     if (processedData.length === 0) return;
     const filterByDateRange = (date: string) => {
@@ -120,14 +141,8 @@ const EnumeratorPerformance: React.FC = () => {
       const filteredSubmissions = enumerator.submissions.filter(submission => {
         if (!submission.submission_date) return false;
 
-        // Date filter
+        // Date filter only - survey filtering already applied to processedData
         if (!filterByDateRange(submission.submission_date)) return false;
-
-        // Survey filter
-        if (selectedSurvey && submission.survey_name !== selectedSurvey) return false;
-
-        // Country filter
-        if (selectedCountry && submission.survey_country !== selectedCountry) return false;
 
         return true;
       });
@@ -146,7 +161,7 @@ const EnumeratorPerformance: React.FC = () => {
       };
     });
     setEnumerators(filteredEnumerators);
-  }, [processedData, fromDate, toDate, selectedSurvey, selectedCountry]);
+  }, [processedData, fromDate, toDate]);
 
   // Check for admin token
   useEffect(() => {
@@ -293,10 +308,8 @@ const EnumeratorPerformance: React.FC = () => {
         maxDate={maxDate}
         selectedSurvey={selectedSurvey}
         setSelectedSurvey={setSelectedSurvey}
-        selectedCountry={selectedCountry}
-        setSelectedCountry={setSelectedCountry}
         availableSurveys={availableSurveys}
-        availableCountries={availableCountries}
+        surveyCountry={surveyCountry}
         onShowAlertGuide={() => setShowAlertGuide(true)}
       />
 

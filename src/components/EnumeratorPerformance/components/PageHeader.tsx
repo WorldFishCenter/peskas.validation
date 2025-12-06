@@ -1,6 +1,5 @@
 import React from 'react';
 import { IconDatabase, IconInfoCircle } from '@tabler/icons-react';
-import { useAuth } from '../../Auth/AuthContext';
 import { getCountryFlag, getCountryName } from '../../../utils/countryMetadata';
 
 interface PageHeaderProps {
@@ -15,10 +14,8 @@ interface PageHeaderProps {
   maxDate: string;
   selectedSurvey: string;
   setSelectedSurvey: (survey: string) => void;
-  selectedCountry: string;
-  setSelectedCountry: (country: string) => void;
   availableSurveys: string[];
-  availableCountries: string[];
+  surveyCountry: string;
   onShowAlertGuide?: () => void;
 }
 
@@ -34,32 +31,19 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   maxDate,
   selectedSurvey,
   setSelectedSurvey,
-  selectedCountry,
-  setSelectedCountry,
   availableSurveys,
-  availableCountries,
+  surveyCountry,
   onShowAlertGuide
 }) => {
-  const { user } = useAuth();
-
-  // Get country context for subtitle
-  const getCountryContext = () => {
-    if (!user?.country || user.country.length === 0) {
-      return 'All Countries';
-    }
-
-    if (user.country.length === 1) {
-      const countryCode = user.country[0];
-      const flag = getCountryFlag(countryCode);
-      const name = getCountryName(countryCode);
-      return `${flag} ${name}`;
-    }
-
-    // Multi-country user
-    return user.country.map(code => `${getCountryFlag(code)} ${getCountryName(code)}`).join(', ');
+  // Get country display for the selected survey
+  const getCountryDisplay = () => {
+    if (!surveyCountry) return '';
+    const flag = getCountryFlag(surveyCountry);
+    const name = getCountryName(surveyCountry);
+    return `${flag} ${name}`;
   };
 
-  const countryContext = getCountryContext();
+  const countryDisplay = getCountryDisplay();
 
   return (
     <div className="page-header d-print-none">
@@ -69,8 +53,8 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             <h2 className="page-title">Enumerator Performance Dashboard</h2>
             <div className="text-muted mt-1">
               Monitor and analyze data collection performance metrics
-              {countryContext && (
-                <span className="ms-2 badge bg-blue-lt">{countryContext}</span>
+              {countryDisplay && (
+                <span className="ms-2 badge bg-blue-lt">{countryDisplay}</span>
               )}
             </div>
           </div>
@@ -89,27 +73,6 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                       {availableSurveys.map(survey => (
                         <option key={survey} value={survey}>
                           {survey}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              {/* Country Filter */}
-              {availableCountries.length > 1 && (
-                <div className="col-auto">
-                  <div className="input-group">
-                    <span className="input-group-text">Country</span>
-                    <select
-                      className="form-select"
-                      value={selectedCountry}
-                      onChange={e => setSelectedCountry(e.target.value)}
-                    >
-                      <option value="">All Countries</option>
-                      {availableCountries.map(countryCode => (
-                        <option key={countryCode} value={countryCode}>
-                          {getCountryFlag(countryCode)} {getCountryName(countryCode)}
                         </option>
                       ))}
                     </select>
