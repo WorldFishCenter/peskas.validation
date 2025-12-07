@@ -168,10 +168,14 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
     },
     tooltip: {
       ...baseTooltipConfig,
-      formatter: function() {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      formatter: function(this: any) {
+        // Get formatted date from category axis
+        const dateLabel = this.key || 
+          (typeof this.x === 'string' ? this.x : this.chart.xAxis[0].categories[this.x]);
         const value = this.y || 0;
         return wrapTooltip(
-          formatTooltipHeader(String(this.x)) +
+          formatTooltipHeader(String(dateLabel)) +
           `<div style="display: flex; justify-content: space-between; margin: 4px 0;">
             <span style="color: #666;">Submissions:</span>
             <span style="font-weight: 600;">${value}</span>

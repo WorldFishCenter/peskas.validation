@@ -50,8 +50,12 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = ({
     },
     tooltip: {
       ...baseTooltipConfig,
-      formatter: function() {
-        const name = String(this.x);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      formatter: function(this: any) {
+        // Get enumerator name from category axis
+        const categoryName = this.key || 
+          (typeof this.x === 'string' ? this.x : this.chart.xAxis[0].categories[this.x]);
+        const name = String(categoryName);
         const enumerator = sortedEnumerators.find(e => e.name === name);
         const errorRate = enumerator?.filteredErrorRate ?? enumerator?.errorRate ?? 0;
         const qualityScore = (100 - errorRate).toFixed(1);

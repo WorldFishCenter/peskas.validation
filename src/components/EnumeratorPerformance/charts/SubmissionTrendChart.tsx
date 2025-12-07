@@ -76,23 +76,29 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
     tooltip: {
       ...baseTooltipConfig,
       shared: true,
-      formatter: function() {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      formatter: function(this: any) {
         const points = this.points || [];
-        const activePoints = points.filter(p => (p.y || 0) > 0);
+        const activePoints = points.filter((p: any) => (p.y || 0) > 0);
+
+        // Get formatted date from category axis (more reliable than this.x)
+        const dateLabel = points.length > 0 
+          ? (points[0].key || this.chart.xAxis[0].categories[points[0].x])
+          : (typeof this.x === 'string' ? this.x : this.chart.xAxis[0].categories[this.x]);
 
         if (activePoints.length === 0) {
           return wrapTooltip(
-            formatTooltipHeader(String(this.x)) +
+            formatTooltipHeader(String(dateLabel)) +
             '<span style="color: #888;">No submissions on this date</span>'
           );
         }
 
-        let content = formatTooltipHeader(String(this.x));
-        const total = activePoints.reduce((sum, p) => sum + (p.y || 0), 0);
+        let content = formatTooltipHeader(String(dateLabel));
+        const total = activePoints.reduce((sum: number, p: any) => sum + (p.y || 0), 0);
 
         activePoints
-          .sort((a, b) => (b.y || 0) - (a.y || 0))
-          .forEach(point => {
+          .sort((a: any, b: any) => (b.y || 0) - (a.y || 0))
+          .forEach((point: any) => {
             const value = point.y || 0;
             content += `<div style="display: flex; align-items: center; margin: 3px 0;">
               <span style="color: ${point.series.color}; font-size: 14px; margin-right: 6px;">●</span>
