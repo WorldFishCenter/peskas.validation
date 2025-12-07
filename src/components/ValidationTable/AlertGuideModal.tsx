@@ -109,25 +109,30 @@ const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose, surveyAlertC
               </div>
             )}
 
-            {/* Alert Codes List */}
-            <div className="list-group list-group-flush">
-              {Object.entries(currentSurvey.alertCodes).map(([code, description]) => (
-                <div key={code} className="list-group-item px-0">
-                  <div className="row align-items-center">
-                    <div className="col-auto">
-                      <span className="avatar avatar-rounded bg-red-lt text-red">
-                        {code}
-                      </span>
-                    </div>
-                    <div className="col text-truncate">
-                      <div className="text-reset d-block">{description}</div>
-                      <div className="d-block text-muted text-truncate mt-n1">
-                        Alert Code {code}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            {/* Alert Codes Table */}
+            <div className="table-responsive">
+              <table className="table table-vcenter card-table">
+                <thead>
+                  <tr>
+                    <th className="w-1">Code</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(currentSurvey.alertCodes).map(([code, description]) => (
+                    <tr key={code}>
+                      <td>
+                        <span className="badge bg-red-lt text-red fs-5">
+                          {code}
+                        </span>
+                      </td>
+                      <td className="text-wrap">
+                        {description}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
           <div className="modal-footer">
