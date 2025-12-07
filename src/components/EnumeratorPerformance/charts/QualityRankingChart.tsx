@@ -2,127 +2,117 @@ import React from 'react';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { EnumeratorData } from '../types';
+import {
+  baseTooltipConfig,
+  formatTooltipHeader,
+  formatTooltipRow,
+  formatStatRow,
+  wrapTooltip,
+  chartColors
+} from '../utils/chartConfig';
 
 interface QualityRankingChartProps {
   enumerators: EnumeratorData[];
 }
 
-const QualityRankingChart: React.FC<QualityRankingChartProps> = ({ 
+const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
   enumerators
 }) => {
-  // Filter out enumerators with no submissions in the selected timeframe
-  const filteredEnumerators = enumerators.filter(e => {
-    const total = e.filteredTotal !== undefined ? e.filteredTotal : e.totalSubmissions;
-    return total > 0; // Only include enumerators with at least 1 submission
-  });
+  // Filter and sort once
+  const sortedEnumerators = enumerators
+    .filter(e => {
+      const total = e.filteredTotal !== undefined ? e.filteredTotal : e.totalSubmissions;
+      return total > 0;
+    })
+    .sort((a, b) => {
+      const aRate = a.filteredErrorRate ?? a.errorRate;
+      const bRate = b.filteredErrorRate ?? b.errorRate;
+      return aRate - bRate; // Best quality first
+    });
 
-  // Generate enumerator quality ranking chart
   const chartOptions: Highcharts.Options = {
     chart: {
       type: 'bar',
-      height: 550
+      height: Math.max(450, sortedEnumerators.length * 32),
+      style: { fontFamily: 'inherit' }
     },
-    title: {
-      text: `Enumerator Quality Ranking (Selected Date Range)`
-    },
+    title: { text: undefined },
     xAxis: {
-      categories: filteredEnumerators
-        .sort((a, b) => {
-          const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
-          const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
-          return aRate - bRate;
-        })
-        .map(e => e.name),
-      title: {
-        text: 'Enumerator'
-      }
+      categories: sortedEnumerators.map(e => e.name),
+      title: { text: null },
+      labels: { style: { fontSize: '12px' } }
     },
     yAxis: [{
-      title: {
-        text: 'Quality Score (%)'
-      },
+      title: { text: 'Quality Score (%)' },
       min: 0,
-      max: 100
+      max: 100,
+      labels: { format: '{value}%' }
     }, {
-      title: {
-        text: 'Submission Count'
-      },
+      title: { text: 'Submissions' },
       min: 0,
       opposite: true
     }],
     tooltip: {
+      ...baseTooltipConfig,
+      shared: true,
       formatter: function() {
-        const x = String(this.x);
-        const enumerator = filteredEnumerators.find(e => e.name === x);
-        
-        if (!enumerator) return `<b>${x}</b><br/>No data available`;
-        
-        const total = enumerator.filteredTotal !== undefined ? 
-          enumerator.filteredTotal : enumerator.totalSubmissions;
-        
-        const alerts = enumerator.filteredAlertsCount !== undefined ? 
-          enumerator.filteredAlertsCount : enumerator.submissionsWithAlerts;
-        
-        const cleanSubmissions = Math.max(0, total - alerts);
-        
-        return `<b>${x}</b><br/>
-                <span style="color:${this.series.color}">●</span> ${this.series.name}: ${this.y}${this.series.name === 'Quality Score' ? '%' : ''}<br/>
-                Total Submissions: ${total}<br/>
-                Clean Submissions: ${cleanSubmissions}`;
-      },
-      shared: true
+        const name = String(this.x);
+        const enumerator = sortedEnumerators.find(e => e.name === name);
+
+        if (!enumerator) return wrapTooltip(formatTooltipHeader(name) + '<span style="color:#888;">No data</span>');
+
+        const total = enumerator.filteredTotal ?? enumerator.totalSubmissions;
+        const alerts = enumerator.filteredAlertsCount ?? enumerator.submissionsWithAlerts;
+        const cleanCount = Math.max(0, total - alerts);
+        const qualityScore = (100 - (enumerator.filteredErrorRate ?? enumerator.errorRate)).toFixed(1);
+
+        return wrapTooltip(
+          formatTooltipHeader(name) +
+          formatTooltipRow(chartColors.success, 'Quality Score', qualityScore, '%') +
+          formatTooltipRow(chartColors.info, 'Submissions', total) +
+          `<div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid #eee;">` +
+          formatStatRow('Clean submissions', cleanCount) +
+          formatStatRow('With alerts', alerts) +
+          `</div>`
+        );
+      }
     },
     plotOptions: {
       bar: {
+        borderRadius: 3,
         dataLabels: {
           enabled: true,
-          style: {
-            fontSize: '10px'
-          }
+          style: { fontSize: '10px', fontWeight: '500' }
         },
-        grouping: false
+        grouping: true
       }
     },
     series: [{
       name: 'Quality Score',
       type: 'bar',
-      data: filteredEnumerators
-        .sort((a, b) => {
-          const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
-          const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
-          return aRate - bRate;
-        })
-        .map(e => {
-          const rate = e.filteredErrorRate !== undefined ? e.filteredErrorRate : e.errorRate;
-          return parseFloat((100 - rate).toFixed(1));
-        }),
-      color: '#28a745',
-      dataLabels: {
-        format: '{y}%'
-      }
+      data: sortedEnumerators.map(e => {
+        const rate = e.filteredErrorRate ?? e.errorRate;
+        return parseFloat((100 - rate).toFixed(1));
+      }),
+      color: chartColors.success,
+      dataLabels: { format: '{y}%' }
     }, {
-      name: 'Submission Count',
+      name: 'Submissions',
       type: 'bar',
-      data: filteredEnumerators
-        .sort((a, b) => {
-          const aRate = a.filteredErrorRate !== undefined ? a.filteredErrorRate : a.errorRate;
-          const bRate = b.filteredErrorRate !== undefined ? b.filteredErrorRate : b.errorRate;
-          return aRate - bRate;
-        })
-        .map(e => e.filteredTotal || e.totalSubmissions),
-      color: '#17a2b8',
+      data: sortedEnumerators.map(e => e.filteredTotal || e.totalSubmissions),
+      color: chartColors.info,
       yAxis: 1,
-      opacity: 0.7,
-      dataLabels: {
-        format: '{y}'
-      }
+      opacity: 0.8,
+      dataLabels: { format: '{y}' }
     }],
-    credits: {
-      enabled: false
-    },
     legend: {
-      enabled: true
-    }
+      enabled: true,
+      align: 'center',
+      verticalAlign: 'top',
+      floating: false,
+      itemStyle: { fontSize: '12px' }
+    },
+    credits: { enabled: false }
   };
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;

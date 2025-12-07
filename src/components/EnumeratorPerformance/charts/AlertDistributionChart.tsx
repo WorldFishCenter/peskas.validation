@@ -1,99 +1,107 @@
 import React, { useMemo } from 'react';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
+import { IconMoodSmile } from '@tabler/icons-react';
 import { EnumeratorData } from '../types';
+import { baseTooltipConfig, wrapTooltip, formatTooltipHeader } from '../utils/chartConfig';
 
 interface AlertDistributionChartProps {
   enumerators: EnumeratorData[];
 }
 
-const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({ 
+const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
   enumerators
 }) => {
-  // Process and calculate alert distribution using memoization for better performance
   const { alertData, totalAlerts } = useMemo(() => {
-    // Collect all alert types across all enumerators
     const alertDistribution = enumerators.reduce((counts: Record<string, number>, enumerator) => {
-      // Use filtered submissions when available
       const submissions = enumerator.filteredSubmissions || enumerator.submissions;
-      
+
       submissions.forEach(submission => {
         if (submission.alert_flag && submission.alert_flag !== "NA") {
           counts[submission.alert_flag] = (counts[submission.alert_flag] || 0) + 1;
         }
       });
-      
+
       return counts;
     }, {});
-    
-    // Convert to array format for the chart
+
     const data = Object.entries(alertDistribution)
       .map(([label, count]) => ({
         name: label,
         y: count
       }))
-      .sort((a, b) => b.y - a.y); // Sort by count in descending order
+      .sort((a, b) => b.y - a.y);
 
-    // Calculate total alerts
     const total = data.reduce((sum, item) => sum + item.y, 0);
-    
+
     return { alertData: data, totalAlerts: total };
   }, [enumerators]);
-  
-  // Show an empty message if no alerts are found
+
+  // Empty state with friendly message
   if (alertData.length === 0) {
     return (
-      <div className="alert alert-info" role="alert">
-        <div className="d-flex">
-          <div>
-            <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-info-circle me-2" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-              <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
-              <path d="M12 8l.01 0"></path>
-              <path d="M11 12h1v4h1"></path>
-            </svg>
-          </div>
-          <div>No alerts found in the selected time period.</div>
+      <div className="empty py-5">
+        <div className="empty-icon">
+          <IconMoodSmile size={48} stroke={1.5} className="text-green" />
         </div>
+        <p className="empty-title">No alerts in this period</p>
+        <p className="empty-subtitle text-secondary">
+          All submissions in the selected date range passed validation without issues.
+        </p>
       </div>
     );
   }
-  
+
   const chartOptions: Highcharts.Options = {
     chart: {
       type: 'pie',
-      height: 550 // Increased height for better visualization
+      height: 480,
+      style: { fontFamily: 'inherit' }
     },
-    title: {
-      text: `Alert Distribution Across All Enumerators`
-    },
+    title: { text: undefined },
     subtitle: {
-      text: `Total Alerts: ${totalAlerts}`
+      text: `${totalAlerts} total alert${totalAlerts !== 1 ? 's' : ''} detected`,
+      style: { fontSize: '13px', color: '#666' }
     },
     tooltip: {
-      pointFormat: '{series.name}: <b>{point.y} ({point.percentage:.1f}%)</b>'
+      ...baseTooltipConfig,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      formatter: function(this: any) {
+        const point = this.point;
+        return wrapTooltip(
+          formatTooltipHeader(`Alert: ${point.name}`) +
+          `<div style="display: flex; justify-content: space-between; margin: 4px 0;">
+            <span style="color: #666;">Count:</span>
+            <span style="font-weight: 600;">${point.y}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin: 4px 0;">
+            <span style="color: #666;">Share:</span>
+            <span style="font-weight: 600;">${point.percentage.toFixed(1)}%</span>
+          </div>`
+        );
+      }
     },
     accessibility: {
-      point: {
-        valueSuffix: '%'
-      }
+      point: { valueSuffix: '%' }
     },
     plotOptions: {
       pie: {
         allowPointSelect: true,
         cursor: 'pointer',
+        borderRadius: 4,
         dataLabels: {
           enabled: true,
           format: '<b>{point.name}</b>: {point.percentage:.1f}%',
-          distance: 20,
+          distance: 25,
+          style: { fontSize: '11px', fontWeight: '500' },
           filter: {
             property: 'percentage',
             operator: '>',
-            value: 4 // Only show labels for segments > 4%
+            value: 4
           }
         },
         showInLegend: true,
-        size: '80%'
+        size: '75%'
       }
     },
     legend: {
@@ -101,18 +109,17 @@ const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
       layout: 'vertical',
       align: 'right',
       verticalAlign: 'middle',
-      itemMarginTop: 5,
-      itemMarginBottom: 5,
-      maxHeight: 400
+      itemMarginTop: 4,
+      itemMarginBottom: 4,
+      maxHeight: 350,
+      itemStyle: { fontSize: '12px' }
     },
     series: [{
       name: 'Alerts',
       type: 'pie',
       data: alertData
     }],
-    credits: {
-      enabled: false
-    }
+    credits: { enabled: false }
   };
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;

@@ -1,5 +1,10 @@
-import React, { useEffect } from 'react';
-import { IconInfoCircle } from '@tabler/icons-react';
+import React from 'react';
+import {
+  IconChartBar,
+  IconTrendingUp,
+  IconStar,
+  IconAlertTriangle
+} from '@tabler/icons-react';
 import { ChartTabType, EnumeratorData } from '../types';
 import SubmissionVolumeChart from '../charts/SubmissionVolumeChart';
 import QualityRankingChart from '../charts/QualityRankingChart';
@@ -14,6 +19,34 @@ interface ChartTabsProps {
   uniqueDates: string[];
 }
 
+// Tab configurations with icons and descriptions
+const tabConfig = {
+  volume: {
+    icon: IconChartBar,
+    label: 'Volume',
+    description: 'Compare submission counts across enumerators. Click any bar to see details.',
+    color: 'primary'
+  },
+  trends: {
+    icon: IconTrendingUp,
+    label: 'Trends',
+    description: 'Track submission patterns over time for top 10 enumerators.',
+    color: 'purple'
+  },
+  quality: {
+    icon: IconStar,
+    label: 'Quality',
+    description: 'Rank enumerators by data quality (% submissions without alerts).',
+    color: 'green'
+  },
+  errors: {
+    icon: IconAlertTriangle,
+    label: 'Alerts',
+    description: 'See which alert types occur most frequently across all data.',
+    color: 'orange'
+  }
+};
+
 const ChartTabs: React.FC<ChartTabsProps> = ({
   activeTab,
   setActiveTab,
@@ -21,133 +54,70 @@ const ChartTabs: React.FC<ChartTabsProps> = ({
   onEnumeratorSelect,
   uniqueDates
 }) => {
-  // Initialize popovers when tab changes
-  useEffect(() => {
-    // Re-init Bootstrap popovers when tab changes
-    if (typeof document !== 'undefined' && (window as any).bootstrap?.Popover) {
-      const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
-      [...popoverTriggerList].forEach(popoverTriggerEl => {
-        new (window as any).bootstrap.Popover(popoverTriggerEl);
-      });
-    }
-  }, [activeTab]);
+  const currentTab = tabConfig[activeTab];
 
   return (
     <div className="card mb-4">
       <div className="card-header">
-        <ul className="nav nav-tabs card-header-tabs" data-bs-toggle="tabs">
-          <li className="nav-item">
-            <a 
-              className={`nav-link ${activeTab === 'volume' ? 'active' : ''}`} 
-              href="#"
-              onClick={(e) => { e.preventDefault(); setActiveTab('volume'); }}
-            >
-              Submission Volume
-            </a>
-          </li>
-          <li className="nav-item">
-            <a 
-              className={`nav-link ${activeTab === 'trends' ? 'active' : ''}`} 
-              href="#"
-              onClick={(e) => { e.preventDefault(); setActiveTab('trends'); }}
-            >
-              Submission Trends
-            </a>
-          </li>
-          <li className="nav-item">
-            <a 
-              className={`nav-link ${activeTab === 'quality' ? 'active' : ''}`} 
-              href="#"
-              onClick={(e) => { e.preventDefault(); setActiveTab('quality'); }}
-            >
-              Quality Metrics
-            </a>
-          </li>
-          <li className="nav-item">
-            <a 
-              className={`nav-link ${activeTab === 'errors' ? 'active' : ''}`} 
-              href="#"
-              onClick={(e) => { e.preventDefault(); setActiveTab('errors'); }}
-            >
-              Error Distribution
-            </a>
-          </li>
+        <ul className="nav nav-tabs card-header-tabs">
+          {(Object.keys(tabConfig) as ChartTabType[]).map((tabKey) => {
+            const tab = tabConfig[tabKey];
+            const TabIcon = tab.icon;
+            const isActive = activeTab === tabKey;
+
+            return (
+              <li className="nav-item" key={tabKey}>
+                <a
+                  className={`nav-link ${isActive ? 'active' : ''}`}
+                  href="#"
+                  onClick={(e) => { e.preventDefault(); setActiveTab(tabKey); }}
+                >
+                  <TabIcon
+                    size={16}
+                    stroke={1.5}
+                    className={`me-1 ${isActive ? `text-${tab.color}` : ''}`}
+                  />
+                  {tab.label}
+                </a>
+              </li>
+            );
+          })}
         </ul>
       </div>
-      <div className="card-body min-vh-60">
+
+      {/* Tab description ribbon */}
+      <div className={`bg-${currentTab.color}-lt border-bottom px-3 py-2`}>
+        <small className="text-secondary">
+          {currentTab.description}
+        </small>
+      </div>
+
+      <div className="card-body">
         <div className="tab-content">
           {/* Volume Tab */}
           <div className={`tab-pane ${activeTab === 'volume' ? 'active show' : ''}`}>
-            <h3 className="card-title">Submission Volume by Enumerator</h3>
-            <p className="text-muted mb-4">Click on any bar to view detailed statistics for that enumerator</p>
-            <SubmissionVolumeChart 
-              enumerators={enumerators} 
-              onEnumeratorSelect={onEnumeratorSelect} 
+            <SubmissionVolumeChart
+              enumerators={enumerators}
+              onEnumeratorSelect={onEnumeratorSelect}
             />
           </div>
-          
+
           {/* Trends Tab */}
           <div className={`tab-pane ${activeTab === 'trends' ? 'active show' : ''}`}>
-            <h3 className="card-title mb-1">Submission Trend Over Time</h3>
-            <p className="text-muted small mb-3">Showing top 10 enumerators by submission volume (use mouse to zoom)</p>
-            <SubmissionTrendChart 
-              enumerators={enumerators} 
+            <SubmissionTrendChart
+              enumerators={enumerators}
               uniqueDates={uniqueDates}
             />
           </div>
-          
+
           {/* Quality Tab */}
           <div className={`tab-pane ${activeTab === 'quality' ? 'active show' : ''}`}>
-            <h3 className="card-title mb-1">Enumerator Quality Ranking</h3>
-            <p className="text-muted small mb-3">Ranked by percentage of submissions without alerts</p>
-            <div className="mb-4">
-              <span 
-                className="cursor-help" 
-                data-bs-toggle="popover" 
-                data-bs-placement="top" 
-                data-bs-html="true"
-                data-bs-trigger="hover focus"
-                title="Understanding Quality Metrics" 
-                data-bs-content="
-                  <strong>Quality Score:</strong> Percentage of submissions without alerts (100% - Error Rate).<br><br>
-                  <strong>Best Performer:</strong> Uses a weighted score that considers both quality and submission volume, requiring at least 5 submissions.<br><br>
-                  <strong>Chart:</strong> Green bars show quality score (%), blue bars show submission count.
-                "
-              >
-                <IconInfoCircle className="icon text-blue" size={20} stroke={2} />
-                <span className="ms-1">Click for more info</span>
-              </span>
-            </div>
-            <QualityRankingChart 
-              enumerators={enumerators} 
-            />
+            <QualityRankingChart enumerators={enumerators} />
           </div>
 
           {/* Error Distribution Tab */}
           <div className={`tab-pane ${activeTab === 'errors' ? 'active show' : ''}`}>
-            <h3 className="card-title mb-1">Alert Type Distribution</h3>
-            <p className="text-muted small mb-3">Distribution of alert types across all enumerators</p>
-            <div className="mb-4">
-              <span 
-                className="cursor-help" 
-                data-bs-toggle="popover" 
-                data-bs-placement="top" 
-                data-bs-html="true"
-                data-bs-trigger="hover focus"
-                title="About Alert Distribution" 
-                data-bs-content="
-                  <strong>Alert Distribution:</strong> Breakdown of alert types across all enumerators.<br><br>
-                  <strong>Purpose:</strong> Helps identify the most common validation issues for targeted training.<br><br>
-                  <strong>Note:</strong> Only shows alert types that occur in the selected time period.
-                "
-              >
-                <IconInfoCircle className="icon text-blue" size={20} stroke={2} />
-                <span className="ms-1">Click for more info</span>
-              </span>
-            </div>
-            <AlertDistributionChart 
-              enumerators={enumerators} 
-            />
+            <AlertDistributionChart enumerators={enumerators} />
           </div>
         </div>
       </div>
@@ -155,4 +125,4 @@ const ChartTabs: React.FC<ChartTabsProps> = ({
   );
 };
 
-export default ChartTabs; 
+export default ChartTabs;

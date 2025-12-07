@@ -1,65 +1,101 @@
 import React from 'react';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
+import { IconMoodSmile } from '@tabler/icons-react';
 import { EnumeratorData } from '../types';
+import {
+  baseTooltipConfig,
+  wrapTooltip,
+  formatTooltipHeader,
+  chartColors
+} from '../utils/chartConfig';
 
 interface AlertDistributionChartProps {
   selectedEnumeratorData: EnumeratorData;
 }
 
-export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({ 
+export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
   selectedEnumeratorData
 }) => {
-  // Generate detailed analysis for selected enumerator
-  const enumeratorAlertDistribution = 
-    // Use filteredSubmissions if available, otherwise use all submissions
-    (selectedEnumeratorData.filteredSubmissions || selectedEnumeratorData.submissions).reduce((counts: Record<string, number>, submission) => {
-      if (submission.alert_flag && submission.alert_flag !== "NA") {
-        counts[submission.alert_flag] = (counts[submission.alert_flag] || 0) + 1;
-      }
-      return counts;
-    }, {});
-  
-  const alertLabels = Object.keys(enumeratorAlertDistribution);
-  const alertCounts = Object.values(enumeratorAlertDistribution);
+  const submissions = selectedEnumeratorData.filteredSubmissions || selectedEnumeratorData.submissions;
+  const alertDistribution = submissions.reduce((counts: Record<string, number>, submission) => {
+    if (submission.alert_flag && submission.alert_flag !== "NA") {
+      counts[submission.alert_flag] = (counts[submission.alert_flag] || 0) + 1;
+    }
+    return counts;
+  }, {});
+
+  const alertData = Object.entries(alertDistribution)
+    .map(([label, count]) => ({ name: label, y: count }))
+    .sort((a, b) => b.y - a.y);
+
+  const totalAlerts = alertData.reduce((sum, item) => sum + item.y, 0);
+
+  // Empty state
+  if (alertData.length === 0) {
+    return (
+      <div className="empty py-4">
+        <div className="empty-icon">
+          <IconMoodSmile size={36} stroke={1.5} className="text-green" />
+        </div>
+        <p className="empty-title h4">No alerts</p>
+        <p className="empty-subtitle text-secondary">
+          This enumerator has no flagged submissions in the selected period.
+        </p>
+      </div>
+    );
+  }
 
   const chartOptions: Highcharts.Options = {
     chart: {
       type: 'pie',
-      height: 350
+      height: 320,
+      style: { fontFamily: 'inherit' }
     },
-    title: {
-      text: `Alert Types for ${selectedEnumeratorData?.name || ''} (Selected Date Range)`
+    title: { text: undefined },
+    subtitle: {
+      text: `${totalAlerts} alert${totalAlerts !== 1 ? 's' : ''} total`,
+      style: { fontSize: '12px', color: '#666' }
     },
     tooltip: {
-      pointFormat: '{series.name}: <b>{point.y} ({point.percentage:.1f}%)</b>'
-    },
-    accessibility: {
-      point: {
-        valueSuffix: '%'
+      ...baseTooltipConfig,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      formatter: function(this: any) {
+        const point = this.point;
+        return wrapTooltip(
+          formatTooltipHeader(`Alert: ${point.name}`) +
+          `<div style="display: flex; justify-content: space-between; margin: 4px 0;">
+            <span style="color: #666;">Count:</span>
+            <span style="font-weight: 600;">${point.y}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin: 4px 0;">
+            <span style="color: #666;">Share:</span>
+            <span style="font-weight: 600;">${point.percentage.toFixed(1)}%</span>
+          </div>`
+        );
       }
     },
+    accessibility: { point: { valueSuffix: '%' } },
     plotOptions: {
       pie: {
         allowPointSelect: true,
         cursor: 'pointer',
+        borderRadius: 3,
         dataLabels: {
           enabled: true,
-          format: '<b>{point.name}</b>: {point.percentage:.1f} %'
-        }
+          format: '<b>{point.name}</b>: {point.percentage:.1f}%',
+          style: { fontSize: '10px' }
+        },
+        size: '85%'
       }
     },
     series: [{
       name: 'Alerts',
       type: 'pie',
-      data: alertLabels.map((label, index) => ({
-        name: label,
-        y: alertCounts[index]
-      }))
+      data: alertData
     }],
-    credits: {
-      enabled: false
-    }
+    legend: { enabled: false },
+    credits: { enabled: false }
   };
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;
@@ -69,108 +105,98 @@ interface EnumeratorTrendChartProps {
   selectedEnumeratorData: EnumeratorData;
 }
 
-export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({ 
+export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
   selectedEnumeratorData
 }) => {
-  // Filter and sort dates for this enumerator's trend chart
   const trendData = selectedEnumeratorData?.submissionTrend || [];
-  
-  // Filter dates by selected date range and sort chronologically
+
+  // Filter dates by selected date range
   const filteredDates = trendData
     .filter(t => {
       const datePart = t.date.includes('T') ? t.date.split('T')[0] : t.date.split(' ')[0];
-      // Use filteredSubmissions to determine range
-      // If the date is present in filteredSubmissions, include it
-      return (
-        selectedEnumeratorData.filteredSubmissions?.some(s => {
-          if (!s.submission_date) return false;
-          const sDate = s.submission_date.includes('T') ? s.submission_date.split('T')[0] : s.submission_date.split(' ')[0];
-          return sDate === datePart;
-        })
-      );
+      return selectedEnumeratorData.filteredSubmissions?.some(s => {
+        if (!s.submission_date) return false;
+        const sDate = s.submission_date.includes('T') ? s.submission_date.split('T')[0] : s.submission_date.split(' ')[0];
+        return sDate === datePart;
+      });
     })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  
-  // Format dates for better display
-  const formattedDateMap = filteredDates.reduce((map, item) => {
+
+  // Format dates
+  const categories = filteredDates.map(item => {
     const d = new Date(item.date);
-    const formatted = d.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
     });
-    map[item.date] = { formatted, count: item.count };
-    return map;
-  }, {} as Record<string, { formatted: string, count: number }>);
-  
-  // Create arrays for categories and data
-  const categories = filteredDates.map(item => formattedDateMap[item.date].formatted);
+  });
+
   const data = filteredDates.map(item => item.count);
-  
-  // Determine appropriate tick interval based on number of dates
   const tickInterval = Math.max(1, Math.floor(categories.length / 8));
-  
-  // Generate individual submission trend for selected enumerator
+  const totalSubmissions = data.reduce((sum, val) => sum + val, 0);
+
   const chartOptions: Highcharts.Options = {
     chart: {
       type: 'column',
-      height: 350,
-      zoomType: 'x'
+      height: 320,
+      zoomType: 'x',
+      style: { fontFamily: 'inherit' }
     },
-    title: {
-      text: `Submission Trend for ${selectedEnumeratorData?.name || ''}`
+    title: { text: undefined },
+    subtitle: {
+      text: `${totalSubmissions} submission${totalSubmissions !== 1 ? 's' : ''} over ${data.length} day${data.length !== 1 ? 's' : ''}`,
+      style: { fontSize: '12px', color: '#666' }
     },
     xAxis: {
-      categories: categories,
-      title: {
-        text: 'Date'
-      },
+      categories,
+      title: { text: null },
       labels: {
         rotation: -45,
-        style: {
-          fontSize: '11px'
-        },
+        style: { fontSize: '10px' },
         step: tickInterval
       },
-      tickmarkPlacement: 'on',
-      startOnTick: true,
-      endOnTick: true,
-      showLastLabel: true
+      crosshair: {
+        width: 1,
+        color: '#dee2e6'
+      }
     },
     yAxis: {
-      title: {
-        text: 'Number of Submissions'
-      },
-      min: 0
+      title: { text: 'Submissions' },
+      min: 0,
+      allowDecimals: false
     },
     tooltip: {
+      ...baseTooltipConfig,
       formatter: function() {
         const value = this.y || 0;
-        return `<b>${this.x}</b><br/>
-                Submissions: ${value} ${value !== 1 ? 'submissions' : 'submission'}`;
+        return wrapTooltip(
+          formatTooltipHeader(String(this.x)) +
+          `<div style="display: flex; justify-content: space-between; margin: 4px 0;">
+            <span style="color: #666;">Submissions:</span>
+            <span style="font-weight: 600;">${value}</span>
+          </div>`
+        );
       }
     },
     plotOptions: {
       column: {
+        borderRadius: 3,
         dataLabels: {
-          enabled: true,
+          enabled: data.length <= 20,
           format: '{y}',
-          style: {
-            fontSize: '10px'
-          }
+          style: { fontSize: '10px', fontWeight: '500' }
         },
-        pointWidth: Math.max(5, Math.min(25, 800 / Math.max(1, filteredDates.length))) // Responsive bar width
+        color: chartColors.primary
       }
     },
     series: [{
       name: 'Submissions',
       type: 'column',
-      data: data,
-      color: '#0d6efd'
+      data
     }],
-    credits: {
-      enabled: false
-    }
+    legend: { enabled: false },
+    credits: { enabled: false }
   };
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;

@@ -2,27 +2,28 @@ import React from 'react';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { EnumeratorData } from '../types';
+import { baseTooltipConfig, formatTooltipHeader, wrapTooltip } from '../utils/chartConfig';
 
 interface SubmissionTrendChartProps {
   enumerators: EnumeratorData[];
   uniqueDates: string[];
 }
 
-const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({ 
-  enumerators, 
+const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
+  enumerators,
   uniqueDates
 }) => {
-  // Filter out enumerators with no submissions in the selected date range
+  // Filter enumerators with submissions
   const filteredEnumerators = enumerators.filter(e => {
     const total = e.filteredTotal !== undefined ? e.filteredTotal : e.totalSubmissions;
-    return total > 0; // Only include enumerators with at least 1 submission
+    return total > 0;
   });
 
-  // Filter and sort dates chronologically
-  const filteredDates = uniqueDates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  // Sort dates chronologically
+  const sortedDates = [...uniqueDates].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
-  // Format dates for better display
-  const formattedDates = filteredDates.map(date => {
+  // Format dates for display
+  const formattedDates = sortedDates.map(date => {
     const d = new Date(date);
     return d.toLocaleDateString('en-US', {
       month: 'short',
@@ -31,58 +32,81 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
     });
   });
 
-  // Determine appropriate tick interval based on number of dates
-  const tickInterval = Math.max(1, Math.floor(filteredDates.length / 10));
-  
-  // Generate options for submission trend over time
+  const tickInterval = Math.max(1, Math.floor(sortedDates.length / 10));
+
+  // Get top 10 enumerators
+  const topEnumerators = [...filteredEnumerators]
+    .sort((a, b) => {
+      const aTotal = a.filteredTotal ?? a.totalSubmissions;
+      const bTotal = b.filteredTotal ?? b.totalSubmissions;
+      return bTotal - aTotal;
+    })
+    .slice(0, 10);
+
   const chartOptions: Highcharts.Options = {
     chart: {
       type: 'line',
-      height: 550,
-      zoomType: 'x'
+      height: 500,
+      zoomType: 'x',
+      style: { fontFamily: 'inherit' }
     },
-    title: {
-      text: `Enumerator Quality Ranking (Selected Date Range)`
+    title: { text: undefined },
+    subtitle: {
+      text: sortedDates.length > 30 ? 'Drag to zoom into a specific period' : undefined,
+      style: { fontSize: '12px', color: '#888' }
     },
     xAxis: {
       categories: formattedDates,
-      title: {
-        text: 'Date'
-      },
+      title: { text: null },
       labels: {
         rotation: -45,
-        style: {
-          fontSize: '11px'
-        },
+        style: { fontSize: '11px' },
         step: tickInterval
       },
-      tickmarkPlacement: 'on',
-      startOnTick: true,
-      endOnTick: true,
-      showLastLabel: true
+      crosshair: {
+        width: 1,
+        color: '#dee2e6',
+        dashStyle: 'Dash'
+      }
     },
     yAxis: {
-      title: {
-        text: 'Number of Submissions'
-      },
+      title: { text: 'Submissions' },
       min: 0
     },
     tooltip: {
+      ...baseTooltipConfig,
       shared: true,
-      crosshairs: true,
       formatter: function() {
         const points = this.points || [];
-        let tooltip = `<b>${this.x}</b><br/>`;
-        
-        // Add information for each series point at this x position
-        points.forEach(point => {
-          const value = point.y || 0;
-          if (value > 0) {
-            tooltip += `<span style="color:${point.series.color}">●</span> ${point.series.name}: ${value} submission${value !== 1 ? 's' : ''}<br/>`;
-          }
-        });
-        
-        return tooltip;
+        const activePoints = points.filter(p => (p.y || 0) > 0);
+
+        if (activePoints.length === 0) {
+          return wrapTooltip(
+            formatTooltipHeader(String(this.x)) +
+            '<span style="color: #888;">No submissions on this date</span>'
+          );
+        }
+
+        let content = formatTooltipHeader(String(this.x));
+        const total = activePoints.reduce((sum, p) => sum + (p.y || 0), 0);
+
+        activePoints
+          .sort((a, b) => (b.y || 0) - (a.y || 0))
+          .forEach(point => {
+            const value = point.y || 0;
+            content += `<div style="display: flex; align-items: center; margin: 3px 0;">
+              <span style="color: ${point.series.color}; font-size: 14px; margin-right: 6px;">●</span>
+              <span style="flex: 1;">${point.series.name}</span>
+              <span style="font-weight: 600; margin-left: 8px;">${value}</span>
+            </div>`;
+          });
+
+        content += `<div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #eee; display: flex; justify-content: space-between;">
+          <span style="color: #666;">Total:</span>
+          <span style="font-weight: 600;">${total} submission${total !== 1 ? 's' : ''}</span>
+        </div>`;
+
+        return wrapTooltip(content);
       }
     },
     legend: {
@@ -91,49 +115,35 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
       align: 'center',
       verticalAlign: 'bottom',
       maxHeight: 80,
-      itemStyle: {
-        fontSize: '10px'
-      }
+      itemStyle: { fontSize: '11px' }
     },
     plotOptions: {
       line: {
+        lineWidth: 2,
         marker: {
-          enabled: filteredDates.length < 30 // Only show markers if we have fewer dates
+          enabled: sortedDates.length < 30,
+          radius: 3
         },
         connectNulls: false
       }
     },
-    series: filteredEnumerators
-      .sort((a, b) => {
-        // Sort by filtered total when available, otherwise use total submissions
-        const aTotal = a.filteredTotal !== undefined ? a.filteredTotal : a.totalSubmissions;
-        const bTotal = b.filteredTotal !== undefined ? b.filteredTotal : b.totalSubmissions;
-        return bTotal - aTotal;
-      })
-      .slice(0, 10) // Top 10 enumerators by filtered volume
-      .map(enumerator => {
-        // Create a map of date -> count for this enumerator
-        const dateCounts = enumerator.submissionTrend.reduce((acc: Record<string, number>, item) => {
-          acc[item.date] = item.count;
-          return acc;
-        }, {});
-        
-        // Generate data points for each date
-        const data = filteredDates.map(date => dateCounts[date] || 0);
-        
-        // Calculate series total for logging
-        const seriesTotal = data.reduce((sum, value) => sum + value, 0);
-        
-        return {
-          name: enumerator.name,
-          type: 'line' as const,
-          data,
-          visible: seriesTotal > 0 // Only make series visible if it has data in the timeframe
-        };
-      }),
-    credits: {
-      enabled: false
-    }
+    series: topEnumerators.map(enumerator => {
+      const dateCounts = enumerator.submissionTrend.reduce((acc: Record<string, number>, item) => {
+        acc[item.date] = item.count;
+        return acc;
+      }, {});
+
+      const data = sortedDates.map(date => dateCounts[date] || 0);
+      const seriesTotal = data.reduce((sum, value) => sum + value, 0);
+
+      return {
+        name: enumerator.name,
+        type: 'line' as const,
+        data,
+        visible: seriesTotal > 0
+      };
+    }),
+    credits: { enabled: false }
   };
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;
