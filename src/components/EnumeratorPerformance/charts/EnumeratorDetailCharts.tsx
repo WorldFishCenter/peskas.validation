@@ -4,9 +4,12 @@ import HighchartsReact from 'highcharts-react-official';
 import { IconMoodSmile } from '@tabler/icons-react';
 import { EnumeratorData } from '../types';
 import {
-  baseTooltipConfig,
+  pieTooltipConfig,
+  columnTooltipConfig,
   wrapTooltip,
   formatTooltipHeader,
+  formatTooltipRow,
+  formatStatRow,
   chartColors
 } from '../utils/chartConfig';
 
@@ -58,20 +61,17 @@ export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
       style: { fontSize: '12px', color: '#666' }
     },
     tooltip: {
-      ...baseTooltipConfig,
+      ...pieTooltipConfig,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       formatter: function(this: any) {
         const point = this.point;
+        const totalAlerts = this.series.data.reduce((sum: number, p: any) => sum + (p.y || 0), 0);
+        
         return wrapTooltip(
-          formatTooltipHeader(`Alert: ${point.name}`) +
-          `<div style="display: flex; justify-content: space-between; margin: 4px 0;">
-            <span style="color: #666;">Count:</span>
-            <span style="font-weight: 600;">${point.y}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin: 4px 0;">
-            <span style="color: #666;">Share:</span>
-            <span style="font-weight: 600;">${point.percentage.toFixed(1)}%</span>
-          </div>`
+          formatTooltipHeader(`Alert Type: ${point.name}`) +
+          formatTooltipRow(point.color, 'Count', point.y, '') +
+          formatStatRow('Percentage', `${point.percentage.toFixed(1)}%`) +
+          formatStatRow('Out of total', `${totalAlerts} alert${totalAlerts !== 1 ? 's' : ''}`)
         );
       }
     },
@@ -167,20 +167,34 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
       allowDecimals: false
     },
     tooltip: {
-      ...baseTooltipConfig,
+      ...columnTooltipConfig,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       formatter: function(this: any) {
         // Get formatted date from category axis
         const dateLabel = this.key || 
           (typeof this.x === 'string' ? this.x : this.chart.xAxis[0].categories[this.x]);
         const value = this.y || 0;
-        return wrapTooltip(
-          formatTooltipHeader(String(dateLabel)) +
-          `<div style="display: flex; justify-content: space-between; margin: 4px 0;">
-            <span style="color: #666;">Submissions:</span>
-            <span style="font-weight: 600;">${value}</span>
-          </div>`
-        );
+        
+        // Calculate stats for context
+        const allData = this.series.data.map((p: any) => p.y || 0);
+        const maxValue = Math.max(...allData);
+        const avgValue = (allData.reduce((sum: number, v: number) => sum + v, 0) / allData.length).toFixed(1);
+        const isPeak = value === maxValue && value > 0;
+        
+        let content = formatTooltipHeader(String(dateLabel)) +
+          formatTooltipRow(chartColors.primary, 'Submissions', value, '');
+        
+        if (isPeak) {
+          content += `<div style="margin-top: 6px; padding: 4px 8px; background: rgba(47, 179, 68, 0.1); border-radius: 4px; font-size: 11px; color: ${chartColors.success};">
+            🎯 Peak day
+          </div>`;
+        }
+        
+        content += `<div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #eee; font-size: 11px;">
+          ${formatStatRow('Daily average', avgValue)}
+        </div>`;
+        
+        return wrapTooltip(content);
       }
     },
     plotOptions: {

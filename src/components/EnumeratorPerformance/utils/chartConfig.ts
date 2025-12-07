@@ -28,6 +28,40 @@ export const baseTooltipConfig: Highcharts.TooltipOptions = {
 };
 
 /**
+ * Tooltip config for pie charts - transparent, positioned with distance
+ */
+export const pieTooltipConfig: Highcharts.TooltipOptions = {
+  ...baseTooltipConfig,
+  enabled: true,
+  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  distance: 30,
+  shadow: {
+    color: 'rgba(0, 0, 0, 0.15)',
+    offsetX: 2,
+    offsetY: 3,
+    width: 6
+  }
+};
+
+/**
+ * Tooltip config for column/line charts - transparent, positioned outside when possible
+ */
+export const columnTooltipConfig: Highcharts.TooltipOptions = {
+  ...baseTooltipConfig,
+  enabled: true,
+  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  distance: 25,
+  followPointer: false,
+  followTouchMove: false,
+  shadow: {
+    color: 'rgba(0, 0, 0, 0.15)',
+    offsetX: 2,
+    offsetY: 3,
+    width: 6
+  }
+};
+
+/**
  * Format a tooltip row with colored bullet and value
  */
 export const formatTooltipRow = (
