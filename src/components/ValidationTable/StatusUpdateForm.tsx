@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IconInfoCircle } from '@tabler/icons-react';
+import { IconInfoCircle, IconAlertCircle } from '@tabler/icons-react';
 import { generateEditUrl } from '../../api/koboToolbox';
 
 interface Submission {
@@ -35,6 +35,7 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
   const [editUrl, setEditUrl] = useState<string | null>(null);
   const [isLoadingUrl, setIsLoadingUrl] = useState(false);
   const [urlGeneratedTime, setUrlGeneratedTime] = useState<Date | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Reset URL state when selected submission changes - with cleanup
   useEffect(() => {
@@ -44,6 +45,7 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
       setEditUrl(null);
       setUrlGeneratedTime(null);
       setIsLoadingUrl(false);
+      setErrorMessage(null);
     }
     
     return () => { mounted = false; };
@@ -57,6 +59,8 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
     if (isLoadingUrl) return;
 
     setIsLoadingUrl(true);
+    setErrorMessage(null); // Clear any previous errors
+    
     try {
       const url = await generateEditUrl(selectedSubmission.submission_id, selectedSubmission.asset_id);
       
@@ -77,6 +81,9 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
     } catch (error) {
       console.error("Failed to get edit URL:", error);
       setEditUrl(null);
+      // Set user-friendly error message
+      const message = error instanceof Error ? error.message : 'Failed to generate edit URL. Please try again.';
+      setErrorMessage(message);
     } finally {
       setIsLoadingUrl(false);
     }
@@ -142,6 +149,21 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
           </button>
         </div>
       </div>
+
+      {errorMessage && (
+        <div className="alert alert-danger alert-dismissible mt-3" role="alert">
+          <div className="d-flex align-items-center">
+            <IconAlertCircle className="icon me-2" size={20} stroke={2} />
+            <div className="flex-fill">{errorMessage}</div>
+            <button
+              type="button"
+              className="btn-close"
+              onClick={() => setErrorMessage(null)}
+              aria-label="Close"
+            ></button>
+          </div>
+        </div>
+      )}
 
       {urlGeneratedTime && urlValid && (
         <div className="alert alert-success mt-3">
