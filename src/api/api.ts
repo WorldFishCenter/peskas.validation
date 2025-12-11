@@ -108,7 +108,7 @@ export const useFetchEnumeratorStats = () => {
     setIsLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/enumerators-stats`, {
-        timeout: 10000 // 10 second timeout
+        timeout: 60000 // 60 second timeout for large datasets
       });
 
       if (!response.data) {
