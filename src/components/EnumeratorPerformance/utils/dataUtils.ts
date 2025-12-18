@@ -180,9 +180,17 @@ export const applyTimeFiltering = (
 };
 
 /**
- * Find the best performing enumerator
+ * Find the best performing enumerator based on quality (lowest error rate)
+ * Only considers enumerators with a minimum number of submissions for statistical significance
+ *
+ * @param enumerators - Array of enumerator data
+ * @param minSubmissions - Minimum submissions required (default: 10)
+ * @returns The best performing enumerator
  */
-export const findBestEnumerator = (enumerators: EnumeratorData[]): EnumeratorData => {
+export const findBestEnumerator = (
+  enumerators: EnumeratorData[],
+  minSubmissions: number = 10
+): EnumeratorData => {
   if (enumerators.length === 0) {
     return {
       name: '',
@@ -194,24 +202,58 @@ export const findBestEnumerator = (enumerators: EnumeratorData[]): EnumeratorDat
       submissionTrend: []
     };
   }
-  
-  return enumerators.reduce((best, current) => {
-    // Only consider enumerators with at least 5 submissions
-    const currentSubmissions = current.filteredTotal !== undefined ? current.filteredTotal : current.totalSubmissions;
-    const bestSubmissions = best.filteredTotal !== undefined ? best.filteredTotal : best.totalSubmissions;
-    
-    if (currentSubmissions < 5) return best;
-    if (bestSubmissions < 5 && currentSubmissions >= 5) return current;
-    
-    // Calculate quality scores
-    const bestQualityScore = 100 - (best.filteredErrorRate !== undefined ? best.filteredErrorRate : best.errorRate);
-    const currentQualityScore = 100 - (current.filteredErrorRate !== undefined ? current.filteredErrorRate : current.errorRate);
-    
-    // Calculate weighted scores that consider both quality and volume
-    // Using logarithmic scale to balance between quality and quantity
-    const bestWeightedScore = bestQualityScore * Math.log10(bestSubmissions + 1);
-    const currentWeightedScore = currentQualityScore * Math.log10(currentSubmissions + 1);
-    
-    return currentWeightedScore > bestWeightedScore ? current : best;
-  }, enumerators[0]);
+
+  // Filter to enumerators with sufficient submissions for meaningful comparison
+  const qualified = enumerators.filter(e => {
+    const submissions = e.filteredTotal !== undefined ? e.filteredTotal : e.totalSubmissions;
+    return submissions >= minSubmissions;
+  });
+
+  // If no one meets the minimum, lower the threshold and try again
+  if (qualified.length === 0) {
+    const lowerThreshold = Math.max(1, Math.floor(minSubmissions / 2));
+    const secondAttempt = enumerators.filter(e => {
+      const submissions = e.filteredTotal !== undefined ? e.filteredTotal : e.totalSubmissions;
+      return submissions >= lowerThreshold;
+    });
+
+    // If still no one qualifies, return the one with most submissions
+    if (secondAttempt.length === 0) {
+      return enumerators.reduce((best, current) => {
+        const bestSubs = best.filteredTotal ?? best.totalSubmissions;
+        const currentSubs = current.filteredTotal ?? current.totalSubmissions;
+        return currentSubs > bestSubs ? current : best;
+      }, enumerators[0]);
+    }
+
+    // Use the lower threshold candidates
+    return secondAttempt.reduce((best, current) => {
+      const bestError = best.filteredErrorRate !== undefined ? best.filteredErrorRate : best.errorRate;
+      const currentError = current.filteredErrorRate !== undefined ? current.filteredErrorRate : current.errorRate;
+
+      // Prioritize quality (lowest error rate)
+      if (currentError < bestError) return current;
+      if (currentError > bestError) return best;
+
+      // If equal quality, prefer higher volume
+      const bestSubs = best.filteredTotal ?? best.totalSubmissions;
+      const currentSubs = current.filteredTotal ?? current.totalSubmissions;
+      return currentSubs > bestSubs ? current : best;
+    }, secondAttempt[0]);
+  }
+
+  // Find the enumerator with the lowest error rate among qualified candidates
+  return qualified.reduce((best, current) => {
+    const bestError = best.filteredErrorRate !== undefined ? best.filteredErrorRate : best.errorRate;
+    const currentError = current.filteredErrorRate !== undefined ? current.filteredErrorRate : current.errorRate;
+
+    // Prioritize quality (lowest error rate wins)
+    if (currentError < bestError) return current;
+    if (currentError > bestError) return best;
+
+    // If error rates are equal, prefer higher volume as tiebreaker
+    const bestSubs = best.filteredTotal ?? best.totalSubmissions;
+    const currentSubs = current.filteredTotal ?? current.totalSubmissions;
+    return currentSubs > bestSubs ? current : best;
+  }, qualified[0]);
 }; 
