@@ -18,7 +18,6 @@ export interface Submission {
 export type ValidationStatus =
   | 'validation_status_approved'
   | 'validation_status_not_approved'
-  | 'validation_status_on_hold'
   | 'default';
 
 type StyleConfig = {
@@ -38,13 +37,8 @@ export const STATUS_STYLES: Record<ValidationStatus, StyleConfig> = {
     textColor: '#D34E24',
     borderColor: 'rgba(211, 78, 36, 0.3)',
   },
-  validation_status_on_hold: {
-    backgroundColor: 'rgba(137, 144, 159, 0.15)', // #89909F
-    textColor: '#89909F',
-    borderColor: 'rgba(137, 144, 159, 0.3)',
-  },
   default: {
-    backgroundColor: 'rgba(137, 144, 159, 0.15)', // Same as on_hold
+    backgroundColor: 'rgba(137, 144, 159, 0.15)',
     textColor: '#89909F',
     borderColor: 'rgba(137, 144, 159, 0.3)',
   },
@@ -65,6 +59,5 @@ export const ALERT_FLAG_DESCRIPTIONS = {
 
 export const VALIDATION_STATUS_OPTIONS = [
   'validation_status_approved',
-  'validation_status_not_approved',
-  'validation_status_on_hold'
+  'validation_status_not_approved'
 ]; 

@@ -58,7 +58,7 @@ async function handler(req, res) {
     }
 
     // Validate validation_status format (must be one of the allowed values)
-    const validStatuses = ['validation_status_approved', 'validation_status_not_approved', 'validation_status_on_hold'];
+    const validStatuses = ['validation_status_approved', 'validation_status_not_approved'];
     if (!validStatuses.includes(validation_status)) {
       return sendDetailedError(res, 'PATCH /api/kobo/validation-status/:id - Invalid validation_status',
         new Error(`validation_status must be one of: ${validStatuses.join(', ')}`), req, 400);

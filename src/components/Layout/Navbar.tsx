@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { IconCheck, IconChartBar, IconUsers } from '@tabler/icons-react';
+import { IconCheck, IconChartBar, IconUsers, IconHelp } from '@tabler/icons-react';
 import { useAuth } from '../Auth/AuthContext';
 
 const Navbar: React.FC = () => {
@@ -48,6 +48,14 @@ const Navbar: React.FC = () => {
                     <IconChartBar className="icon" size={24} stroke={2} />
                   </span>
                   <span className="nav-link-title">Enumerator Performance</span>
+                </Link>
+              </li>
+              <li className={`nav-item ${location.pathname === '/how-it-works' ? 'active' : ''}`}>
+                <Link to="/how-it-works" className="nav-link">
+                  <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
+                    <IconHelp className="icon" size={24} stroke={2} />
+                  </span>
+                  <span className="nav-link-title">How It Works</span>
                 </Link>
               </li>
               {/* Admin-only Users Management Link */}

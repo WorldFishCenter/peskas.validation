@@ -7,6 +7,7 @@ import MainLayout from './components/Layout/MainLayout';
 import ErrorBoundary from './components/ErrorBoundary';
 import EnumeratorPerformance from './components/EnumeratorPerformance/EnumeratorPerformance';
 import AdminUsers from './components/Admin/AdminUsers';
+import HowItWorks from './components/HowItWorks/HowItWorks';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -19,6 +20,11 @@ const AppRoutes: React.FC = () => {
       <Route path="/enumerators" element={
         <ErrorBoundary>
           <EnumeratorPerformance />
+        </ErrorBoundary>
+      } />
+      <Route path="/how-it-works" element={
+        <ErrorBoundary>
+          <HowItWorks />
         </ErrorBoundary>
       } />
       <Route path="/admin/users" element={

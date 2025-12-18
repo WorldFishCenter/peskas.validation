@@ -1,0 +1,209 @@
+/* HowItWorks.css - Print-friendly and responsive styles */
+
+/* Print Styles */
+@media print {
+  /* Hide navigation and print button */
+  .navbar,
+  .d-print-none {
+    display: none !important;
+  }
+
+  /* Optimize page layout for printing */
+  .page {
+    margin: 0;
+    padding: 0;
+  }
+
+  .page-body {
+    margin: 0;
+    padding: 1rem;
+  }
+
+  .container-xl {
+    max-width: 100%;
+    padding: 0;
+  }
+
+  /* Ensure cards don't break across pages */
+  .card {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ddd;
+    margin-bottom: 1rem;
+  }
+
+  /* Ensure step items don't break */
+  .step-item {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Remove background colors to save ink */
+  .bg-primary-lt,
+  .bg-warning-lt,
+  .bg-success-lt,
+  .bg-info-lt,
+  .bg-danger-lt {
+    background-color: #f8f9fa !important;
+    border: 1px solid #dee2e6;
+  }
+
+  /* Ensure text is readable */
+  body {
+    color: #000;
+    background: #fff;
+  }
+
+  /* Add page title at top */
+  .page::before {
+    content: "PESKAS Validation Portal - User Guide";
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #000;
+  }
+
+  /* Adjust icon sizes for print */
+  .icon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  /* Ensure step numbers are visible */
+  .avatar {
+    border: 2px solid #000;
+  }
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+  /* Stack cards vertically on mobile */
+  .row-cards .col-md-6 {
+    margin-bottom: 1rem;
+  }
+
+  /* Reduce padding on mobile */
+  .card-body.py-5 {
+    padding: 2rem 1rem !important;
+  }
+
+  /* Adjust display text size */
+  .display-6 {
+    font-size: 2rem;
+  }
+
+  /* Ensure step avatars are visible but not too large */
+  .avatar-lg {
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.25rem !important;
+  }
+
+  /* Adjust quick reference icon badges */
+  .badge-pill {
+    font-size: 0.75rem;
+  }
+}
+
+/* Accessibility enhancements */
+.card:focus-within {
+  outline: 2px solid #206bc4;
+  outline-offset: 2px;
+}
+
+/* Improve readability of step separators */
+.hr-text {
+  margin: 1.5rem 0;
+  font-weight: 600;
+  color: #666;
+}
+
+/* Enhance visual hierarchy */
+.step-item h3 {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* Ensure sufficient contrast for badges */
+.badge.bg-red {
+  background-color: #d63939 !important;
+  color: white;
+}
+
+.badge.bg-green {
+  background-color: #2fb344 !important;
+  color: white;
+}
+
+/* Improve spacing for better readability */
+.list-unstyled li {
+  line-height: 1.6;
+}
+
+/* Card status top border enhancement */
+.card-status-top {
+  height: 4px;
+}
+
+/* Ensure alert boxes are clearly visible */
+.alert {
+  border-left: 4px solid;
+}
+
+.alert-info {
+  border-left-color: #4299e1;
+}
+
+.alert-success {
+  border-left-color: #2fb344;
+}
+
+.alert-warning {
+  border-left-color: #f59f00;
+}
+
+/* Improve icon alignment in lists */
+.icon.me-2,
+.icon.me-3 {
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* Responsive text sizing */
+@media (max-width: 576px) {
+  .fs-4 {
+    font-size: 1rem !important;
+  }
+
+  .fs-5 {
+    font-size: 0.95rem !important;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+  }
+}
+
+/* Print page breaks for major sections */
+@media print {
+  .page-header::after {
+    content: "";
+    display: block;
+    page-break-after: avoid;
+  }
+
+  h2 {
+    page-break-after: avoid;
+  }
+
+  .row.mb-4 {
+    page-break-inside: avoid;
+  }
+}

@@ -14,8 +14,6 @@ const getStatusBadgeClass = (status: string): string => {
       return 'badge bg-green text-green-fg';
     case 'validation_status_not_approved':
       return 'badge bg-red text-red-fg';
-    case 'validation_status_on_hold':
-      return 'badge bg-yellow text-yellow-fg';
     default:
       return 'badge bg-secondary text-secondary-fg';
   }

@@ -126,7 +126,6 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
             >
               <option value="validation_status_approved">Approved</option>
               <option value="validation_status_not_approved">Not Approved</option>
-              <option value="validation_status_on_hold">On Hold</option>
             </select>
           </div>
         </div>
