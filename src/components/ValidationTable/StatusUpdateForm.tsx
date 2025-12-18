@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IconInfoCircle, IconAlertCircle } from '@tabler/icons-react';
+import { IconInfoCircle, IconAlertCircle, IconCheck, IconExternalLink } from '@tabler/icons-react';
 import { generateEditUrl } from '../../api/koboToolbox';
 import { useTranslation } from 'react-i18next';
 
@@ -167,21 +167,25 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
       )}
 
       {urlGeneratedTime && urlValid && (
-        <div className="alert alert-success mt-3">
-          <div className="d-flex justify-content-between align-items-center">
-            <div>
+        <div className="alert alert-success alert-dismissible mt-3" role="alert">
+          <div className="d-flex align-items-center">
+            <IconCheck className="icon alert-icon me-2" size={20} stroke={2} />
+            <div className="flex-fill">
               <strong>{t('form.editLinkOpened')}</strong>
+              {editUrl && (
+                <div className="mt-2">
+                  <a
+                    href={editUrl}
+                    target="_blank"
+                    className="btn btn-sm btn-success"
+                    rel="noreferrer"
+                  >
+                    <IconExternalLink className="icon me-1" size={16} stroke={2} />
+                    {t('buttons.openAgain', { ns: 'common' })}
+                  </a>
+                </div>
+              )}
             </div>
-            {editUrl && (
-              <a
-                href={editUrl}
-                target="_blank"
-                className="btn btn-sm btn-success"
-                rel="noreferrer"
-              >
-                {t('buttons.openAgain', { ns: 'common' })}
-              </a>
-            )}
           </div>
         </div>
       )}
