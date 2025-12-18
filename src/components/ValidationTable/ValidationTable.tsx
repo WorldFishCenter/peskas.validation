@@ -513,80 +513,99 @@ const ValidationTable: React.FC = () => {
       
       {/* Offcanvas Sidebar */}
       {selectedRow && (
-        <div
-          className={`offcanvas offcanvas-end ${sidebarOpen ? 'show' : ''}`}
-          tabIndex={-1}
-          id="submissionSidebar"
-          style={{ visibility: sidebarOpen ? 'visible' : 'hidden' }}
-        >
-          <div className="offcanvas-header border-bottom">
-            <h5 className="offcanvas-title">{t('table.submissionDetails')}</h5>
-            <button type="button" className="btn-close text-reset" onClick={() => setSidebarOpen(false)} aria-label="Close"></button>
-          </div>
-          <div className="offcanvas-body">
-            <div className="card card-sm mb-3">
-              <div className="card-body">
-                <div className="d-flex justify-content-between mb-2">
-                  <div className="text-muted">{t('table.submissionIdLabel')}</div>
-                  <div className="fw-bold">{selectedRow?.submission_id || t('table.notAvailable')}</div>
+        <>
+          {/* Backdrop overlay */}
+          {sidebarOpen && (
+            <div 
+              className="offcanvas-backdrop fade show" 
+              onClick={() => setSidebarOpen(false)}
+              aria-hidden="true"
+            />
+          )}
+          
+          <div
+            className={`offcanvas offcanvas-end ${sidebarOpen ? 'show' : ''}`}
+            tabIndex={-1}
+            id="submissionSidebar"
+            aria-labelledby="submissionSidebarLabel"
+            aria-hidden={!sidebarOpen}
+          >
+            <div className="offcanvas-header">
+              <h5 className="offcanvas-title" id="submissionSidebarLabel">{t('table.submissionDetails')}</h5>
+              <button 
+                type="button" 
+                className="btn-close" 
+                onClick={() => setSidebarOpen(false)}
+                aria-label={t('buttons.close', { ns: 'common' })}
+              />
+            </div>
+            <div className="offcanvas-body">
+              {/* Submission Details - Using Tabler description list pattern */}
+              <dl className="datagrid mb-3">
+                <div className="datagrid-item">
+                  <div className="datagrid-title">{t('table.submissionIdLabel')}</div>
+                  <div className="datagrid-content">
+                    <strong>{selectedRow?.submission_id || t('table.notAvailable')}</strong>
+                  </div>
                 </div>
-                <div className="d-flex justify-content-between mb-2">
-                  <div className="text-muted">{t('table.dateLabel')}</div>
-                  <div>{selectedRow?.submission_date ? formatDate(selectedRow.submission_date) : t('table.notAvailable')}</div>
+                <div className="datagrid-item">
+                  <div className="datagrid-title">{t('table.dateLabel')}</div>
+                  <div className="datagrid-content">
+                    {selectedRow?.submission_date ? formatDate(selectedRow.submission_date) : t('table.notAvailable')}
+                  </div>
                 </div>
-                <div className="d-flex justify-content-between mb-2">
-                  <div className="text-muted">{t('table.submittedByLabel')}</div>
-                  <div>{selectedRow?.submitted_by || t('table.unknownEnumerator')}</div>
+                <div className="datagrid-item">
+                  <div className="datagrid-title">{t('table.submittedByLabel')}</div>
+                  <div className="datagrid-content">
+                    {selectedRow?.submitted_by || t('table.unknownEnumerator')}
+                  </div>
                 </div>
                 {selectedRow?.vessel_number && (
-                  <div className="d-flex justify-content-between mb-2">
-                    <div className="text-muted">{t('table.vesselLabel')}</div>
-                    <div>{selectedRow.vessel_number}</div>
+                  <div className="datagrid-item">
+                    <div className="datagrid-title">{t('table.vesselLabel')}</div>
+                    <div className="datagrid-content">{selectedRow.vessel_number}</div>
                   </div>
                 )}
                 {selectedRow?.catch_number && (
-                  <div className="d-flex justify-content-between mb-2">
-                    <div className="text-muted">{t('table.catchNumberLabel')}</div>
-                    <div>{selectedRow.catch_number}</div>
+                  <div className="datagrid-item">
+                    <div className="datagrid-title">{t('table.catchNumberLabel')}</div>
+                    <div className="datagrid-content">{selectedRow.catch_number}</div>
                   </div>
                 )}
-                <div className="d-flex justify-content-between mb-2">
-                  <div className="text-muted">{t('table.statusLabel')}</div>
-                  <div>
+                <div className="datagrid-item">
+                  <div className="datagrid-title">{t('table.statusLabel')}</div>
+                  <div className="datagrid-content">
                     <StatusBadge status={selectedRow.validation_status} />
                   </div>
                 </div>
                 {selectedRow?.alert_flag && selectedRow.alert_flag.trim() !== '' && (
-                  <div className="d-flex justify-content-between mb-2">
-                    <div className="text-muted">{t('table.alertFlagsLabel')}</div>
-                    <div>
+                  <div className="datagrid-item">
+                    <div className="datagrid-title">{t('table.alertFlagsLabel')}</div>
+                    <div className="datagrid-content">
                       <AlertBadge alertFlag={selectedRow.alert_flag} alertFlags={selectedRow.alert_flags} />
                     </div>
                   </div>
                 )}
-                <div className="d-flex justify-content-between">
-                  <div className="text-muted">{t('table.lastValidatedLabel')}</div>
-                  <div>{formatDate(selectedRow?.validated_at || null)}</div>
+                <div className="datagrid-item">
+                  <div className="datagrid-title">{t('table.lastValidatedLabel')}</div>
+                  <div className="datagrid-content">
+                    {formatDate(selectedRow?.validated_at || null)}
+                  </div>
                 </div>
-              </div>
+              </dl>
+
+              <StatusUpdateForm
+                selectedSubmission={selectedRow}
+                status={statusToUpdate}
+                setStatus={setStatusToUpdate}
+                onUpdate={handleUpdateStatus}
+                isUpdating={isUpdating}
+                updateMessage={updateMessage}
+                hideSubmissionInfo={true}
+              />
             </div>
-
-            <StatusUpdateForm
-              selectedSubmission={selectedRow}
-              status={statusToUpdate}
-              setStatus={setStatusToUpdate}
-              onUpdate={handleUpdateStatus}
-              isUpdating={isUpdating}
-              updateMessage={updateMessage}
-              hideSubmissionInfo={true}
-            />
           </div>
-        </div>
-      )}
-
-      {/* Backdrop overlay */}
-      {sidebarOpen && (
-        <div className="offcanvas-backdrop fade show" onClick={() => setSidebarOpen(false)}></div>
+        </>
       )}
 
       {/* Alert Guide Modal */}
