@@ -2,34 +2,11 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { IconCheck, IconChartBar, IconUsers } from '@tabler/icons-react';
 import { useAuth } from '../Auth/AuthContext';
-import { getCountryFlag, getCountryName } from '../../utils/countryMetadata';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
 
-  // Determine country display for navbar
-  const getCountryDisplay = () => {
-    if (!user?.country || user.country.length === 0) {
-      // Admin with access to all countries
-      return { flag: '', name: '' };
-    }
-
-    if (user.country.length === 1) {
-      // Single country user
-      const countryCode = user.country[0];
-      return {
-        flag: getCountryFlag(countryCode),
-        name: getCountryName(countryCode)
-      };
-    }
-
-    // Multi-country user
-    return { flag: '', name: 'Multi-Country' };
-  };
-
-  const countryDisplay = getCountryDisplay();
-  
   return (
     <header className="navbar navbar-expand-md navbar-light d-print-none">
       <div className="container-xl">
@@ -38,7 +15,7 @@ const Navbar: React.FC = () => {
         </button>
         <h1 className="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
           <Link to="/">
-            {countryDisplay.flag && `${countryDisplay.flag} `}PESKAS{countryDisplay.name && ` | ${countryDisplay.name}`} | <span className="text-muted">validation portal</span>
+            PESKAS | <span className="text-muted">validation portal</span>
           </Link>
         </h1>
         <div className="navbar-nav flex-row order-md-last">
