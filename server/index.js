@@ -3,6 +3,8 @@ const { MongoClient, ObjectId } = require('mongodb');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const NodeCache = require('node-cache');
 const { spawn } = require('child_process');
 // const path = require('path'); // Currently unused
 const axios = require('axios');
@@ -17,6 +19,11 @@ app.use(express.json());
 const PORT = process.env.PORT || 3001;
 const MONGODB_VALIDATION_URI = process.env.MONGODB_VALIDATION_URI;
 const MONGODB_VALIDATION_DB = process.env.MONGODB_VALIDATION_DB;
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_EXPIRY = process.env.JWT_EXPIRY || '7d';
+
+// Initialize cache with 5 minute TTL
+const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
 
 if (!MONGODB_VALIDATION_URI) {
   console.error('Error: MONGODB_VALIDATION_URI not set in environment variables');
@@ -95,7 +102,7 @@ async function connectToMongo() {
   }
 }
 
-// Authentication middleware - validates JWT or session token
+// Authentication middleware - validates JWT token
 async function authenticateUser(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
@@ -106,36 +113,42 @@ async function authenticateUser(req, res, next) {
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-    // For now, we'll use a simple token lookup in the database
-    // In production, you'd use JWT with proper signing
+    // Verify JWT token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' });
+      }
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
     const database = getDb();
     if (!database) {
       return res.status(500).json({ error: 'Authentication system not configured' });
     }
 
-    // Simple session token lookup (store username in localStorage on frontend)
-    // For Phase 1, we'll accept username as the token
+    // Get full user data including permissions
     const user = await database.collection('users').findOne({
-      username: token,
+      username: decoded.username,
       active: true
     });
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid or expired authentication' });
+      return res.status(401).json({ error: 'User not found or inactive' });
     }
 
-    // Attach user to request
+    // Attach complete user data to request (to avoid redundant DB lookups)
     req.user = {
       id: user._id.toString(),
       username: user.username,
       email: user.email,
-      role: user.role
+      role: user.role,
+      name: user.name,
+      country: user.country,
+      permissions: user.permissions // Include permissions.surveys and permissions.enumerators
     };
-
-    // Only add country for viewers
-    if (user.country) {
-      req.user.country = user.country;
-    }
 
     next();
   } catch (error) {
@@ -160,18 +173,27 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
       return res.status(500).json({ error: 'Database not configured' });
     }
 
-    // Get the authenticated user's full data
-    const user = await database.collection('users').findOne({ username: req.user.username });
+    // Parse pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 1000; // Default 1000 for backward compatibility
+    const skip = (page - 1) * limit;
 
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
+    // User data is now in req.user from middleware (no redundant DB query!)
+    const user = req.user;
+
+    // Build cache key
+    const cacheKey = `submissions_${user.username}_${page}_${limit}`;
+    const cachedData = cache.get(cacheKey);
+    if (cachedData) {
+      res.set('X-Cache', 'HIT');
+      return res.json(cachedData);
     }
 
     // Determine which surveys the user has access to
     let accessibleSurveys;
 
-    if (user.role === 'admin') {
-      // Admin users get full access to ALL active surveys, regardless of permissions.surveys
+    if (user.role === 'admin' && (!user.permissions?.surveys || user.permissions.surveys.length === 0)) {
+      // Admin users get full access to ALL active surveys
       accessibleSurveys = await database.collection('surveys')
         .find({ active: true })
         .toArray();
@@ -190,19 +212,49 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
         count: 0,
         next: null,
         previous: null,
-        results: []
+        results: [],
+        page: page,
+        limit: limit
       });
     }
 
-    // Fetch submissions from MongoDB for each accessible survey
-    // R pipeline now stores all data including validation_status, validated_at, validated_by
+    // Determine if user has enumerator restrictions
+    const allowedEnumerators = user.permissions?.enumerators || [];
+    const hasEnumeratorRestrictions = allowedEnumerators.length > 0;
+
+    // Build enumerator filter for MongoDB query
+    const enumeratorFilter = hasEnumeratorRestrictions
+      ? { submitted_by: { $in: allowedEnumerators } }
+      : {};
+
+    // Fetch submissions from MongoDB for each accessible survey with pagination
     const submissionsPromises = accessibleSurveys.map(async (survey) => {
       const collectionName = getSurveyFlagsCollection(survey.asset_id);
 
       try {
-        // Fetch all submissions from MongoDB (R pipeline writes everything here)
+        // Fetch submissions with filters and projection (only needed fields)
         const mongoSubmissions = await database.collection(collectionName)
-          .find({ type: { $ne: 'metadata' } })
+          .find(
+            {
+              type: { $ne: 'metadata' },
+              ...enumeratorFilter
+            },
+            {
+              projection: {
+                submission_id: 1,
+                submission_date: 1,
+                vessel_number: 1,
+                catch_number: 1,
+                submitted_by: 1,
+                validation_status: 1,
+                validated_at: 1,
+                validated_by: 1,
+                alert_flag: 1,
+                _id: 0
+              }
+            }
+          )
+          .sort({ submission_date: -1 })
           .toArray();
 
         return {
@@ -212,6 +264,7 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
           survey_country: survey.country_id
         };
       } catch (error) {
+        console.error(`Error fetching from ${collectionName}:`, error);
         return {
           asset_id: survey.asset_id,
           submissions: [],
@@ -223,50 +276,49 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
 
     const surveySubmissions = await Promise.all(submissionsPromises);
 
-    // Determine if user has enumerator restrictions
-    const allowedEnumerators = user.permissions?.enumerators || [];
-    const hasEnumeratorRestrictions = allowedEnumerators.length > 0;
-
     // Process and combine all submissions from all accessible surveys
     let allSubmissions = [];
-    let totalCount = 0;
 
     surveySubmissions.forEach(surveyData => {
-      const processedSubmissions = surveyData.submissions
-        .map(mongoDoc => {
-          return {
-            submission_id: mongoDoc.submission_id,
-            submission_date: mongoDoc.submission_date,
-            vessel_number: mongoDoc.vessel_number || '',
-            catch_number: mongoDoc.catch_number || '',
-            submitted_by: mongoDoc.submitted_by || '',
-            validation_status: mongoDoc.validation_status || 'validation_status_on_hold',
-            validated_at: mongoDoc.validated_at || mongoDoc.submission_date,
-            validated_by: mongoDoc.validated_by || '',
-            alert_flag: mongoDoc.alert_flag || '',
-            alert_flags: mongoDoc.alert_flag ? mongoDoc.alert_flag.split(', ') : [],
-            asset_id: surveyData.asset_id,
-            survey_name: surveyData.survey_name || 'Unknown Survey',
-            survey_country: surveyData.survey_country || ''
-          };
-        })
-        .filter(submission => {
-          // Apply enumerator filtering if user has restrictions
-          if (hasEnumeratorRestrictions) {
-            return allowedEnumerators.includes(submission.submitted_by);
-          }
-          return true; // No restrictions, include all
-        });
+      const processedSubmissions = surveyData.submissions.map(mongoDoc => ({
+        submission_id: mongoDoc.submission_id,
+        submission_date: mongoDoc.submission_date,
+        vessel_number: mongoDoc.vessel_number || '',
+        catch_number: mongoDoc.catch_number || '',
+        submitted_by: mongoDoc.submitted_by || '',
+        validation_status: mongoDoc.validation_status || 'validation_status_on_hold',
+        validated_at: mongoDoc.validated_at || mongoDoc.submission_date,
+        validated_by: mongoDoc.validated_by || '',
+        alert_flag: mongoDoc.alert_flag || '',
+        alert_flags: mongoDoc.alert_flag ? mongoDoc.alert_flag.split(', ') : [],
+        asset_id: surveyData.asset_id,
+        survey_name: surveyData.survey_name || 'Unknown Survey',
+        survey_country: surveyData.survey_country || ''
+      }));
 
       allSubmissions = [...allSubmissions, ...processedSubmissions];
-      totalCount += processedSubmissions.length;
     });
 
-    res.json({
+    // Sort by submission_date descending (most recent first)
+    allSubmissions.sort((a, b) => {
+      if (!a.submission_date) return 1;
+      if (!b.submission_date) return -1;
+      return b.submission_date.localeCompare(a.submission_date);
+    });
+
+    // Apply pagination after combining all surveys
+    const totalCount = allSubmissions.length;
+    const paginatedSubmissions = allSubmissions.slice(skip, skip + limit);
+    const hasNextPage = skip + limit < totalCount;
+
+    const response = {
       count: totalCount,
-      next: null,
-      previous: null,
-      results: allSubmissions,
+      page: page,
+      limit: limit,
+      totalPages: Math.ceil(totalCount / limit),
+      next: hasNextPage ? `/api/kobo/submissions?page=${page + 1}&limit=${limit}` : null,
+      previous: page > 1 ? `/api/kobo/submissions?page=${page - 1}&limit=${limit}` : null,
+      results: paginatedSubmissions,
       metadata: {
         accessible_surveys: accessibleSurveys.map(s => ({
           asset_id: s.asset_id,
@@ -274,7 +326,14 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
           country_id: s.country_id
         }))
       }
-    });
+    };
+
+    // Cache the response
+    cache.set(cacheKey, response);
+    res.set('X-Cache', 'MISS');
+    res.set('Cache-Control', 'private, max-age=300'); // 5 minutes
+
+    res.json(response);
   } catch (error) {
     console.error('Error fetching combined data:', error);
     res.status(500).json({ error: 'Failed to fetch submissions' });
@@ -309,6 +368,14 @@ app.patch('/api/submissions/:id/validation_status', authenticateUser, async (req
       },
       { upsert: true }
     );
+
+    // Clear submissions cache for all users (data changed)
+    const keys = cache.keys();
+    keys.forEach(key => {
+      if (key.startsWith('submissions_')) {
+        cache.del(key);
+      }
+    });
 
     res.json({ success: true, message: `Validation status correctly updated for submission ${id}` });
   } catch (error) {
@@ -358,7 +425,18 @@ app.post('/api/auth/login', async (req, res) => {
       { $set: { last_login: new Date() } }
     );
 
-    // Return user object (exclude password_hash)
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        id: user._id.toString(),
+        username: user.username,
+        role: user.role
+      },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRY }
+    );
+
+    // Return user object and token (exclude password_hash)
     const userResponse = {
       id: user._id.toString(),
       username: user.username,
@@ -372,7 +450,9 @@ app.post('/api/auth/login', async (req, res) => {
 
     res.status(200).json({
       success: true,
-      user: userResponse
+      token: token,
+      user: userResponse,
+      expiresIn: JWT_EXPIRY
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -1598,18 +1678,27 @@ app.get('/api/enumerators-stats', authenticateUser, async (req, res) => {
       return res.status(500).json({ error: 'Database connection not established' });
     }
 
-    // Get the authenticated user's full data
-    const user = await database.collection('users').findOne({ username: req.user.username });
+    // Parse pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10000; // High default for backward compatibility
+    const skip = (page - 1) * limit;
 
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
+    // User data is now in req.user from middleware (no redundant DB query!)
+    const user = req.user;
+
+    // Build cache key
+    const cacheKey = `stats_${user.username}_${page}_${limit}`;
+    const cachedData = cache.get(cacheKey);
+    if (cachedData) {
+      res.set('X-Cache', 'HIT');
+      return res.json(cachedData);
     }
 
     // Determine which asset_ids the user has access to
     let accessibleAssetIds;
 
-    if (user.role === 'admin') {
-      // Admin users get full access to ALL active surveys, regardless of permissions.surveys
+    if (user.role === 'admin' && (!user.permissions?.surveys || user.permissions.surveys.length === 0)) {
+      // Admin users get full access to ALL active surveys
       const surveys = await database.collection('surveys').find({ active: true }).toArray();
       accessibleAssetIds = surveys.map(s => s.asset_id);
     } else {
@@ -1638,41 +1727,67 @@ app.get('/api/enumerators-stats', authenticateUser, async (req, res) => {
     const allowedEnumerators = user.permissions?.enumerators || [];
     const hasEnumeratorRestrictions = allowedEnumerators.length > 0;
 
-    // Fetch stats from each survey's collection
+    // Build enumerator filter for MongoDB query
+    const enumeratorFilter = hasEnumeratorRestrictions
+      ? { submitted_by: { $in: allowedEnumerators } }
+      : {};
+
+    // Fetch stats from each survey's collection with optimizations
     const statsPromises = accessibleAssetIds.map(async (assetId) => {
       const collectionName = getEnumeratorStatsCollection(assetId);
       try {
-        const stats = await database.collection(collectionName).find({}).toArray();
+        const stats = await database.collection(collectionName)
+          .find({
+            type: { $ne: 'metadata' },
+            ...enumeratorFilter
+          })
+          .toArray();
+
         // Add asset_id, survey name, and country to each stat record for frontend filtering
         const surveyInfo = surveyMap[assetId] || { name: 'Unknown', country_id: null };
-        return stats
-          .map(stat => ({
-            ...stat,
-            asset_id: assetId,
-            survey_name: surveyInfo.name,
-            survey_country: surveyInfo.country_id
-          }))
-          .filter(stat => {
-            // Skip metadata records (type: "metadata")
-            if (stat.type && stat.type.includes('metadata')) {
-              return false;
-            }
-            // Apply enumerator filtering if user has restrictions
-            // Note: stats collection contains raw submissions with submitted_by field, not aggregated data
-            if (hasEnumeratorRestrictions) {
-              return allowedEnumerators.includes(stat.submitted_by);
-            }
-            return true; // No restrictions, include all
-          });
+        return stats.map(stat => ({
+          ...stat,
+          asset_id: assetId,
+          survey_name: surveyInfo.name,
+          survey_country: surveyInfo.country_id
+        }));
       } catch (error) {
+        console.error(`Error fetching stats from ${collectionName}:`, error);
         return [];
       }
     });
 
     const allStats = await Promise.all(statsPromises);
-    const flattenedStats = allStats.flat();
+    let flattenedStats = allStats.flat();
 
-    res.json(flattenedStats);
+    // Sort by submission_date descending if available
+    flattenedStats.sort((a, b) => {
+      if (!a.submission_date) return 1;
+      if (!b.submission_date) return -1;
+      return b.submission_date.localeCompare(a.submission_date);
+    });
+
+    // Apply pagination
+    const totalCount = flattenedStats.length;
+    const paginatedStats = flattenedStats.slice(skip, skip + limit);
+    const hasNextPage = skip + limit < totalCount;
+
+    const response = {
+      count: totalCount,
+      page: page,
+      limit: limit,
+      totalPages: Math.ceil(totalCount / limit),
+      next: hasNextPage ? `/api/enumerators-stats?page=${page + 1}&limit=${limit}` : null,
+      previous: page > 1 ? `/api/enumerators-stats?page=${page - 1}&limit=${limit}` : null,
+      results: paginatedStats
+    };
+
+    // Cache the response
+    cache.set(cacheKey, response);
+    res.set('X-Cache', 'MISS');
+    res.set('Cache-Control', 'private, max-age=300'); // 5 minutes
+
+    res.json(response);
   } catch (error) {
     console.error('Error fetching enumerator statistics:', error);
     res.status(500).json({ error: 'Failed to fetch enumerator statistics' });

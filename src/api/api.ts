@@ -37,9 +37,13 @@ export const useFetchSubmissions = () => {
       setIsLoading(true);
       setError(null);
 
-
-      const response = await axios.get(`${API_BASE_URL}/kobo/submissions`);
-
+      // Fetch with high limit to get all data (backward compatible)
+      // The server default is 1000, but we request more to ensure we get everything
+      const response = await axios.get(`${API_BASE_URL}/kobo/submissions`, {
+        params: {
+          limit: 100000 // High limit to get all data
+        }
+      });
 
       // Process and normalize all data
       const processedData = response.data.results.map(normalizeSubmissionData);
@@ -108,6 +112,9 @@ export const useFetchEnumeratorStats = () => {
     setIsLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/enumerators-stats`, {
+        params: {
+          limit: 100000 // High limit to get all data
+        },
         timeout: 60000 // 60 second timeout for large datasets
       });
 
@@ -115,7 +122,10 @@ export const useFetchEnumeratorStats = () => {
         throw new Error('Empty response received from server');
       }
 
-      setData(response.data);
+      // Handle both old format (array) and new format (object with results)
+      const statsData = Array.isArray(response.data) ? response.data : response.data.results;
+
+      setData(statsData || []);
       setError(null);
       setRetryCount(0); // Reset retry count on success
     } catch (error: any) {
