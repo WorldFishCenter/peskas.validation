@@ -5,6 +5,7 @@ import {
   IconStar,
   IconAlertTriangle
 } from '@tabler/icons-react';
+import { useTranslation } from 'react-i18next';
 import { ChartTabType, EnumeratorData } from '../types';
 import SubmissionVolumeChart from '../charts/SubmissionVolumeChart';
 import QualityRankingChart from '../charts/QualityRankingChart';
@@ -19,34 +20,6 @@ interface ChartTabsProps {
   uniqueDates: string[];
 }
 
-// Tab configurations with icons and descriptions
-const tabConfig = {
-  volume: {
-    icon: IconChartBar,
-    label: 'Volume',
-    description: 'Compare submission counts across enumerators. Click any bar to see details.',
-    color: 'primary'
-  },
-  trends: {
-    icon: IconTrendingUp,
-    label: 'Trends',
-    description: 'Track submission patterns over time for top 10 enumerators.',
-    color: 'purple'
-  },
-  quality: {
-    icon: IconStar,
-    label: 'Quality',
-    description: 'Rank enumerators by data quality (% submissions without alerts).',
-    color: 'green'
-  },
-  errors: {
-    icon: IconAlertTriangle,
-    label: 'Alerts',
-    description: 'See which alert types occur most frequently across all data.',
-    color: 'orange'
-  }
-};
-
 const ChartTabs: React.FC<ChartTabsProps> = ({
   activeTab,
   setActiveTab,
@@ -54,6 +27,36 @@ const ChartTabs: React.FC<ChartTabsProps> = ({
   onEnumeratorSelect,
   uniqueDates
 }) => {
+  const { t } = useTranslation('enumerators');
+
+  // Tab configurations with icons and descriptions
+  const tabConfig = {
+    volume: {
+      icon: IconChartBar,
+      label: t('charts.tabs.volume'),
+      description: t('charts.tabs.volumeDescription'),
+      color: 'primary'
+    },
+    trends: {
+      icon: IconTrendingUp,
+      label: t('charts.tabs.trend'),
+      description: t('charts.tabs.trendsDescription'),
+      color: 'purple'
+    },
+    quality: {
+      icon: IconStar,
+      label: t('charts.tabs.quality'),
+      description: t('charts.tabs.qualityDescription'),
+      color: 'green'
+    },
+    errors: {
+      icon: IconAlertTriangle,
+      label: t('charts.tabs.alerts'),
+      description: t('charts.tabs.alertsDescription'),
+      color: 'orange'
+    }
+  };
+
   const currentTab = tabConfig[activeTab];
 
   return (

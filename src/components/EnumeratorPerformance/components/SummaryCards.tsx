@@ -5,6 +5,7 @@ import {
   IconAlertTriangle,
   IconTrophy
 } from '@tabler/icons-react';
+import { useTranslation } from 'react-i18next';
 import { EnumeratorData } from '../types';
 
 interface SummaryCardsProps {
@@ -20,6 +21,8 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
   avgErrorRate,
   bestEnumerator
 }) => {
+  const { t } = useTranslation('enumerators');
+
   // Determine error rate indicator color
   const getErrorRateColor = (rate: number) => {
     if (rate <= 10) return 'green';
@@ -40,10 +43,10 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
               <span className="avatar avatar-sm bg-primary-lt me-2">
                 <IconFileAnalytics size={18} stroke={1.5} />
               </span>
-              <div className="subheader">Total Submissions</div>
+              <div className="subheader">{t('summaryCards.totalSubmissions')}</div>
             </div>
             <div className="h1 mb-0">{totalSubmissions.toLocaleString()}</div>
-            <div className="text-muted small">In selected date range</div>
+            <div className="text-muted small">{t('summaryCards.inDateRange')}</div>
           </div>
         </div>
       </div>
@@ -56,10 +59,10 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
               <span className="avatar avatar-sm bg-purple-lt me-2">
                 <IconUsers size={18} stroke={1.5} />
               </span>
-              <div className="subheader">Enumerators</div>
+              <div className="subheader">{t('summaryCards.enumeratorsCount')}</div>
             </div>
             <div className="h1 mb-0">{enumerators.length}</div>
-            <div className="text-muted small">With activity in period</div>
+            <div className="text-muted small">{t('summaryCards.withActivityInPeriod')}</div>
           </div>
         </div>
       </div>
@@ -72,11 +75,11 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
               <span className={`avatar avatar-sm bg-${errorRateColor}-lt me-2`}>
                 <IconAlertTriangle size={18} stroke={1.5} />
               </span>
-              <div className="subheader">Avg Alert Rate</div>
+              <div className="subheader">{t('summaryCards.avgAlertRate')}</div>
             </div>
             <div className={`h1 mb-0 text-${errorRateColor}`}>{avgErrorRate.toFixed(1)}%</div>
             <div className="text-muted small">
-              {avgErrorRate <= 10 ? 'Excellent' : avgErrorRate <= 25 ? 'Moderate' : 'Needs attention'}
+              {avgErrorRate <= 10 ? t('summaryCards.qualityExcellent') : avgErrorRate <= 25 ? t('summaryCards.qualityModerate') : t('summaryCards.qualityNeedsAttention')}
             </div>
           </div>
         </div>
@@ -90,13 +93,13 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
               <span className="avatar avatar-sm bg-green-lt me-2">
                 <IconTrophy size={18} stroke={1.5} />
               </span>
-              <div className="subheader">Top Performer</div>
+              <div className="subheader">{t('summaryCards.topPerformer')}</div>
             </div>
             <div className="h4 mb-0 text-truncate" title={bestEnumerator.name}>
               {bestEnumerator.name}
             </div>
             <div className="text-muted small">
-              {(100 - bestEnumeratorErrorRate).toFixed(0)}% quality score
+              {(100 - bestEnumeratorErrorRate).toFixed(0)}% {t('quality.qualityScore', { ns: 'common' })}
             </div>
           </div>
         </div>

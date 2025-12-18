@@ -1,11 +1,14 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { IconCheck, IconChartBar, IconUsers, IconHelp } from '@tabler/icons-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../Auth/AuthContext';
+import LanguageSwitcher from './LanguageSwitcher';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const { t } = useTranslation('navigation');
 
   return (
     <header className="navbar navbar-expand-md navbar-light d-print-none">
@@ -15,19 +18,20 @@ const Navbar: React.FC = () => {
         </button>
         <h1 className="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
           <Link to="/">
-            PESKAS | <span className="text-muted">validation portal</span>
+            {t('brand').split('|')[0]} | <span className="text-muted">{t('brand').split('|')[1]?.trim()}</span>
           </Link>
         </h1>
         <div className="navbar-nav flex-row order-md-last">
-          <div className="nav-item dropdown">
+          <LanguageSwitcher />
+          <div className="nav-item dropdown ms-2">
             <a href="#" className="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="Open user menu">
               <div className="d-none d-xl-block ps-2">
                 <div>{user?.username}</div>
-                <div className="mt-1 small text-muted">{user?.role === 'admin' ? 'Administrator' : 'User'}</div>
+                <div className="mt-1 small text-muted">{user?.role === 'admin' ? t('role.admin') : t('role.user')}</div>
               </div>
             </a>
             <div className="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-              <button className="dropdown-item" onClick={logout}>Logout</button>
+              <button className="dropdown-item" onClick={logout}>{t('logout')}</button>
             </div>
           </div>
         </div>
@@ -39,7 +43,7 @@ const Navbar: React.FC = () => {
                   <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
                     <IconCheck className="icon" size={24} stroke={2} />
                   </span>
-                  <span className="nav-link-title">Validation</span>
+                  <span className="nav-link-title">{t('validation')}</span>
                 </Link>
               </li>
               <li className={`nav-item ${location.pathname === '/enumerators' ? 'active' : ''}`}>
@@ -47,7 +51,7 @@ const Navbar: React.FC = () => {
                   <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
                     <IconChartBar className="icon" size={24} stroke={2} />
                   </span>
-                  <span className="nav-link-title">Enumerator Performance</span>
+                  <span className="nav-link-title">{t('enumeratorPerformance')}</span>
                 </Link>
               </li>
               <li className={`nav-item ${location.pathname === '/how-it-works' ? 'active' : ''}`}>
@@ -55,7 +59,7 @@ const Navbar: React.FC = () => {
                   <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
                     <IconHelp className="icon" size={24} stroke={2} />
                   </span>
-                  <span className="nav-link-title">How It Works</span>
+                  <span className="nav-link-title">{t('howItWorks')}</span>
                 </Link>
               </li>
               {/* Admin-only Users Management Link */}
@@ -65,7 +69,7 @@ const Navbar: React.FC = () => {
                     <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
                       <IconUsers className="icon" size={24} stroke={2} />
                     </span>
-                    <span className="nav-link-title">Users</span>
+                    <span className="nav-link-title">{t('users')}</span>
                   </Link>
                 </li>
               )}

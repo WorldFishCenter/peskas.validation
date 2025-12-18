@@ -2,6 +2,7 @@ import React from 'react';
 import { Table } from '@tanstack/react-table';
 import { IconSearch, IconInfoCircle } from '@tabler/icons-react';
 import { VALIDATION_STATUS_OPTIONS } from '../../types/validation';
+import { useTranslation } from 'react-i18next';
 
 interface TableFiltersProps<T> {
   table: Table<T>;
@@ -32,6 +33,8 @@ const TableFilters = <T,>({
   accessibleSurveys,
   onShowAlertGuide
 }: TableFiltersProps<T>) => {
+  const { t } = useTranslation('validation');
+
   // Get columns with defensive access
   const statusColumn = table.getColumn('validation_status');
   const alertColumn = table.getColumn('alert_flag');
@@ -64,7 +67,7 @@ const TableFilters = <T,>({
             <input
               type="text"
               className="form-control"
-              placeholder="Search submissions..."
+              placeholder={t('filters.searchPlaceholder')}
               value={globalFilter ?? ''}
               onChange={e => setGlobalFilter(e.target.value)}
             />
@@ -73,7 +76,7 @@ const TableFilters = <T,>({
                 className="btn"
                 type="button"
                 onClick={() => setGlobalFilter('')}
-                aria-label="Clear search"
+                aria-label={t('filters.clearSearch')}
               >
                 ×
               </button>
@@ -89,7 +92,7 @@ const TableFilters = <T,>({
               onClick={onShowAlertGuide}
             >
               <IconInfoCircle className="icon me-2" size={18} />
-              Alert Guide
+              {t('filters.alertGuide')}
             </button>
           )}
 
@@ -99,7 +102,7 @@ const TableFilters = <T,>({
               className="btn flex-fill"
               onClick={resetFilters}
             >
-              Reset Filters
+              {t('filters.resetFilters')}
             </button>
           )}
         </div>
@@ -118,7 +121,7 @@ const TableFilters = <T,>({
               }
               disabled={!surveyColumn}
             >
-              <option value="">All Surveys</option>
+              <option value="">{t('filters.allSurveys')}</option>
               {uniqueSurveys.map(survey => (
                 <option key={survey} value={survey}>
                   {survey}
@@ -138,12 +141,12 @@ const TableFilters = <T,>({
             }
             disabled={!statusColumn}
           >
-            <option value="">All Statuses</option>
+            <option value="">{t('filters.allStatuses')}</option>
             {VALIDATION_STATUS_OPTIONS.map(status => (
               <option key={status} value={status}>
-                {status === 'validation_status_approved' && 'Approved'}
-                {status === 'validation_status_not_approved' && 'Not Approved'}
-                {status === 'validation_status_on_hold' && 'On Hold'}
+                {status === 'validation_status_approved' && t('status.approved', { ns: 'common' })}
+                {status === 'validation_status_not_approved' && t('status.notApproved', { ns: 'common' })}
+                {status === 'validation_status_on_hold' && t('status.onHold', { ns: 'common' })}
               </option>
             ))}
           </select>
@@ -159,9 +162,9 @@ const TableFilters = <T,>({
             }
             disabled={!alertColumn}
           >
-            <option value="all">All Items</option>
-            <option value="with-alerts">With Alerts</option>
-            <option value="no-alerts">No Alerts</option>
+            <option value="all">{t('filters.allItems')}</option>
+            <option value="with-alerts">{t('filters.withAlerts')}</option>
+            <option value="no-alerts">{t('filters.noAlerts')}</option>
           </select>
         </div>
 
@@ -177,7 +180,7 @@ const TableFilters = <T,>({
               onChange={e => setFromDate(e.target.value)}
               aria-label="From date"
             />
-            <span className="input-group-text">to</span>
+            <span className="input-group-text">{t('filters.dateTo')}</span>
             <input
               type="date"
               className="form-control"

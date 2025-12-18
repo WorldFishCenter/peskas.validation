@@ -1,0 +1,56 @@
+{
+  "buttons": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "reset": "Repor",
+    "update": "Atualizar",
+    "create": "Criar",
+    "close": "Fechar",
+    "confirm": "Confirmar",
+    "submit": "Submeter",
+    "tryAgain": "Tentar novamente",
+    "openAgain": "Abrir novamente"
+  },
+  "status": {
+    "approved": "Aprovado",
+    "notApproved": "Não Aprovado",
+    "onHold": "Em Espera",
+    "default": "Pendente",
+    "not_approved": "Não Aprovado",
+    "on_hold": "Em Espera"
+  },
+  "role": {
+    "admin": "Administrador",
+    "administrator": "Administrador",
+    "manager": "Gestor",
+    "user": "Utilizador"
+  },
+  "pagination": {
+    "showing": "A mostrar",
+    "to": "a",
+    "of": "de",
+    "entries": "registos",
+    "previous": "anterior",
+    "next": "seguinte",
+    "perPage": "{{count}} / página"
+  },
+  "quality": {
+    "excellent": "Excelente",
+    "moderate": "Moderado",
+    "needsAttention": "Requer atenção",
+    "qualityScore": "pontuação de qualidade"
+  },
+  "loading": "A carregar...",
+  "error": "Erro",
+  "success": "Sucesso",
+  "noData": "Sem dados disponíveis",
+  "close": "fechar",
+  "all": "Todos",
+  "none": "Nenhum",
+  "unknown": "Desconhecido",
+  "footer": {
+    "copyright": "WorldFish Center © 2025"
+  }
+}

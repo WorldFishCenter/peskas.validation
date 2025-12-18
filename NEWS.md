@@ -1,3 +1,59 @@
+# validation-zanzibar 1.4.0
+
+## Features
+
+- **Full Internationalization (i18n) Support**
+  - Complete multi-language support for English, Portuguese, and Swahili
+  - Language switcher component in navbar and login page
+  - Persistent language preference stored in localStorage and user profile
+  - Organized translation files by namespace (common, validation, enumerators, admin, guide, etc.)
+  - Automatic language detection from browser preferences
+  - Type-safe translations with TypeScript support
+
+## Performance Improvements
+
+- **Backend Query Optimization for Large Datasets**
+  - Added NodeCache for API response caching (5-minute TTL)
+  - Optimized pagination queries: skip expensive `countDocuments` for first 3 pages
+  - Fetch only requested `limit` submissions per collection in parallel
+  - In-memory sorting and merging of submissions for faster pagination
+  - Reduced frontend and backend timeouts to more appropriate values after optimizations
+  - Significantly improved load times for datasets with 45k+ submissions
+
+## UI/UX Improvements
+
+- **Complete Tabler UI Framework Compliance**
+  - Standardized all color classes to Tabler semantic colors:
+    - `text-blue` → `text-primary` (all loading spinners)
+    - `btn-green` → `btn-success` (status update buttons)
+    - `border-blue` → `border-primary` (alert borders)
+  - Fixed container classes: `container container-slim` → `container-tight`
+  - Removed deprecated `form-group` classes (replaced with direct spacing classes)
+  - All components now use consistent Tabler utility classes throughout
+
+- **Login Page Redesign**
+  - Redesigned login page with proper Tabler styling
+  - Integrated language switcher directly into login card for better UX
+  - More prominent language switcher with improved visibility
+  - Fixed focus outline issues on card elements
+  - Updated all login elements to use Tabler primary color classes
+
+- **Navbar Language Switcher Enhancements**
+  - Improved styling to match Tabler navbar user dropdown
+  - Added proper spacing between language switcher and user dropdown
+  - Replaced badge with IconCheck for active language indicator
+  - Better visual consistency with Tabler design patterns
+
+## Code Quality
+
+- **Consistent Styling Architecture**
+  - Removed all non-standard color classes
+  - Standardized button classes across all components
+  - Consistent badge color usage with Tabler light variants
+  - Clean separation of concerns with proper component structure
+
+---
+
 # validation-zanzibar 1.3.0
 
 ## Architecture & Scalability

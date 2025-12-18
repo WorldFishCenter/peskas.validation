@@ -39,4 +39,25 @@ body {
   top: 0;
   background-color: var(--tblr-bg-surface);
   z-index: 10;
+}
+
+/* Prevent focus outline on card and card-body elements */
+.card:focus,
+.card:focus-within,
+.card-body:focus,
+.card-body:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure card is not focusable */
+.card {
+  outline: none !important;
+}
+
+/* Ensure button focus stays on button only */
+.card-body .dropdown button:focus,
+.card-body .dropdown button:focus-visible {
+  outline: 2px solid var(--tblr-primary);
+  outline-offset: 2px;
 } 

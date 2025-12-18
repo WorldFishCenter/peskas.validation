@@ -13,6 +13,7 @@ import {
   SortingState,
 } from '@tanstack/react-table';
 import { rankItem } from '@tanstack/match-sorter-utils';
+import { useTranslation } from 'react-i18next';
 import StatusUpdateForm from './StatusUpdateForm';
 import { useFetchSubmissions } from '../../api/api';
 import { useContextualAlertCodes } from '../../hooks/useContextualAlertCodes';
@@ -31,18 +32,18 @@ const fuzzyFilter: FilterFn<Submission> = (row, columnId, value, addMeta) => {
   return itemRank.passed;
 };
 
-const formatDate = (dateStr: string | null): string => {
-  if (!dateStr) return 'Never';
+const formatDateWithDefault = (dateStr: string | null, defaultText: string, invalidText: string): string => {
+  if (!dateStr) return defaultText;
   try {
     // Check if the date string is actually a Unix timestamp (number)
     const timestamp = Number(dateStr);
-    const date = !isNaN(timestamp) 
+    const date = !isNaN(timestamp)
       ? new Date(timestamp * 1000)  // Convert seconds to milliseconds
       : new Date(dateStr);
 
     // Check if it's a valid date object
     if (isNaN(date.getTime())) {
-      return 'Invalid Date';
+      return invalidText;
     }
 
     return date.toLocaleString('en-GB', {
@@ -53,7 +54,7 @@ const formatDate = (dateStr: string | null): string => {
       minute: '2-digit'
     });
   } catch (e) {
-    return 'Invalid Date';
+    return invalidText;
   }
 };
 
@@ -70,6 +71,7 @@ const getMinMaxDate = (subs: Submission[] | undefined): [string, string] => {
 };
 
 const ValidationTable: React.FC = () => {
+  const { t } = useTranslation('validation');
   const { data: submissions, accessibleSurveys, isLoading, error, refetch } = useFetchSubmissions();
   const [selectedRow, setSelectedRow] = useState<Submission | null>(null);
   const [statusToUpdate, setStatusToUpdate] = useState<string>('validation_status_approved');
@@ -86,6 +88,26 @@ const ValidationTable: React.FC = () => {
   const [toDate, setToDate] = useState('');
   const [minDate, maxDate] = getMinMaxDate(submissions);
   const [contextualSubmissions, setContextualSubmissions] = useState<Submission[]>(submissions || []);
+
+  // Helper function that uses translation
+  const formatDate = (dateStr: string | null): string => {
+    if (!dateStr) return t('table.notAvailable');
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        return t('table.invalidDate');
+      }
+      return date.toLocaleString('en-GB', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return t('table.invalidDate');
+    }
+  };
 
   // Sync contextualSubmissions when submissions first load
   useEffect(() => {
@@ -114,7 +136,7 @@ const ValidationTable: React.FC = () => {
     () => [
       {
         accessorKey: 'submission_id',
-        header: () => 'SUBMISSION ID',
+        header: () => t('columns.submissionId'),
         cell: info => info.getValue(),
         enableSorting: true,
         enableColumnFilter: true,
@@ -122,10 +144,10 @@ const ValidationTable: React.FC = () => {
       },
       {
         accessorKey: 'survey_name',
-        header: () => 'SURVEY',
+        header: () => t('columns.survey'),
         cell: info => {
           const row = info.row.original;
-          const surveyName = row.survey_name || 'Unknown';
+          const surveyName = row.survey_name || t('table.unknownSurvey');
           const countryCode = row.survey_country || '';
           const countryFlag = getCountryFlag(countryCode);
           const countryName = getCountryName(countryCode);
@@ -148,7 +170,7 @@ const ValidationTable: React.FC = () => {
       },
       {
         accessorKey: 'submitted_by',
-        header: () => 'SUBMITTED BY',
+        header: () => t('columns.enumerator'),
         cell: info => {
           const row = info.row.original;
           const value = info.getValue();
@@ -177,15 +199,15 @@ const ValidationTable: React.FC = () => {
       },
       {
         accessorKey: 'submission_date',
-        header: () => 'SUBMISSION DATE',
+        header: () => t('columns.date'),
         cell: info => {
           const date = info.getValue() as string;
-          if (!date) return 'N/A';
+          if (!date) return t('table.notAvailable');
           try {
             // For submission date, we only want YYYY-MM-DD
             return date.split('T')[0];
           } catch (e) {
-            return 'Invalid Date';
+            return t('table.invalidDate');
           }
         },
         enableSorting: true,
@@ -194,7 +216,7 @@ const ValidationTable: React.FC = () => {
       },
       {
         accessorKey: 'alert_flag',
-        header: () => 'ALERT',
+        header: () => t('columns.alert'),
         cell: info => {
           const row = info.row.original;
           const alertFlag = info.getValue() as string;
@@ -220,7 +242,7 @@ const ValidationTable: React.FC = () => {
       },
       {
         accessorKey: 'validation_status',
-        header: () => 'STATUS',
+        header: () => t('columns.status'),
         cell: info => <StatusBadge status={info.getValue() as string} />,
         enableSorting: true,
         enableColumnFilter: true,
@@ -230,14 +252,14 @@ const ValidationTable: React.FC = () => {
       },
       {
         accessorKey: 'validated_at',
-        header: () => 'LAST VALIDATED',
-        cell: info => formatDate(info.getValue() as string),
+        header: () => t('columns.actions'),
+        cell: info => formatDateWithDefault(info.getValue() as string, t('table.neverValidated'), t('table.invalidDate')),
         enableSorting: true,
         enableColumnFilter: true,
         filterFn: fuzzyFilter,
       },
     ],
-    [fromDate, toDate]
+    [t, fromDate, toDate]
   );
 
   const table = useReactTable({
@@ -318,7 +340,7 @@ const ValidationTable: React.FC = () => {
       <div className="page-body">
         <div className="container-xl">
           <div className="d-flex justify-content-center py-5">
-            <div className="spinner-border text-blue"></div>
+            <div className="spinner-border text-primary"></div>
           </div>
         </div>
       </div>
@@ -340,9 +362,9 @@ const ValidationTable: React.FC = () => {
         <div className="container-xl">
           <div className="row g-2 align-items-center">
             <div className="col">
-              <h2 className="page-title">Data Validation</h2>
+              <h2 className="page-title">{t('pageTitle')}</h2>
               <div className="text-muted mt-1">
-                Review and validate survey submissions
+                {t('pageDescription')}
               </div>
             </div>
           </div>
@@ -436,7 +458,7 @@ const ValidationTable: React.FC = () => {
                   ) : (
                     <tr>
                       <td colSpan={columns.length} className="text-center py-4">
-                        No results found. Try adjusting your search criteria.
+                        {t('table.noResults')}
                       </td>
                     </tr>
                   )}
@@ -447,7 +469,7 @@ const ValidationTable: React.FC = () => {
             {/* Pagination Footer */}
             <div className="card-footer d-flex align-items-center">
               <p className="m-0 text-muted">
-                Showing <span>{table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}</span> to <span>{Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getPrePaginationRowModel().rows.length)}</span> of <span>{table.getPrePaginationRowModel().rows.length}</span> entries
+                {t('pagination.showing', { ns: 'common' })} <span>{table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}</span> {t('pagination.to', { ns: 'common' })} <span>{Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getPrePaginationRowModel().rows.length)}</span> {t('pagination.of', { ns: 'common' })} <span>{table.getPrePaginationRowModel().rows.length}</span> {t('pagination.entries', { ns: 'common' })}
               </p>
               <ul className="pagination m-0 ms-auto">
                 <li className={`page-item ${!table.getCanPreviousPage() ? 'disabled' : ''}`}>
@@ -457,7 +479,7 @@ const ValidationTable: React.FC = () => {
                     disabled={!table.getCanPreviousPage()}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><polyline points="15 6 9 12 15 18" /></svg>
-                    prev
+                    {t('table.prev')}
                   </button>
                 </li>
                 <li className="page-item">
@@ -468,7 +490,7 @@ const ValidationTable: React.FC = () => {
                   >
                     {[5, 10, 20, 25, 50].map(size => (
                       <option key={size} value={size}>
-                        {size} / page
+                        {t('pagination.perPage', { ns: 'common', count: size })}
                       </option>
                     ))}
                   </select>
@@ -479,7 +501,7 @@ const ValidationTable: React.FC = () => {
                     onClick={() => table.nextPage()}
                     disabled={!table.getCanNextPage()}
                   >
-                    next
+                    {t('table.next')}
                     <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><polyline points="9 6 15 12 9 18" /></svg>
                   </button>
                 </li>
@@ -498,52 +520,52 @@ const ValidationTable: React.FC = () => {
           style={{ visibility: sidebarOpen ? 'visible' : 'hidden' }}
         >
           <div className="offcanvas-header border-bottom">
-            <h5 className="offcanvas-title">Submission Details</h5>
+            <h5 className="offcanvas-title">{t('table.submissionDetails')}</h5>
             <button type="button" className="btn-close text-reset" onClick={() => setSidebarOpen(false)} aria-label="Close"></button>
           </div>
           <div className="offcanvas-body">
             <div className="card card-sm mb-3">
               <div className="card-body">
                 <div className="d-flex justify-content-between mb-2">
-                  <div className="text-muted">Submission ID:</div>
-                  <div className="fw-bold">{selectedRow?.submission_id || 'N/A'}</div>
+                  <div className="text-muted">{t('table.submissionIdLabel')}</div>
+                  <div className="fw-bold">{selectedRow?.submission_id || t('table.notAvailable')}</div>
                 </div>
                 <div className="d-flex justify-content-between mb-2">
-                  <div className="text-muted">Date:</div>
-                  <div>{selectedRow?.submission_date ? formatDate(selectedRow.submission_date) : 'N/A'}</div>
+                  <div className="text-muted">{t('table.dateLabel')}</div>
+                  <div>{selectedRow?.submission_date ? formatDate(selectedRow.submission_date) : t('table.notAvailable')}</div>
                 </div>
                 <div className="d-flex justify-content-between mb-2">
-                  <div className="text-muted">Submitted By:</div>
-                  <div>{selectedRow?.submitted_by || 'Unknown'}</div>
+                  <div className="text-muted">{t('table.submittedByLabel')}</div>
+                  <div>{selectedRow?.submitted_by || t('table.unknownEnumerator')}</div>
                 </div>
                 {selectedRow?.vessel_number && (
                   <div className="d-flex justify-content-between mb-2">
-                    <div className="text-muted">Vessel:</div>
+                    <div className="text-muted">{t('table.vesselLabel')}</div>
                     <div>{selectedRow.vessel_number}</div>
                   </div>
                 )}
                 {selectedRow?.catch_number && (
                   <div className="d-flex justify-content-between mb-2">
-                    <div className="text-muted">Catch #:</div>
+                    <div className="text-muted">{t('table.catchNumberLabel')}</div>
                     <div>{selectedRow.catch_number}</div>
                   </div>
                 )}
                 <div className="d-flex justify-content-between mb-2">
-                  <div className="text-muted">Status:</div>
+                  <div className="text-muted">{t('table.statusLabel')}</div>
                   <div>
                     <StatusBadge status={selectedRow.validation_status} />
                   </div>
                 </div>
                 {selectedRow?.alert_flag && selectedRow.alert_flag.trim() !== '' && (
                   <div className="d-flex justify-content-between mb-2">
-                    <div className="text-muted">Alert Flags:</div>
+                    <div className="text-muted">{t('table.alertFlagsLabel')}</div>
                     <div>
                       <AlertBadge alertFlag={selectedRow.alert_flag} alertFlags={selectedRow.alert_flags} />
                     </div>
                   </div>
                 )}
                 <div className="d-flex justify-content-between">
-                  <div className="text-muted">Last Validated:</div>
+                  <div className="text-muted">{t('table.lastValidatedLabel')}</div>
                   <div>{formatDate(selectedRow?.validated_at || null)}</div>
                 </div>
               </div>

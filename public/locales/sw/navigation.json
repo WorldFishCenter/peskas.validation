@@ -1,0 +1,12 @@
+{
+  "brand": "PESKAS | lango la uthibitishaji",
+  "validation": "Uthibitishaji",
+  "enumeratorPerformance": "Utendaji wa Wakusanyaji",
+  "howItWorks": "Jinsi Inavyofanya Kazi",
+  "users": "Watumiaji",
+  "logout": "Toka",
+  "role": {
+    "admin": "Msimamizi",
+    "user": "Mtumiaji"
+  }
+}

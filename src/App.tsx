@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './components/Auth/AuthContext';
+import { I18nProvider } from './i18n/I18nContext';
 import Login from './components/Auth/Login';
 import ValidationTable from './components/ValidationTable/ValidationTable';
 import MainLayout from './components/Layout/MainLayout';
@@ -42,9 +43,9 @@ const AppContent: React.FC = () => {
   if (loading) {
     return (
       <div className="page page-center">
-        <div className="container container-slim py-4">
+        <div className="container-tight py-4">
           <div className="text-center">
-            <div className="spinner-border text-blue" role="status"></div>
+            <div className="spinner-border text-primary" role="status"></div>
             <div className="mt-3">Loading...</div>
           </div>
         </div>
@@ -62,9 +63,11 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <I18nProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </I18nProvider>
     </BrowserRouter>
   );
 };

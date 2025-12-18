@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ValidationStatus } from '../../types/validation';
 
 interface StatusBadgeProps {
@@ -19,15 +20,18 @@ const getStatusBadgeClass = (status: string): string => {
   }
 };
 
-// Format status text for display
-const formatStatusText = (status: string): string => {
-  if (!status) return 'Unknown';
-  return status.replace('validation_status_', '').replace(/_/g, ' ');
-};
-
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
+  const { t } = useTranslation('common');
   const badgeClass = getStatusBadgeClass(status);
-  const displayText = formatStatusText(status);
+
+  // Map status to translation key
+  const getStatusKey = (status: string): string => {
+    const normalized = status || 'default';
+    const key = normalized.replace('validation_status_', '');
+    return `status.${key}`;
+  };
+
+  const displayText = t(getStatusKey(status));
 
   return (
     <span className={`${badgeClass} text-uppercase text-nowrap`}>

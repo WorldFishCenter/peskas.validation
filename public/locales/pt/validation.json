@@ -1,0 +1,81 @@
+{
+  "pageTitle": "Validação de Dados",
+  "pageDescription": "Rever e validar submissões de inquéritos",
+  "columns": {
+    "submissionId": "ID DE SUBMISSÃO",
+    "survey": "INQUÉRITO",
+    "enumerator": "ENUMERADOR",
+    "date": "DATA",
+    "status": "ESTADO",
+    "alert": "ALERTA",
+    "actions": "AÇÕES"
+  },
+  "filters": {
+    "search": "Pesquisar submissões...",
+    "searchPlaceholder": "Pesquisar submissões...",
+    "clearSearch": "Limpar pesquisa",
+    "status": "Estado",
+    "survey": "Inquérito",
+    "alert": "Alerta",
+    "alertGuide": "Guia de Alertas",
+    "resetFilters": "Repor Filtros",
+    "all": "Todos",
+    "allSurveys": "Todos os Inquéritos",
+    "allStatuses": "Todos os Estados",
+    "allItems": "Todos os Itens",
+    "withAlerts": "Com Alertas",
+    "noAlerts": "Sem Alertas",
+    "dateTo": "a"
+  },
+  "table": {
+    "neverValidated": "Nunca",
+    "invalidDate": "Data Inválida",
+    "unknownSurvey": "Desconhecido",
+    "unknownEnumerator": "Desconhecido",
+    "notAvailable": "N/D",
+    "noResults": "Nenhum resultado encontrado. Tente ajustar os critérios de pesquisa.",
+    "prev": "anterior",
+    "next": "seguinte",
+    "submissionDetails": "Detalhes da Submissão",
+    "submissionIdLabel": "ID da Submissão:",
+    "dateLabel": "Data:",
+    "submittedByLabel": "Submetido por:",
+    "vesselLabel": "Embarcação:",
+    "catchNumberLabel": "Captura #:",
+    "statusLabel": "Estado:",
+    "alertFlagsLabel": "Sinalizadores de Alerta:",
+    "lastValidatedLabel": "Última Validação:",
+    "codeHeader": "Código",
+    "descriptionHeader": "Descrição"
+  },
+  "form": {
+    "popupBlocked": "O pop-up foi bloqueado. Permita pop-ups para este site.",
+    "editUrlError": "Falha ao gerar o URL de edição. Tente novamente.",
+    "selectedSubmission": "Submissão selecionada: ",
+    "assignStatus": "Atribuir Estado",
+    "updating": "A atualizar...",
+    "updateStatus": "Atualizar Estado",
+    "generatingLink": "A gerar ligação...",
+    "goToSubmission": "Ir para Submissão",
+    "editLinkOpened": "Ligação de edição aberta num novo separador."
+  },
+  "modal": {
+    "alertCodesTitle": "Referência de Códigos de Alerta",
+    "noAlertCodes": "Não há códigos de alerta disponíveis para os dados atuais.",
+    "alertCodesInfo": "Os códigos de alerta identificam potenciais problemas de qualidade de dados que exigem validação.",
+    "close": "Fechar"
+  },
+  "noResults": "Nenhuma submissão encontrada",
+  "alertCodes": {
+    "1": "Foi reportada uma captura, mas nenhum táxon foi especificado",
+    "2": "Um táxon foi especificado, mas nenhuma informação foi fornecida",
+    "3": "Várias capturas reportadas sem separação adequada dos táxones",
+    "4": "Informação de data/hora inválida ou inconsistente",
+    "5": "Faltam os dados de localização obrigatórios",
+    "6": "Peso ou quantidade da captura fora do intervalo esperado",
+    "7": "Submissão duplicada detetada",
+    "8": "Prova fotográfica em falta ou pouco clara",
+    "9": "Tipo de arte de pesca inconsistente com a captura reportada",
+    "10": "Outro problema de qualidade de dados"
+  }
+}

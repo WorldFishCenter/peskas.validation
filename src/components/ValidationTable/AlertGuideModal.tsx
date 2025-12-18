@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import { getCountryFlag, getCountryName } from '../../utils/countryMetadata';
+import { useTranslation } from 'react-i18next';
 
 interface SurveyAlertCodes {
   surveyName: string;
@@ -15,6 +16,7 @@ interface AlertGuideModalProps {
 }
 
 const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose, surveyAlertCodes }) => {
+  const { t } = useTranslation('validation');
   const [selectedSurvey, setSelectedSurvey] = useState<string>(
     surveyAlertCodes.length > 0 ? surveyAlertCodes[0].assetId : ''
   );
@@ -30,12 +32,12 @@ const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose, surveyAlertC
         <div className="modal-dialog modal-dialog-centered" role="document">
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title">Alert Codes Reference</h5>
-              <button type="button" className="btn-close" onClick={onClose} aria-label="Close"></button>
+              <h5 className="modal-title">{t('modal.alertCodesTitle')}</h5>
+              <button type="button" className="btn-close" onClick={onClose} aria-label={t('modal.close')}></button>
             </div>
             <div className="modal-body">
               <div className="alert alert-warning">
-                No alert codes available for the current data.
+                {t('modal.noAlertCodes')}
               </div>
             </div>
           </div>
@@ -51,13 +53,13 @@ const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose, surveyAlertC
           <div className="modal-header">
             <h5 className="modal-title">
               <IconAlertTriangle className="icon text-yellow me-2" size={24} stroke={2} />
-              Alert Codes Reference
+              {t('modal.alertCodesTitle')}
             </h5>
             <button
               type="button"
               className="btn-close"
               onClick={onClose}
-              aria-label="Close"
+              aria-label={t('modal.close')}
             ></button>
           </div>
           <div className="modal-body">
@@ -72,14 +74,14 @@ const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose, surveyAlertC
                 </svg>
               </div>
               <div>
-                Alert codes identify potential data quality issues that require validation attention.
+                {t('modal.alertCodesInfo')}
               </div>
             </div>
 
             {/* Survey Selector - only show if multiple surveys */}
             {surveyAlertCodes.length > 1 && (
               <div className="mb-3">
-                <label className="form-label">Survey</label>
+                <label className="form-label">{t('filters.survey')}</label>
                 <select
                   className="form-select"
                   value={selectedSurvey}
@@ -114,8 +116,8 @@ const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose, surveyAlertC
               <table className="table table-vcenter card-table">
                 <thead>
                   <tr>
-                    <th className="w-1">Code</th>
-                    <th>Description</th>
+                    <th className="w-1">{t('table.codeHeader')}</th>
+                    <th>{t('table.descriptionHeader')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -141,7 +143,7 @@ const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose, surveyAlertC
               className="btn"
               onClick={onClose}
             >
-              Close
+              {t('modal.close')}
             </button>
           </div>
         </div>

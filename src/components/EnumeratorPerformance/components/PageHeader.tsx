@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { IconDatabase, IconInfoCircle } from '@tabler/icons-react';
 import { getCountryFlag, getCountryName } from '../../../utils/countryMetadata';
 
@@ -35,6 +36,8 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   surveyCountry,
   onShowAlertGuide
 }) => {
+  const { t } = useTranslation('enumerators');
+
   // Get country display for the selected survey
   const getCountryDisplay = () => {
     if (!surveyCountry) return '';
@@ -50,9 +53,9 @@ const PageHeader: React.FC<PageHeaderProps> = ({
       <div className="container-xl">
         <div className="row g-2 align-items-center">
           <div className="col">
-            <h2 className="page-title">Enumerator Performance Dashboard</h2>
+            <h2 className="page-title">{t('pageTitle')}</h2>
             <div className="text-muted mt-1">
-              Monitor and analyze data collection performance metrics
+              {t('pageSubtitle')}
               {countryDisplay && (
                 <span className="ms-2 badge bg-blue-lt">{countryDisplay}</span>
               )}
@@ -64,7 +67,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
               {availableSurveys.length > 1 && (
                 <div className="col-auto">
                   <div className="input-group">
-                    <span className="input-group-text">Survey</span>
+                    <span className="input-group-text">{t('filters.survey', { ns: 'validation' })}</span>
                     <select
                       className="form-select mw-12"
                       value={selectedSurvey}
@@ -92,7 +95,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                     onChange={e => setFromDate(e.target.value)}
                     aria-label="From date"
                   />
-                  <span className="input-group-text">to</span>
+                  <span className="input-group-text">{t('filters.dateTo', { ns: 'validation' })}</span>
                   <input
                     type="date"
                     className="form-control"
@@ -113,7 +116,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                     onClick={onShowAlertGuide}
                   >
                     <IconInfoCircle className="icon me-1" size={20} stroke={2} />
-                    Alert Guide
+                    {t('alertGuide')}
                   </button>
                 </div>
               )}
@@ -127,7 +130,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                     disabled={isRefreshing}
                   >
                     <IconDatabase className="icon me-1" size={20} stroke={2} />
-                    Refresh Data
+                    {t('refreshData')}
                   </button>
                 </div>
               )}

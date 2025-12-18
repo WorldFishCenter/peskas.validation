@@ -91,6 +91,7 @@ module.exports = async function handler(req, res) {
       role: user.role,
       active: user.active,
       permissions: user.permissions,
+      language: user.language || 'en', // Include language preference (default to 'en')
       created_at: user.created_at,
       last_login: new Date()
     };

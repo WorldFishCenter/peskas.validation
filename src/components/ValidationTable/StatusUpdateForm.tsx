@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IconInfoCircle, IconAlertCircle } from '@tabler/icons-react';
 import { generateEditUrl } from '../../api/koboToolbox';
+import { useTranslation } from 'react-i18next';
 
 interface Submission {
   submission_id: string;
@@ -23,15 +24,16 @@ interface StatusUpdateFormProps {
   hideSubmissionInfo?: boolean;
 }
 
-const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({ 
-  selectedSubmission, 
-  status, 
-  setStatus, 
-  onUpdate, 
+const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
+  selectedSubmission,
+  status,
+  setStatus,
+  onUpdate,
   isUpdating,
   updateMessage,
   hideSubmissionInfo = false
 }) => {
+  const { t } = useTranslation('validation');
   const [editUrl, setEditUrl] = useState<string | null>(null);
   const [isLoadingUrl, setIsLoadingUrl] = useState(false);
   const [urlGeneratedTime, setUrlGeneratedTime] = useState<Date | null>(null);
@@ -75,14 +77,14 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
         if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
           console.warn('Popup blocked or could not open window');
           // Show a message to the user
-          alert('Popup was blocked. Please allow popups for this site.');
+          alert(t('form.popupBlocked'));
         }
       }
     } catch (error) {
       console.error("Failed to get edit URL:", error);
       setEditUrl(null);
       // Set user-friendly error message
-      const message = error instanceof Error ? error.message : 'Failed to generate edit URL. Please try again.';
+      const message = error instanceof Error ? error.message : t('form.editUrlError');
       setErrorMessage(message);
     } finally {
       setIsLoadingUrl(false);
@@ -105,11 +107,11 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
   return (
     <div>
       {!hideSubmissionInfo && (
-        <div className="alert alert-info py-2 mb-3 border-start border-blue border-4">
+        <div className="alert alert-info py-2 mb-3 border-start border-primary border-4">
           <div className="d-flex align-items-center gap-2">
             <IconInfoCircle className="icon" size={14} stroke={2} />
             <div className="small">
-              Selected submission: {selectedSubmission.submission_id}
+              {t('form.selectedSubmission')}{selectedSubmission.submission_id}
             </div>
           </div>
         </div>
@@ -117,15 +119,15 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
 
       <div className="row g-2">
         <div className="col-auto">
-          <div className="form-group mb-0">
-            <label className="form-label">Assign Status</label>
+          <div className="mb-0">
+            <label className="form-label">{t('form.assignStatus')}</label>
             <select
               className="form-select"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
             >
-              <option value="validation_status_approved">Approved</option>
-              <option value="validation_status_not_approved">Not Approved</option>
+              <option value="validation_status_approved">{t('status.approved', { ns: 'common' })}</option>
+              <option value="validation_status_not_approved">{t('status.notApproved', { ns: 'common' })}</option>
             </select>
           </div>
         </div>
@@ -135,7 +137,7 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
             onClick={onUpdate}
             disabled={isUpdating}
           >
-            {isUpdating ? 'Updating...' : 'Update Status'}
+            {isUpdating ? t('form.updating') : t('form.updateStatus')}
           </button>
         </div>
         <div className="col-auto d-flex align-items-end">
@@ -144,7 +146,7 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
             className="btn btn-secondary"
             disabled={isLoadingUrl}
           >
-            {isLoadingUrl ? 'Generating Link...' : 'Go to Submission'}
+            {isLoadingUrl ? t('form.generatingLink') : t('form.goToSubmission')}
           </button>
         </div>
       </div>
@@ -158,7 +160,7 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
               type="button"
               className="btn-close"
               onClick={() => setErrorMessage(null)}
-              aria-label="Close"
+              aria-label={t('modal.close')}
             ></button>
           </div>
         </div>
@@ -168,16 +170,16 @@ const StatusUpdateForm: React.FC<StatusUpdateFormProps> = ({
         <div className="alert alert-success mt-3">
           <div className="d-flex justify-content-between align-items-center">
             <div>
-              <strong>Edit link opened in new tab.</strong>
+              <strong>{t('form.editLinkOpened')}</strong>
             </div>
             {editUrl && (
               <a
                 href={editUrl}
                 target="_blank"
-                className="btn btn-sm btn-green"
+                className="btn btn-sm btn-success"
                 rel="noreferrer"
               >
-                Open Again
+                {t('buttons.openAgain', { ns: 'common' })}
               </a>
             )}
           </div>

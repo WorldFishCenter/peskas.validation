@@ -1,0 +1,12 @@
+{
+  "AUTH_INVALID_CREDENTIALS": "Invalid username or password",
+  "AUTH_TOKEN_EXPIRED": "Your session has expired. Please log in again",
+  "AUTH_ACCOUNT_DISABLED": "Account is disabled. Contact your administrator",
+  "AUTH_REQUIRED": "Authentication required",
+  "VALIDATION_UPDATE_FAILED": "Failed to update validation status",
+  "SUBMISSION_NOT_FOUND": "Submission not found",
+  "PERMISSION_DENIED": "You don't have permission to perform this action",
+  "NETWORK_ERROR": "Network error. Please check your connection",
+  "UNKNOWN_ERROR": "An unexpected error occurred. Please try again",
+  "ADMIN_REQUIRED": "Administrator access required"
+}

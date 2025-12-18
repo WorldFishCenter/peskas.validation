@@ -1,0 +1,12 @@
+{
+  "brand": "PESKAS | portal de validação",
+  "validation": "Validação",
+  "enumeratorPerformance": "Desempenho dos Enumeradores",
+  "howItWorks": "Como Funciona",
+  "users": "Utilizadores",
+  "logout": "Terminar sessão",
+  "role": {
+    "admin": "Administrador",
+    "user": "Utilizador"
+  }
+}

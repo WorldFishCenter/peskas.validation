@@ -1,0 +1,81 @@
+{
+  "pageTitle": "Data Validation",
+  "pageDescription": "Review and validate survey submissions",
+  "columns": {
+    "submissionId": "SUBMISSION ID",
+    "survey": "SURVEY",
+    "enumerator": "ENUMERATOR",
+    "date": "DATE",
+    "status": "STATUS",
+    "alert": "ALERT",
+    "actions": "ACTIONS"
+  },
+  "filters": {
+    "search": "Search submissions...",
+    "searchPlaceholder": "Search submissions...",
+    "clearSearch": "Clear search",
+    "status": "Status",
+    "survey": "Survey",
+    "alert": "Alert",
+    "alertGuide": "Alert Guide",
+    "resetFilters": "Reset Filters",
+    "all": "All",
+    "allSurveys": "All Surveys",
+    "allStatuses": "All Statuses",
+    "allItems": "All Items",
+    "withAlerts": "With Alerts",
+    "noAlerts": "No Alerts",
+    "dateTo": "to"
+  },
+  "table": {
+    "neverValidated": "Never",
+    "invalidDate": "Invalid Date",
+    "unknownSurvey": "Unknown",
+    "unknownEnumerator": "Unknown",
+    "notAvailable": "N/A",
+    "noResults": "No results found. Try adjusting your search criteria.",
+    "prev": "prev",
+    "next": "next",
+    "submissionDetails": "Submission Details",
+    "submissionIdLabel": "Submission ID:",
+    "dateLabel": "Date:",
+    "submittedByLabel": "Submitted By:",
+    "vesselLabel": "Vessel:",
+    "catchNumberLabel": "Catch #:",
+    "statusLabel": "Status:",
+    "alertFlagsLabel": "Alert Flags:",
+    "lastValidatedLabel": "Last Validated:",
+    "codeHeader": "Code",
+    "descriptionHeader": "Description"
+  },
+  "form": {
+    "popupBlocked": "Popup was blocked. Please allow popups for this site.",
+    "editUrlError": "Failed to generate edit URL. Please try again.",
+    "selectedSubmission": "Selected submission: ",
+    "assignStatus": "Assign Status",
+    "updating": "Updating...",
+    "updateStatus": "Update Status",
+    "generatingLink": "Generating Link...",
+    "goToSubmission": "Go to Submission",
+    "editLinkOpened": "Edit link opened in new tab."
+  },
+  "modal": {
+    "alertCodesTitle": "Alert Codes Reference",
+    "noAlertCodes": "No alert codes available for the current data.",
+    "alertCodesInfo": "Alert codes identify potential data quality issues that require validation attention.",
+    "close": "Close"
+  },
+  "noResults": "No submissions found",
+  "alertCodes": {
+    "1": "A catch was reported, but no taxon was specified",
+    "2": "A taxon was specified, but no information provided",
+    "3": "Multiple catches reported without proper taxon separation",
+    "4": "Invalid or inconsistent date/time information",
+    "5": "Missing required location data",
+    "6": "Catch weight or quantity outside expected range",
+    "7": "Duplicate submission detected",
+    "8": "Photo evidence missing or unclear",
+    "9": "Gear type inconsistent with reported catch",
+    "10": "Other data quality issue"
+  }
+}

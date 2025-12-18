@@ -1,0 +1,81 @@
+{
+  "pageTitle": "Uthibitishaji wa Data",
+  "pageDescription": "Kagua na uthibitishe uwasilishaji wa tafiti",
+  "columns": {
+    "submissionId": "KITAMBULISHO CHA UWASILISHAJI",
+    "survey": "TAFITI",
+    "enumerator": "MKUSANYAJI",
+    "date": "TAREHE",
+    "status": "HALI",
+    "alert": "TAHADHARI",
+    "actions": "VITENDO"
+  },
+  "filters": {
+    "search": "Tafuta uwasilishaji...",
+    "searchPlaceholder": "Tafuta uwasilishaji...",
+    "clearSearch": "Futa utafutaji",
+    "status": "Hali",
+    "survey": "Tafiti",
+    "alert": "Tahadhari",
+    "alertGuide": "Mwongozo wa Tahadhari",
+    "resetFilters": "Weka upya Vichujio",
+    "all": "Zote",
+    "allSurveys": "Tafiti Zote",
+    "allStatuses": "Hali Zote",
+    "allItems": "Vipengee Vyote",
+    "withAlerts": "Zenye Tahadhari",
+    "noAlerts": "Bila Tahadhari",
+    "dateTo": "hadi"
+  },
+  "table": {
+    "neverValidated": "Kamwe",
+    "invalidDate": "Tarehe Si Sahihi",
+    "unknownSurvey": "Haijulikani",
+    "unknownEnumerator": "Haijulikani",
+    "notAvailable": "Haihusiki",
+    "noResults": "Hakuna matokeo. Jaribu kubadilisha vigezo vya utafutaji.",
+    "prev": "iliyopita",
+    "next": "ijayo",
+    "submissionDetails": "Maelezo ya Uwasilishaji",
+    "submissionIdLabel": "Kitambulisho cha Uwasilishaji:",
+    "dateLabel": "Tarehe:",
+    "submittedByLabel": "Imewasilishwa na:",
+    "vesselLabel": "Chombo:",
+    "catchNumberLabel": "Nyara #:",
+    "statusLabel": "Hali:",
+    "alertFlagsLabel": "Bendera za Tahadhari:",
+    "lastValidatedLabel": "Ilithibitishwa Mwisho:",
+    "codeHeader": "Msimbo",
+    "descriptionHeader": "Maelezo"
+  },
+  "form": {
+    "popupBlocked": "Dirisha ibukizi limezuiwa. Tafadhali ruhusu popups kwa tovuti hii.",
+    "editUrlError": "Imeshindwa kuunda kiungo cha kuhariri. Tafadhali jaribu tena.",
+    "selectedSubmission": "Uwasilishaji ulioteuliwa: ",
+    "assignStatus": "Weka Hali",
+    "updating": "Inasasisha...",
+    "updateStatus": "Sasisha Hali",
+    "generatingLink": "Inatengeneza Kiungo...",
+    "goToSubmission": "Nenda kwenye Uwasilishaji",
+    "editLinkOpened": "Kiungo cha kuhariri kimefunguliwa katika kichupo kipya."
+  },
+  "modal": {
+    "alertCodesTitle": "Marejeo ya Msimbo wa Tahadhari",
+    "noAlertCodes": "Hakuna misimbo ya tahadhari inayopatikana kwa data ya sasa.",
+    "alertCodesInfo": "Misimbo ya tahadhari hutambua masuala yanayoweza kutokea ya ubora wa data yanayohitaji uangalizi.",
+    "close": "Funga"
+  },
+  "noResults": "Hakuna uwasilishaji ulioonekana",
+  "alertCodes": {
+    "1": "Uwasilishaji wa nyara umeripotiwa, lakini aina (taxon) haijabainishwa",
+    "2": "Aina (taxon) imetajwa, lakini hakuna taarifa imewekwa",
+    "3": "Nyara kadhaa zimeripotiwa bila kutenganisha aina ipasavyo",
+    "4": "Taarifa za tarehe/muda si sahihi au hazilingani",
+    "5": "Data ya eneo inayohitajika haipo",
+    "6": "Uzito au kiasi cha nyara kiko nje ya kiwango kinachotarajiwa",
+    "7": "Uwasilishaji wa marudio umebainika",
+    "8": "Ushahidi wa picha haupo au hauko wazi",
+    "9": "Aina ya zana si sawia na nyara iliyoripotiwa",
+    "10": "Tatizo lingine la ubora wa data"
+  }
+}

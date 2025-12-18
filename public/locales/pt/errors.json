@@ -1,0 +1,12 @@
+{
+  "AUTH_INVALID_CREDENTIALS": "Nome de utilizador ou palavra-passe inválidos",
+  "AUTH_TOKEN_EXPIRED": "A sessão expirou. Por favor inicie sessão novamente",
+  "AUTH_ACCOUNT_DISABLED": "A conta está desativada. Contacte o seu administrador",
+  "AUTH_REQUIRED": "Autenticação necessária",
+  "VALIDATION_UPDATE_FAILED": "Falha ao atualizar o estado de validação",
+  "SUBMISSION_NOT_FOUND": "Submissão não encontrada",
+  "PERMISSION_DENIED": "Não tem permissão para realizar esta ação",
+  "NETWORK_ERROR": "Erro de rede. Verifique a sua ligação",
+  "UNKNOWN_ERROR": "Ocorreu um erro inesperado. Tente novamente",
+  "ADMIN_REQUIRED": "É necessário acesso de administrador"
+}

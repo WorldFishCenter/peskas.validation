@@ -1,0 +1,56 @@
+{
+  "buttons": {
+    "save": "Hifadhi",
+    "cancel": "Ghairi",
+    "delete": "Futa",
+    "edit": "Hariri",
+    "reset": "Weka upya",
+    "update": "Sasisha",
+    "create": "Unda",
+    "close": "Funga",
+    "confirm": "Thibitisha",
+    "submit": "Wasilisha",
+    "tryAgain": "Jaribu tena",
+    "openAgain": "Fungua tena"
+  },
+  "status": {
+    "approved": "Imeidhinishwa",
+    "notApproved": "Haijaidhinishwa",
+    "onHold": "Imesitishwa",
+    "default": "Inasubiri",
+    "not_approved": "Haijaidhinishwa",
+    "on_hold": "Imesitishwa"
+  },
+  "role": {
+    "admin": "Msimamizi",
+    "administrator": "Msimamizi",
+    "manager": "Meneja",
+    "user": "Mtumiaji"
+  },
+  "pagination": {
+    "showing": "Inaonyesha",
+    "to": "hadi",
+    "of": "kati ya",
+    "entries": "rekodi",
+    "previous": "iliyopita",
+    "next": "ijayo",
+    "perPage": "{{count}} / ukurasa"
+  },
+  "quality": {
+    "excellent": "Bora sana",
+    "moderate": "Wastani",
+    "needsAttention": "Inahitaji uangalizi",
+    "qualityScore": "alama ya ubora"
+  },
+  "loading": "Inapakia...",
+  "error": "Hitilafu",
+  "success": "Mafanikio",
+  "noData": "Hakuna data inapatikana",
+  "close": "funga",
+  "all": "Zote",
+  "none": "Hakuna",
+  "unknown": "Haijulikani",
+  "footer": {
+    "copyright": "WorldFish Center © 2025"
+  }
+}

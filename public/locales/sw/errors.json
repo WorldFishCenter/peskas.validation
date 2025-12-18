@@ -1,0 +1,12 @@
+{
+  "AUTH_INVALID_CREDENTIALS": "Jina la mtumiaji au nenosiri si sahihi",
+  "AUTH_TOKEN_EXPIRED": "Muda wa kikao umeisha. Tafadhali ingia tena",
+  "AUTH_ACCOUNT_DISABLED": "Akaunti imezimwa. Wasiliana na msimamizi wako",
+  "AUTH_REQUIRED": "Uthibitisho unahitajika",
+  "VALIDATION_UPDATE_FAILED": "Imeshindwa kusasisha hali ya uthibitishaji",
+  "SUBMISSION_NOT_FOUND": "Uwasilishaji haujapatikana",
+  "PERMISSION_DENIED": "Huna ruhusa kufanya kitendo hiki",
+  "NETWORK_ERROR": "Hitilafu ya mtandao. Tafadhali angalia muunganisho wako",
+  "UNKNOWN_ERROR": "Hitilafu isiyotarajiwa imetokea. Tafadhali jaribu tena",
+  "ADMIN_REQUIRED": "Upatikanaji wa msimamizi unahitajika"
+}

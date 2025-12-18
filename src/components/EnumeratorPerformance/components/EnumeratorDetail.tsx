@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { EnumeratorData, DetailTabType } from '../types';
 import { AlertDistributionChart, EnumeratorTrendChart } from '../charts/EnumeratorDetailCharts';
 
@@ -19,6 +20,8 @@ const EnumeratorDetail: React.FC<EnumeratorDetailProps> = ({
   detailActiveTab,
   setDetailActiveTab
 }) => {
+  const { t } = useTranslation('enumerators');
+
   return (
     <div className="card" id="enumerator-detail">
       <div className="card-body">
@@ -31,17 +34,17 @@ const EnumeratorDetail: React.FC<EnumeratorDetailProps> = ({
                 <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
               </svg>
             </span>
-            <h3 className="card-title m-0">Detailed Analysis: {selectedEnumeratorData.name}</h3>
+            <h3 className="card-title m-0">{t('detailedAnalysis')}{selectedEnumeratorData.name}</h3>
           </div>
           <div style={{ width: '200px' }}>
-            <select 
-              className="form-select" 
-              value={selectedEnumerator || ''} 
+            <select
+              className="form-select"
+              value={selectedEnumerator || ''}
               onChange={(e) => setSelectedEnumerator(e.target.value)}
             >
-              <option value="" disabled>Select Enumerator</option>
+              <option value="" disabled>{t('selectEnumerator')}</option>
               {enumerators
-                .filter(e => e.name !== 'Unknown')
+                .filter(e => e.name !== t('table.unknownEnumerator', { ns: 'validation' }))
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map(enumerator => (
                   <option key={enumerator.name} value={enumerator.name}>
@@ -56,30 +59,30 @@ const EnumeratorDetail: React.FC<EnumeratorDetailProps> = ({
         <div className="card-tabs">
           <ul className="nav nav-tabs nav-tabs-bottom">
             <li className="nav-item">
-              <a 
-                className={`nav-link ${detailActiveTab === 'overview' ? 'active' : ''}`} 
+              <a
+                className={`nav-link ${detailActiveTab === 'overview' ? 'active' : ''}`}
                 href="#"
                 onClick={(e) => { e.preventDefault(); setDetailActiveTab('overview'); }}
               >
-                Overview
+                {t('overviewTab')}
               </a>
             </li>
             <li className="nav-item">
-              <a 
-                className={`nav-link ${detailActiveTab === 'trends' ? 'active' : ''}`} 
+              <a
+                className={`nav-link ${detailActiveTab === 'trends' ? 'active' : ''}`}
                 href="#"
                 onClick={(e) => { e.preventDefault(); setDetailActiveTab('trends'); }}
               >
-                Submission Trend
+                {t('submissionTrendTab')}
               </a>
             </li>
             <li className="nav-item">
-              <a 
-                className={`nav-link ${detailActiveTab === 'alerts' ? 'active' : ''}`} 
+              <a
+                className={`nav-link ${detailActiveTab === 'alerts' ? 'active' : ''}`}
                 href="#"
                 onClick={(e) => { e.preventDefault(); setDetailActiveTab('alerts'); }}
               >
-                Alert Distribution
+                {t('alertDistributionTab')}
               </a>
             </li>
           </ul>
@@ -94,17 +97,17 @@ const EnumeratorDetail: React.FC<EnumeratorDetailProps> = ({
                   <div className="card-body p-4">
                     <div className="d-flex justify-content-between">
                       <div>
-                        <div className="subheader">TOTAL SUBMISSIONS</div>
+                        <div className="subheader">{t('totalSubmissionsLabel')}</div>
                         <div className="h1 mt-2">{selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions}</div>
                       </div>
                       <div>
                         <span className="badge bg-primary text-white p-2">
-                          Selected Date Range
+                          {t('selectedDateRange')}
                         </span>
                       </div>
                     </div>
                     <div className="d-flex mt-3">
-                      <div>Submission Rate</div>
+                      <div>{t('submissionRate')}</div>
                       <div className="ms-auto text-green">
                         {Math.round((selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions) / (enumerators.reduce((sum, e) => sum + (e.filteredTotal || e.totalSubmissions), 0) / enumerators.length) * 100)}%
                         <svg xmlns="http://www.w3.org/2000/svg" className="icon ms-1" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -123,22 +126,22 @@ const EnumeratorDetail: React.FC<EnumeratorDetailProps> = ({
                   <div className="card-body p-4">
                     <div className="d-flex justify-content-between">
                       <div>
-                        <div className="subheader">QUALITY SCORE</div>
+                        <div className="subheader">{t('qualityScoreLabel')}</div>
                         <div className="h1 mt-2">{(100 - (selectedEnumeratorData.filteredErrorRate !== undefined ? selectedEnumeratorData.filteredErrorRate : selectedEnumeratorData.errorRate)).toFixed(1)}%</div>
                       </div>
                       <div>
                         <span className="badge bg-success text-white p-2">
-                          Performance
+                          {t('performance')}
                         </span>
                       </div>
                     </div>
                     <div className="d-flex mt-3">
-                      <div>Clean Submissions</div>
+                      <div>{t('cleanSubmissions')}</div>
                       <div className="ms-auto text-green">
-                        {(selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions) - 
+                        {(selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions) -
                          (selectedEnumeratorData.filteredAlertsCount || selectedEnumeratorData.submissionsWithAlerts)}
                         <span className="text-muted ms-2">
-                          of {selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions}
+                          {t('pagination.of', { ns: 'common' })} {selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions}
                         </span>
                       </div>
                     </div>
@@ -151,17 +154,17 @@ const EnumeratorDetail: React.FC<EnumeratorDetailProps> = ({
           {/* Trends Tab */}
           <div className={`tab-pane ${detailActiveTab === 'trends' ? 'active show' : ''}`}>
             <h4 className="mb-3">
-              Submission Trend for {selectedEnumeratorData.name} (Selected Date Range)
+              {t('submissionTrendFor')}{selectedEnumeratorData.name}{t('selectedDateRangeSuffix')}
             </h4>
-            <EnumeratorTrendChart 
+            <EnumeratorTrendChart
               selectedEnumeratorData={selectedEnumeratorData}
             />
           </div>
-          
+
           {/* Alerts Tab */}
           <div className={`tab-pane ${detailActiveTab === 'alerts' ? 'active show' : ''}`}>
-            <h4 className="mb-3">Alert Types for {selectedEnumeratorData.name}</h4>
-            <AlertDistributionChart 
+            <h4 className="mb-3">{t('alertTypesFor')}{selectedEnumeratorData.name}</h4>
+            <AlertDistributionChart
               selectedEnumeratorData={selectedEnumeratorData}
             />
           </div>

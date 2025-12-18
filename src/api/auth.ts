@@ -11,6 +11,7 @@ interface LoginResponse {
     role: string;
     name?: string;
     country?: string[];
+    language?: string;
   };
   expiresIn?: string;
   error?: string;

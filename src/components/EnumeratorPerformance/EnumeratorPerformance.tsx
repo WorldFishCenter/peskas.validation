@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFetchEnumeratorStats } from '../../api/api';
 import { ChartTabType, DetailTabType, EnumeratorData } from './types';
 import { processEnumeratorData, findBestEnumerator } from './utils/dataUtils';
@@ -24,6 +25,7 @@ declare module 'highcharts' {
 }
 
 const EnumeratorPerformance: React.FC = () => {
+  const { t } = useTranslation('enumerators');
   const { data: rawData = [], isLoading, error, refetch } = useFetchEnumeratorStats();
   const [enumerators, setEnumerators] = useState<EnumeratorData[]>([]);
   const [processedData, setProcessedData] = useState<EnumeratorData[]>([]);
@@ -175,7 +177,7 @@ const EnumeratorPerformance: React.FC = () => {
   // Handle admin refresh
   const handleAdminRefresh = async () => {
     if (!adminToken) {
-      const token = prompt('Enter admin token to refresh data:');
+      const token = prompt(t('adminTokenPrompt'));
       if (!token) return;
       setAdminToken(token);
       localStorage.setItem('admin_token', token);
@@ -184,7 +186,7 @@ const EnumeratorPerformance: React.FC = () => {
 
     setIsRefreshing(true);
     setRefreshMessage(null);
-    
+
     try {
       const result = await refreshEnumeratorStats(adminToken);
       if (result.success) {
@@ -198,7 +200,7 @@ const EnumeratorPerformance: React.FC = () => {
         }
       }
     } catch (error) {
-      setRefreshMessage('Failed to refresh data. Please try again.');
+      setRefreshMessage(t('refreshError'));
     } finally {
       setIsRefreshing(false);
     }
@@ -212,7 +214,7 @@ const EnumeratorPerformance: React.FC = () => {
       <div className="page-body">
         <div className="container-xl">
           <div className="d-flex justify-content-center py-5">
-            <div className="spinner-border text-blue"></div>
+            <div className="spinner-border text-primary"></div>
           </div>
         </div>
       </div>
@@ -238,7 +240,7 @@ const EnumeratorPerformance: React.FC = () => {
             </div>
             <div className="mt-3">
               <button className="btn btn-outline-primary" onClick={refetch}>
-                Try Again
+                {t('buttons.tryAgain', { ns: 'common' })}
               </button>
             </div>
           </div>
@@ -262,7 +264,7 @@ const EnumeratorPerformance: React.FC = () => {
                   <path d="M11 12h1v4h1"></path>
                 </svg>
               </div>
-              <div className="ms-2">No enumerator performance data available.</div>
+              <div className="ms-2">{t('noData')}</div>
             </div>
           </div>
         </div>

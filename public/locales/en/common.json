@@ -1,0 +1,56 @@
+{
+  "buttons": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "reset": "Reset",
+    "update": "Update",
+    "create": "Create",
+    "close": "Close",
+    "confirm": "Confirm",
+    "submit": "Submit",
+    "tryAgain": "Try Again",
+    "openAgain": "Open Again"
+  },
+  "status": {
+    "approved": "Approved",
+    "notApproved": "Not Approved",
+    "onHold": "On Hold",
+    "default": "Pending",
+    "not_approved": "Not Approved",
+    "on_hold": "On Hold"
+  },
+  "role": {
+    "admin": "Admin",
+    "administrator": "Administrator",
+    "manager": "Manager",
+    "user": "User"
+  },
+  "pagination": {
+    "showing": "Showing",
+    "to": "to",
+    "of": "of",
+    "entries": "entries",
+    "previous": "prev",
+    "next": "next",
+    "perPage": "{{count}} / page"
+  },
+  "quality": {
+    "excellent": "Excellent",
+    "moderate": "Moderate",
+    "needsAttention": "Needs attention",
+    "qualityScore": "quality score"
+  },
+  "loading": "Loading...",
+  "error": "Error",
+  "success": "Success",
+  "noData": "No data available",
+  "close": "close",
+  "all": "All",
+  "none": "None",
+  "unknown": "Unknown",
+  "footer": {
+    "copyright": "WorldFish Center © 2025"
+  }
+}

@@ -1,10 +1,9 @@
-import { IconPrinter, IconClipboardCheck, IconChartBar, IconEye, IconEdit, IconAlertTriangle } from '@tabler/icons-react';
+import { IconClipboardCheck, IconChartBar, IconEye, IconEdit, IconAlertTriangle } from '@tabler/icons-react';
+import { useTranslation } from 'react-i18next';
 import './HowItWorks.css';
 
 const HowItWorks = () => {
-  const handlePrint = () => {
-    window.print();
-  };
+  const { t } = useTranslation('guide');
 
   return (
     <div className="page">
@@ -13,9 +12,9 @@ const HowItWorks = () => {
         <div className="container-xl">
           <div className="row g-2 align-items-center">
             <div className="col">
-              <h2 className="page-title">User Guide</h2>
+              <h2 className="page-title">{t('pageTitle')}</h2>
               <div className="text-muted mt-1">
-                Instructions for monitoring data quality and enumerator performance
+                {t('pageSubtitle')}
               </div>
             </div>
           </div>
@@ -31,19 +30,17 @@ const HowItWorks = () => {
             <div className="col-12">
               <div className="card">
                 <div className="card-body">
-                  <h2 className="card-title mb-3">Overview</h2>
+                  <h2 className="card-title mb-3">{t('overview')}</h2>
                   <p className="text-muted mb-4">
-                    This portal helps you supervise data quality from field enumerators who collect fishery catch data.
-                    Your responsibilities include monitoring enumerator performance, reviewing data submissions for accuracy,
-                    and providing feedback to improve data collection quality.
+                    {t('overviewText')}
                   </p>
                   <div className="row">
                     <div className="col-md-4 mb-3 mb-md-0">
                       <div className="d-flex align-items-start">
                         <IconEye className="icon text-primary me-2 flex-shrink-0" style={{ marginTop: '2px' }} />
                         <div>
-                          <strong>Monitor Performance</strong>
-                          <div className="text-muted small">Track enumerator activity and data quality metrics</div>
+                          <strong>{t('monitorPerformance')}</strong>
+                          <div className="text-muted small">{t('monitorDescription')}</div>
                         </div>
                       </div>
                     </div>
@@ -51,8 +48,8 @@ const HowItWorks = () => {
                       <div className="d-flex align-items-start">
                         <IconAlertTriangle className="icon text-primary me-2 flex-shrink-0" style={{ marginTop: '2px' }} />
                         <div>
-                          <strong>Review Alerts</strong>
-                          <div className="text-muted small">Examine submissions flagged with data quality issues</div>
+                          <strong>{t('reviewAlerts')}</strong>
+                          <div className="text-muted small">{t('reviewDescription')}</div>
                         </div>
                       </div>
                     </div>
@@ -60,8 +57,8 @@ const HowItWorks = () => {
                       <div className="d-flex align-items-start">
                         <IconEdit className="icon text-primary me-2 flex-shrink-0" style={{ marginTop: '2px' }} />
                         <div>
-                          <strong>Validate & Guide</strong>
-                          <div className="text-muted small">Approve data and provide feedback for improvement</div>
+                          <strong>{t('validateGuide')}</strong>
+                          <div className="text-muted small">{t('validateDescription')}</div>
                         </div>
                       </div>
                     </div>
@@ -74,7 +71,7 @@ const HowItWorks = () => {
           {/* Two Main Pages Section */}
           <div className="row mb-4">
             <div className="col-12">
-              <h2 className="mb-3">Main Features</h2>
+              <h2 className="mb-3">{t('mainFeatures')}</h2>
             </div>
           </div>
 
@@ -85,16 +82,16 @@ const HowItWorks = () => {
                 <div className="card-body">
                   <div className="d-flex align-items-center mb-3">
                     <IconClipboardCheck className="icon text-primary me-2" />
-                    <h3 className="card-title mb-0">Validation Table</h3>
+                    <h3 className="card-title mb-0">{t('validationTable')}</h3>
                   </div>
                   <p className="text-muted mb-3">
-                    Review individual submissions and update validation status based on data quality.
+                    {t('validationDescription')}
                   </p>
                   <ul className="list-unstyled">
-                    <li className="mb-2 text-muted">• View all submissions from enumerators</li>
-                    <li className="mb-2 text-muted">• Identify submissions with alert flags</li>
-                    <li className="mb-2 text-muted">• Update validation status (Approved/Not Approved)</li>
-                    <li className="mb-2 text-muted">• Filter by enumerator, date, or survey</li>
+                    <li className="mb-2 text-muted">• {t('validationBullet1')}</li>
+                    <li className="mb-2 text-muted">• {t('validationBullet2')}</li>
+                    <li className="mb-2 text-muted">• {t('validationBullet3')}</li>
+                    <li className="mb-2 text-muted">• {t('validationBullet4')}</li>
                   </ul>
                 </div>
               </div>
@@ -106,16 +103,16 @@ const HowItWorks = () => {
                 <div className="card-body">
                   <div className="d-flex align-items-center mb-3">
                     <IconChartBar className="icon text-primary me-2" />
-                    <h3 className="card-title mb-0">Enumerator Performance</h3>
+                    <h3 className="card-title mb-0">{t('enumeratorPerformance')}</h3>
                   </div>
                   <p className="text-muted mb-3">
-                    Monitor performance metrics and identify areas requiring attention or training.
+                    {t('performanceDescription')}
                   </p>
                   <ul className="list-unstyled">
-                    <li className="mb-2 text-muted">• View quality rankings by error rate</li>
-                    <li className="mb-2 text-muted">• Track submission volume over time</li>
-                    <li className="mb-2 text-muted">• Analyze common alert types</li>
-                    <li className="mb-2 text-muted">• Compare performance across enumerators</li>
+                    <li className="mb-2 text-muted">• {t('performanceBullet1')}</li>
+                    <li className="mb-2 text-muted">• {t('performanceBullet2')}</li>
+                    <li className="mb-2 text-muted">• {t('performanceBullet3')}</li>
+                    <li className="mb-2 text-muted">• {t('performanceBullet4')}</li>
                   </ul>
                 </div>
               </div>
@@ -125,8 +122,8 @@ const HowItWorks = () => {
           {/* Step-by-Step Guide Section */}
           <div className="row mb-4">
             <div className="col-12">
-              <h2 className="mb-3">Your Weekly Workflow</h2>
-              <p className="text-muted">Follow these steps to review and validate data submissions</p>
+              <h2 className="mb-3">{t('weeklyWorkflow')}</h2>
+              <p className="text-muted">{t('workflowDescription')}</p>
             </div>
           </div>
 
@@ -141,9 +138,9 @@ const HowItWorks = () => {
                   </div>
                   <div className="col">
                     <div className="text-truncate">
-                      <strong>Open the Validation Table</strong>
+                      <strong>{t('step1Title')}</strong>
                     </div>
-                    <div className="text-muted">Navigate to "Validation" in the top menu to view all submissions</div>
+                    <div className="text-muted">{t('step1Description')}</div>
                   </div>
                 </div>
               </div>
@@ -156,9 +153,9 @@ const HowItWorks = () => {
                   </div>
                   <div className="col">
                     <div className="text-truncate">
-                      <strong>Identify submissions with alerts</strong>
+                      <strong>{t('step2Title')}</strong>
                     </div>
-                    <div className="text-muted">Look for submissions marked with red alert badges indicating potential data issues</div>
+                    <div className="text-muted">{t('step2Description')}</div>
                   </div>
                 </div>
               </div>
@@ -171,9 +168,9 @@ const HowItWorks = () => {
                   </div>
                   <div className="col">
                     <div className="text-truncate">
-                      <strong>Review submission details</strong>
+                      <strong>{t('step3Title')}</strong>
                     </div>
-                    <div className="text-muted">Click on a submission to examine the data and verify accuracy</div>
+                    <div className="text-muted">{t('step3Description')}</div>
                   </div>
                 </div>
               </div>
@@ -186,9 +183,9 @@ const HowItWorks = () => {
                   </div>
                   <div className="col">
                     <div className="text-truncate">
-                      <strong>Update validation status</strong>
+                      <strong>{t('step4Title')}</strong>
                     </div>
-                    <div className="text-muted">Set status as Approved or Not Approved based on your review</div>
+                    <div className="text-muted">{t('step4Description')}</div>
                   </div>
                 </div>
               </div>
@@ -201,9 +198,9 @@ const HowItWorks = () => {
                   </div>
                   <div className="col">
                     <div className="text-truncate">
-                      <strong>Provide feedback to enumerators</strong>
+                      <strong>{t('step5Title')}</strong>
                     </div>
-                    <div className="text-muted">Communicate findings and improvement areas using the Enumerator Performance page</div>
+                    <div className="text-muted">{t('step5Description')}</div>
                   </div>
                 </div>
               </div>
@@ -214,7 +211,7 @@ const HowItWorks = () => {
           {/* Understanding Key Concepts */}
           <div className="row mb-4">
             <div className="col-12">
-              <h2 className="mb-3">Key Concepts</h2>
+              <h2 className="mb-3">{t('keyConcepts')}</h2>
             </div>
           </div>
 
@@ -223,22 +220,22 @@ const HowItWorks = () => {
             <div className="col-md-6">
               <div className="card h-100">
                 <div className="card-body">
-                  <h3 className="mb-3">Alert Flags</h3>
+                  <h3 className="mb-3">{t('alertFlags')}</h3>
                   <p className="text-muted mb-3">
-                    Automatic indicators that highlight potential data quality issues requiring review.
+                    {t('alertFlagsDescription')}
                   </p>
                   <div className="mb-3">
                     <div className="d-flex align-items-center mb-2">
-                      <span className="badge bg-red text-white me-2">Code</span>
-                      <span className="text-muted">Indicates specific data quality concern</span>
+                      <span className="badge bg-red text-white me-2">{t('codeLabel')}</span>
+                      <span className="text-muted">{t('codeDescription')}</span>
                     </div>
                     <div className="d-flex align-items-center">
-                      <span className="badge bg-green text-white me-2">NA</span>
-                      <span className="text-muted">No alerts detected</span>
+                      <span className="badge bg-green text-white me-2">{t('naLabel')}</span>
+                      <span className="text-muted">{t('naDescription')}</span>
                     </div>
                   </div>
                   <p className="text-muted small mb-0">
-                    <strong>Note:</strong> Alert flags are automated warnings. Final validation decisions are made by you.
+                    <strong>Note:</strong> {t('alertFlagsNote')}
                   </p>
                 </div>
               </div>
@@ -248,22 +245,22 @@ const HowItWorks = () => {
             <div className="col-md-6">
               <div className="card h-100">
                 <div className="card-body">
-                  <h3 className="mb-3">Validation Status</h3>
+                  <h3 className="mb-3">{t('validationStatus')}</h3>
                   <p className="text-muted mb-3">
-                    Your decision on the accuracy and acceptability of submitted data.
+                    {t('validationStatusDescription')}
                   </p>
                   <div className="mb-3">
                     <div className="d-flex align-items-center mb-2">
                       <span className="status status-success me-2"></span>
-                      <span><strong>Approved:</strong> <span className="text-muted">Data verified as accurate</span></span>
+                      <span><strong>{t('approvedStatus')}</strong> <span className="text-muted">{t('approvedDescription')}</span></span>
                     </div>
                     <div className="d-flex align-items-center">
                       <span className="status status-danger me-2"></span>
-                      <span><strong>Not Approved:</strong> <span className="text-muted">Data contains errors</span></span>
+                      <span><strong>{t('notApprovedStatus')}</strong> <span className="text-muted">{t('notApprovedDescription')}</span></span>
                     </div>
                   </div>
                   <p className="text-muted small mb-0">
-                    <strong>Note:</strong> Review data thoroughly before updating validation status.
+                    <strong>Note:</strong> {t('validationStatusNote')}
                   </p>
                 </div>
               </div>
@@ -275,9 +272,9 @@ const HowItWorks = () => {
             <div className="col-12">
               <div className="card bg-blue-lt">
                 <div className="card-body">
-                  <h3 className="mb-2">Need Assistance?</h3>
+                  <h3 className="mb-2">{t('needAssistance')}</h3>
                   <p className="text-muted mb-0">
-                    Contact your system administrator for technical support or questions about using this portal.
+                    {t('assistanceText')}
                   </p>
                 </div>
               </div>

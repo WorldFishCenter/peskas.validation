@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { login as apiLogin } from '../../api/auth';
 
 interface User {
@@ -6,6 +7,7 @@ interface User {
   role: 'admin' | 'user';
   name?: string;
   country?: string[];
+  language?: string;
 }
 
 interface AuthContextType {
@@ -27,6 +29,7 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { i18n } = useTranslation();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -69,11 +72,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           username: result.user.username,
           role: result.user.role as 'admin' | 'user',
           name: result.user.name,
-          country: result.user.country
+          country: result.user.country,
+          language: result.user.language || 'en'
         };
         setUser(userData);
         setIsAuthenticated(true);
         localStorage.setItem('user', JSON.stringify(userData));
+
+        // Sync language preference with i18n
+        if (userData.language && userData.language !== i18n.language) {
+          await i18n.changeLanguage(userData.language);
+          localStorage.setItem('i18n_language', userData.language);
+        }
 
         return { success: true };
       }
