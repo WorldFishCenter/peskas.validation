@@ -1,17 +1,17 @@
 {
   "buttons": {
-    "save": "Guardar",
-    "cancel": "Cancelar",
-    "delete": "Eliminar",
-    "edit": "Editar",
-    "reset": "Repor",
-    "update": "Atualizar",
-    "create": "Criar",
-    "close": "Fechar",
-    "confirm": "Confirmar",
-    "submit": "Submeter",
-    "tryAgain": "Tentar novamente",
-    "openAgain": "Abrir novamente"
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "reset": "Reset",
+    "update": "Update",
+    "create": "Create",
+    "close": "Close",
+    "confirm": "Confirm",
+    "submit": "Submit",
+    "tryAgain": "Try Again",
+    "openAgain": "Open Again"
   },
   "status": {
     "approved": "Aprovado",

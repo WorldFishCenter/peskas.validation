@@ -66,16 +66,81 @@
     "close": "Funga"
   },
   "noResults": "Hakuna uwasilishaji ulioonekana",
-  "alertCodes": {
-    "1": "Uwasilishaji wa nyara umeripotiwa, lakini aina (taxon) haijabainishwa",
-    "2": "Aina (taxon) imetajwa, lakini hakuna taarifa imewekwa",
-    "3": "Nyara kadhaa zimeripotiwa bila kutenganisha aina ipasavyo",
-    "4": "Taarifa za tarehe/muda si sahihi au hazilingani",
-    "5": "Data ya eneo inayohitajika haipo",
-    "6": "Uzito au kiasi cha nyara kiko nje ya kiwango kinachotarajiwa",
-    "7": "Uwasilishaji wa marudio umebainika",
-    "8": "Ushahidi wa picha haupo au hauko wazi",
-    "9": "Aina ya zana si sawia na nyara iliyoripotiwa",
-    "10": "Tatizo lingine la ubora wa data"
+  "surveys": {
+    "akwPVCiz5f8KxQ8hTpgEUY": {
+      "1": "Uwasilishaji wa nyara umeripotiwa, lakini aina (taxon) haijabainishwa",
+      "2": "Aina (taxon) imetajwa, lakini hakuna taarifa kuhusu idadi ya samaki, ukubwa, au uzito wao",
+      "3": "Urefu ni mdogo kuliko kiwango cha chini cha urefu kwa aina iliyochaguliwa ya nyara",
+      "4": "Urefu unazidi kiwango cha juu cha urefu kwa aina iliyochaguliwa ya nyara",
+      "5": "Uzito wa ndoo unazidi kiwango cha juu (50kg)",
+      "6": "Idadi ya ndoo inazidi kiwango cha juu (300)",
+      "7": "Idadi ya viumbe inazidi kiwango cha juu (100)",
+      "8": "Bei kwa kilo inazidi kizingiti",
+      "9": "Uvuvi kwa jitihada (CPUE) unazidi kiwango cha juu (30kg kwa saa kwa mvuvi)",
+      "10": "Mapato kwa jitihada (RPUE) yanazidi kizingiti"
+    },
+    "aNKjDfXDKyW3JLtaCdxDp5": {
+      "1": "Nguvu ya farasi ni ≤ 0 au inazidi kiwango cha juu (hp max = 150)",
+      "2": "Idadi ya wavuvi ni ≤ 0 au inazidi kiwango cha juu (wavuvi max = 100)",
+      "3": "Muda wa safari ni ≤ 0 au unazidi kiwango cha juu (muda max = saa 96)",
+      "4_1": "Matokeo ya nyara ni 'ndiyo' lakini jumla ya bei ya nyara ni ≤ 0 KSH",
+      "4_2": "Matokeo ya nyara ni 'hapana' lakini jumla ya bei ya nyara ni ≥ 0 KSH",
+      "4_3": "Jumla ya bei ya nyara inazidi mapato ya juu (mapato max = 387,600 KSH)",
+      "5_1": "Uzito wa sampuli jumla unazidi uzito wa nyara jumla",
+      "5_2": "Uzito wa sampuli moja unazidi uzito wa sampuli jumla au unazidi uzito wa nyara jumla",
+      "6_1": "CPUE inazidi kiwango cha juu (cpue max = 20 kg / mvuvi / saa)",
+      "6_2": "RPUE inazidi kiwango cha juu (rpue max = 3,876 KSH / mvuvi / saa)",
+      "6_3": "Bei kwa kilo inazidi kiwango cha juu (bei max kg = 3,876 KSH / kg)"
+    },
+    "apobg7g9x9c5ZqHbcn69T3": {
+      "1": "Uwasilishaji wa nyara umeripotiwa, lakini aina (taxon) haijabainishwa",
+      "2": "Aina (taxon) imetajwa, lakini hakuna taarifa kuhusu idadi ya samaki, ukubwa, au uzito wao",
+      "3": "Urefu ni mdogo kuliko kiwango cha chini cha urefu kwa aina iliyochaguliwa ya nyara",
+      "4": "Urefu unazidi kiwango cha juu cha urefu kwa aina iliyochaguliwa ya nyara",
+      "5": "Uzito wa ndoo unazidi kiwango cha juu (50kg)",
+      "6": "Idadi ya ndoo inazidi kiwango cha juu (300)",
+      "7": "Idadi ya viumbe inazidi kiwango cha juu (100)",
+      "8": "Bei kwa kilo inazidi kizingiti",
+      "9": "Uvuvi kwa jitihada (CPUE) unazidi kiwango cha juu (30kg kwa saa kwa mvuvi)",
+      "10": "Mapato kwa jitihada (RPUE) yanazidi kizingiti",
+      "11": "Jumla ya wavuvi imeripotiwa kuwa 0 ilhali nyara ni zaidi ya 0"
+    },
+    "ajEruvrFJCzmi4cmWs9PAc": {
+      "1": "Uwasilishaji wa nyara umeripotiwa, lakini aina (taxon) haijabainishwa",
+      "2": "Aina (taxon) imetajwa, lakini hakuna taarifa kuhusu idadi ya samaki, ukubwa, au uzito wao",
+      "3": "Urefu ni mdogo kuliko kiwango cha chini cha urefu kwa aina iliyochaguliwa ya nyara",
+      "4": "Urefu unazidi kiwango cha juu cha urefu kwa aina iliyochaguliwa ya nyara",
+      "5": "Uzito wa ndoo unazidi kiwango cha juu (50kg)",
+      "6": "Idadi ya ndoo inazidi kiwango cha juu (300)",
+      "7": "Idadi ya viumbe inazidi kiwango cha juu (100)",
+      "8": "Bei kwa kilo inazidi kizingiti",
+      "9": "Uvuvi kwa jitihada (CPUE) unazidi kiwango cha juu (30kg kwa saa kwa mvuvi)",
+      "10": "Mapato kwa jitihada (RPUE) yanazidi kizingiti"
+    },
+    "acbfEuAzqAnCGm8Mqenr56": {
+      "1": "Uwasilishaji wa nyara umeripotiwa, lakini aina (taxon) haijabainishwa",
+      "2": "Aina (taxon) imetajwa, lakini hakuna taarifa kuhusu idadi ya samaki, ukubwa, au uzito wao",
+      "3": "Urefu ni mdogo kuliko kiwango cha chini cha urefu kwa aina iliyochaguliwa ya nyara",
+      "4": "Urefu unazidi kiwango cha juu cha urefu kwa aina iliyochaguliwa ya nyara",
+      "5": "Uzito wa ndoo unazidi kiwango cha juu (50kg)",
+      "6": "Idadi ya ndoo inazidi kiwango cha juu (300)",
+      "7": "Idadi ya viumbe inazidi kiwango cha juu (100)",
+      "8": "Bei kwa kilo inazidi kizingiti",
+      "9": "Uvuvi kwa jitihada (CPUE) unazidi kiwango cha juu (30kg kwa saa kwa mvuvi)",
+      "10": "Mapato kwa jitihada (RPUE) yanazidi kizingiti"
+    },
+    "aCvp5SjbUG3SFTuT2GSZ9V": {
+      "1": "Uwasilishaji wa nyara umeripotiwa, lakini aina (taxon) haijabainishwa",
+      "2": "Aina (taxon) imetajwa, lakini hakuna taarifa kuhusu idadi ya samaki, ukubwa, au uzito wao",
+      "3": "Urefu ni mdogo kuliko kiwango cha chini cha urefu kwa aina iliyochaguliwa ya nyara",
+      "4": "Urefu unazidi kiwango cha juu cha urefu kwa aina iliyochaguliwa ya nyara",
+      "5": "Uzito wa ndoo unazidi kiwango cha juu (50kg)",
+      "6": "Idadi ya ndoo inazidi kiwango cha juu (300)",
+      "7": "Idadi ya viumbe inazidi kiwango cha juu (100)",
+      "8": "Bei kwa kilo inazidi kizingiti",
+      "9": "Uvuvi kwa jitihada (CPUE) unazidi kiwango cha juu (30kg kwa saa kwa mvuvi)",
+      "10": "Mapato kwa jitihada (RPUE) yanazidi kizingiti"
+    },
+    "aJsanKkQRwjWf8u6h3xmso": {}
   }
 }

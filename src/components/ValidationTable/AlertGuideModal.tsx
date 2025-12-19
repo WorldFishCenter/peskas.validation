@@ -121,18 +121,35 @@ const AlertGuideModal: React.FC<AlertGuideModalProps> = ({ onClose, surveyAlertC
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.entries(currentSurvey.alertCodes).map(([code, description]) => (
-                    <tr key={code}>
-                      <td>
-                        <span className="badge bg-red-lt text-red fs-5">
-                          {code}
-                        </span>
-                      </td>
-                      <td className="text-wrap">
-                        {description}
-                      </td>
-                    </tr>
-                  ))}
+                  {Object.entries(currentSurvey.alertCodes).map(([code, description]) => {
+                    // Try survey-specific translation first, then generic, then database value
+                    // Priority: surveys.{assetId}.{code} > alertCodes.{code} > database value
+                    const surveySpecificKey = `surveys.${currentSurvey.assetId}.${code}`;
+                    const genericKey = `alertCodes.${code}`;
+
+                    // Check if survey-specific translation exists
+                    const surveySpecific = t(surveySpecificKey);
+                    const isSurveySpecificFound = surveySpecific !== surveySpecificKey;
+
+                    // If survey-specific not found, try generic
+                    const generic = !isSurveySpecificFound ? t(genericKey) : null;
+                    const isGenericFound = generic && generic !== genericKey;
+
+                    const translatedDescription = isSurveySpecificFound ? surveySpecific : (isGenericFound ? generic : description);
+
+                    return (
+                      <tr key={code}>
+                        <td>
+                          <span className="badge bg-red-lt text-red fs-5">
+                            {code}
+                          </span>
+                        </td>
+                        <td className="text-wrap">
+                          {translatedDescription}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
