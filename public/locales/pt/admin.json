@@ -100,6 +100,9 @@
     "createUser": "Criar Novo Utilizador",
     "editUser": "Editar Utilizador: ",
     "resetPasswordFor": "Repor Palavra-passe de ",
-    "resetPasswordWarning": "Aviso: Isto vai repor imediatamente a palavra-passe de {{username}}. Certifique-se de comunicar a nova palavra-passe ao utilizador de forma segura."
+    "resetPasswordWarning": "Aviso: Isto vai repor imediatamente a palavra-passe de {{username}}. Certifique-se de comunicar a nova palavra-passe ao utilizador de forma segura.",
+    "surveyPermissionsTitle": "Permissões de Inquéritos:",
+    "surveyPermissionsAdminNote": "Os administradores têm acesso a todos os inquéritos.",
+    "surveyPermissionsUserNote": "Utilizadores comuns recebem inquéritos atribuídos no Airtable."
   }
 }

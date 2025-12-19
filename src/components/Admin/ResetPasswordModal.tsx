@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import { User } from '../../api/admin';
 import { getApiBaseUrl } from '../../utils/apiConfig';
@@ -10,6 +11,7 @@ interface ResetPasswordModalProps {
 }
 
 const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ user, onClose, onSuccess }) => {
+  const { t } = useTranslation('admin');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,12 +23,12 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ user, onClose, 
 
     // Validation
     if (!newPassword.trim() || newPassword.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError(t('form.passwordMinLength'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('form.passwordsNoMatch'));
       return;
     }
 
@@ -37,7 +39,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ user, onClose, 
       const token = localStorage.getItem('authToken');
 
       if (!token) {
-        setError('Authentication token not found. Please log in again.');
+        setError(t('messages.tokenNotFound'));
         setIsSubmitting(false);
         return;
       }
@@ -53,13 +55,13 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ user, onClose, 
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to reset password' }));
+        const errorData = await response.json().catch(() => ({ message: t('form.resetPasswordFailed') }));
         if (response.status === 401) {
-          setError('Authentication failed. Please log in again.');
+          setError(t('form.authFailed'));
         } else if (response.status === 403) {
-          setError('You do not have permission to reset passwords.');
+          setError(t('form.permissionDenied'));
         } else {
-          setError(errorData.message || errorData.error || 'Failed to reset password');
+          setError(errorData.message || errorData.error || t('form.resetPasswordFailed'));
         }
         return;
       }
@@ -67,15 +69,15 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ user, onClose, 
       const result = await response.json();
 
       if (result.success) {
-        alert(`Password reset successfully for ${user.username}`);
+        alert(`${t('form.passwordResetSuccess')}${user.username}`);
         onSuccess();
         onClose();
       } else {
-        setError(result.message || 'Failed to reset password');
+        setError(result.message || t('form.resetPasswordFailed'));
       }
     } catch (err) {
       console.error('Reset password error:', err);
-      setError('An unexpected error occurred. Please try again.');
+      setError(t('form.unexpectedError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -91,7 +93,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ user, onClose, 
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title">Reset Password for {user.username}</h5>
+              <h5 className="modal-title">{t('modal.resetPasswordFor')}{user.username}</h5>
               <button type="button" className="btn-close" onClick={onClose}></button>
             </div>
             <form onSubmit={handleSubmit}>
@@ -106,28 +108,28 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ user, onClose, 
                 )}
 
                 <div className="mb-3">
-                  <label className="form-label required">New Password</label>
+                  <label className="form-label required">{t('form.newPassword')}</label>
                   <input
                     type="password"
                     className="form-control"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     disabled={isSubmitting}
-                    placeholder="Enter new password"
+                    placeholder={t('form.newPasswordPlaceholder')}
                     required
                   />
-                  <small className="form-hint">Minimum 8 characters</small>
+                  <small className="form-hint">{t('form.minCharacters')}</small>
                 </div>
 
                 <div className="mb-3">
-                  <label className="form-label required">Confirm Password</label>
+                  <label className="form-label required">{t('form.confirmPassword')}</label>
                   <input
                     type="password"
                     className="form-control"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     disabled={isSubmitting}
-                    placeholder="Confirm new password"
+                    placeholder={t('form.confirmPasswordPlaceholder')}
                     required
                   />
                 </div>
@@ -135,8 +137,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ user, onClose, 
                 <div className="alert alert-warning">
                   <IconAlertTriangle className="icon alert-icon" size={24} stroke={2} />
                   <div>
-                    <strong>Warning:</strong> This will immediately reset the password for {user.username}.
-                    Make sure to communicate the new password securely to the user.
+                    {t('modal.resetPasswordWarning', { username: user.username })}
                   </div>
                 </div>
               </div>
@@ -148,7 +149,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ user, onClose, 
                   onClick={onClose}
                   disabled={isSubmitting}
                 >
-                  Cancel
+                  {t('form.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -158,10 +159,10 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ user, onClose, 
                   {isSubmitting ? (
                     <>
                       <span className="spinner-border spinner-border-sm me-2"></span>
-                      Resetting...
+                      {t('form.resetting')}
                     </>
                   ) : (
-                    'Reset Password'
+                    t('form.resetPassword')
                   )}
                 </button>
               </div>

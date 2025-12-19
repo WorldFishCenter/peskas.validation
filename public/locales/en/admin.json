@@ -100,6 +100,9 @@
     "createUser": "Create New User",
     "editUser": "Edit User: ",
     "resetPasswordFor": "Reset Password for ",
-    "resetPasswordWarning": "Warning: This will immediately reset the password for {{username}}. Make sure to communicate the new password securely to the user."
+    "resetPasswordWarning": "Warning: This will immediately reset the password for {{username}}. Make sure to communicate the new password securely to the user.",
+    "surveyPermissionsTitle": "Survey Permissions:",
+    "surveyPermissionsAdminNote": "Administrators have access to all surveys.",
+    "surveyPermissionsUserNote": "Regular users are assigned surveys in Airtable."
   }
 }

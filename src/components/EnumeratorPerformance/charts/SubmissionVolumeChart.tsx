@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { EnumeratorData } from '../types';
@@ -19,6 +20,8 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = ({
   enumerators,
   onEnumeratorSelect
 }) => {
+  const { t } = useTranslation('enumerators');
+
   // Filter out enumerators with no submissions in the selected timeframe
   const filteredEnumerators = enumerators.filter(e => {
     const total = e.filteredTotal !== undefined ? e.filteredTotal : e.totalSubmissions;
@@ -30,7 +33,7 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = ({
     (a, b) => (b.filteredTotal || b.totalSubmissions) - (a.filteredTotal || a.totalSubmissions)
   );
 
-  const chartOptions: Highcharts.Options = {
+  const chartOptions: Highcharts.Options = useMemo(() => ({
     chart: {
       type: 'bar',
       height: Math.max(400, sortedEnumerators.length * 28),
@@ -45,7 +48,7 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = ({
       }
     },
     yAxis: {
-      title: { text: 'Submissions' },
+      title: { text: t('charts.submissions') },
       min: 0
     },
     tooltip: {
@@ -62,10 +65,10 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = ({
 
         return wrapTooltip(
           formatTooltipHeader(name) +
-          formatStatRow('Submissions', this.y || 0) +
-          formatStatRow('Quality Score', qualityScore, '%') +
+          formatStatRow(t('charts.submissions'), this.y || 0) +
+          formatStatRow(t('charts.qualityScore'), qualityScore, '%') +
           `<div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid #eee; font-size: 11px; color: #888;">
-            Click to view details
+            ${t('charts.clickForDetails')}
           </div>`
         );
       }
@@ -97,13 +100,13 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = ({
       }
     },
     series: [{
-      name: 'Submissions',
+      name: t('charts.submissions'),
       type: 'bar',
       data: sortedEnumerators.map(e => e.filteredTotal || e.totalSubmissions)
     }],
     legend: { enabled: false },
     credits: { enabled: false }
-  };
+  }), [sortedEnumerators, t, onEnumeratorSelect]);
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;
 };

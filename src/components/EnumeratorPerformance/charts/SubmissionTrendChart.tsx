@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { EnumeratorData } from '../types';
@@ -13,6 +14,8 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
   enumerators,
   uniqueDates
 }) => {
+  const { t } = useTranslation('enumerators');
+
   // Filter enumerators with submissions
   const filteredEnumerators = enumerators.filter(e => {
     const total = e.filteredTotal !== undefined ? e.filteredTotal : e.totalSubmissions;
@@ -43,7 +46,7 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
     })
     .slice(0, 10);
 
-  const chartOptions: Highcharts.Options = {
+  const chartOptions: Highcharts.Options = useMemo(() => ({
     chart: {
       type: 'line',
       height: 500,
@@ -52,7 +55,7 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
     },
     title: { text: undefined },
     subtitle: {
-      text: sortedDates.length > 30 ? 'Drag to zoom into a specific period' : undefined,
+      text: sortedDates.length > 30 ? t('charts.dragToZoom') : undefined,
       style: { fontSize: '12px', color: '#888' }
     },
     xAxis: {
@@ -70,7 +73,7 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
       }
     },
     yAxis: {
-      title: { text: 'Submissions' },
+      title: { text: t('charts.submissions') },
       min: 0
     },
     tooltip: {
@@ -89,7 +92,7 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
         if (activePoints.length === 0) {
           return wrapTooltip(
             formatTooltipHeader(String(dateLabel)) +
-            '<span style="color: #888;">No submissions on this date</span>'
+            `<span style="color: #888;">${t('charts.noSubmissionsDate')}</span>`
           );
         }
 
@@ -107,9 +110,10 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
             </div>`;
           });
 
+        const submissionText = total === 1 ? t('charts.submission') : t('charts.submissionPlural');
         content += `<div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #eee; display: flex; justify-content: space-between;">
-          <span style="color: #666;">Total:</span>
-          <span style="font-weight: 600;">${total} submission${total !== 1 ? 's' : ''}</span>
+          <span style="color: #666;">${t('charts.total')}</span>
+          <span style="font-weight: 600;">${total} ${submissionText}</span>
         </div>`;
 
         return wrapTooltip(content);
@@ -150,7 +154,7 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
       };
     }),
     credits: { enabled: false }
-  };
+  }), [sortedDates, formattedDates, tickInterval, topEnumerators, t]);
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;
 };

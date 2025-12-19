@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { EnumeratorData } from '../types';
@@ -18,6 +19,8 @@ interface QualityRankingChartProps {
 const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
   enumerators
 }) => {
+  const { t } = useTranslation('enumerators');
+
   // Filter and sort once
   const sortedEnumerators = enumerators
     .filter(e => {
@@ -30,7 +33,7 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
       return aRate - bRate; // Best quality first
     });
 
-  const chartOptions: Highcharts.Options = {
+  const chartOptions: Highcharts.Options = useMemo(() => ({
     chart: {
       type: 'bar',
       height: Math.max(450, sortedEnumerators.length * 32),
@@ -43,12 +46,12 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
       labels: { style: { fontSize: '12px' } }
     },
     yAxis: [{
-      title: { text: 'Quality Score (%)' },
+      title: { text: t('charts.qualityScore') },
       min: 0,
       max: 100,
       labels: { format: '{value}%' }
     }, {
-      title: { text: 'Submissions' },
+      title: { text: t('charts.submissions') },
       min: 0,
       opposite: true
     }],
@@ -65,7 +68,7 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
         const name = String(categoryName);
         const enumerator = sortedEnumerators.find(e => e.name === name);
 
-        if (!enumerator) return wrapTooltip(formatTooltipHeader(name) + '<span style="color:#888;">No data</span>');
+        if (!enumerator) return wrapTooltip(formatTooltipHeader(name) + `<span style="color:#888;">${t('charts.noData')}</span>`);
 
         const total = enumerator.filteredTotal ?? enumerator.totalSubmissions;
         const alerts = enumerator.filteredAlertsCount ?? enumerator.submissionsWithAlerts;
@@ -74,11 +77,11 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
 
         return wrapTooltip(
           formatTooltipHeader(name) +
-          formatTooltipRow(chartColors.success, 'Quality Score', qualityScore, '%') +
-          formatTooltipRow(chartColors.info, 'Submissions', total) +
+          formatTooltipRow(chartColors.success, t('charts.qualityScore'), qualityScore, '%') +
+          formatTooltipRow(chartColors.info, t('charts.submissions'), total) +
           `<div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid #eee;">` +
-          formatStatRow('Clean submissions', cleanCount) +
-          formatStatRow('With alerts', alerts) +
+          formatStatRow(t('charts.cleanSubmissions'), cleanCount) +
+          formatStatRow(t('charts.withAlerts'), alerts) +
           `</div>`
         );
       }
@@ -94,7 +97,7 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
       }
     },
     series: [{
-      name: 'Quality Score',
+      name: t('charts.qualityScore'),
       type: 'bar',
       data: sortedEnumerators.map(e => {
         const rate = e.filteredErrorRate ?? e.errorRate;
@@ -103,7 +106,7 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
       color: chartColors.success,
       dataLabels: { format: '{y}%' }
     }, {
-      name: 'Submissions',
+      name: t('charts.submissions'),
       type: 'bar',
       data: sortedEnumerators.map(e => e.filteredTotal || e.totalSubmissions),
       color: chartColors.info,
@@ -119,7 +122,7 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
       itemStyle: { fontSize: '12px' }
     },
     credits: { enabled: false }
-  };
+  }), [sortedEnumerators, t]);
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;
 };

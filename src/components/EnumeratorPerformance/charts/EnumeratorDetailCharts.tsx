@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { IconMoodSmile } from '@tabler/icons-react';
@@ -20,6 +21,7 @@ interface AlertDistributionChartProps {
 export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
   selectedEnumeratorData
 }) => {
+  const { t } = useTranslation('enumerators');
   const submissions = selectedEnumeratorData.filteredSubmissions || selectedEnumeratorData.submissions;
   const alertDistribution = submissions.reduce((counts: Record<string, number>, submission) => {
     if (submission.alert_flag && submission.alert_flag !== "NA") {
@@ -41,15 +43,15 @@ export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
         <div className="empty-icon">
           <IconMoodSmile size={36} stroke={1.5} className="text-green" />
         </div>
-        <p className="empty-title h4">No alerts</p>
+        <p className="empty-title h4">{t('charts.noAlertsTitle')}</p>
         <p className="empty-subtitle text-secondary">
-          This enumerator has no flagged submissions in the selected period.
+          {t('charts.noAlertsEnumerator')}
         </p>
       </div>
     );
   }
 
-  const chartOptions: Highcharts.Options = {
+  const chartOptions: Highcharts.Options = useMemo(() => ({
     chart: {
       type: 'pie',
       height: 320,
@@ -57,7 +59,7 @@ export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
     },
     title: { text: undefined },
     subtitle: {
-      text: `${totalAlerts} alert${totalAlerts !== 1 ? 's' : ''} total`,
+      text: totalAlerts === 1 ? t('charts.alertCount', { count: totalAlerts }) : t('charts.alertCountPlural', { count: totalAlerts }),
       style: { fontSize: '12px', color: '#666' }
     },
     tooltip: {
@@ -66,12 +68,13 @@ export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
       formatter: function(this: any) {
         const point = this.point;
         const totalAlerts = this.series.data.reduce((sum: number, p: any) => sum + (p.y || 0), 0);
-        
+        const alertText = totalAlerts === 1 ? t('charts.alertCount', { count: totalAlerts }) : t('charts.alertCountPlural', { count: totalAlerts });
+
         return wrapTooltip(
-          formatTooltipHeader(`Alert Type: ${point.name}`) +
-          formatTooltipRow(point.color, 'Count', point.y, '') +
-          formatStatRow('Percentage', `${point.percentage.toFixed(1)}%`) +
-          formatStatRow('Out of total', `${totalAlerts} alert${totalAlerts !== 1 ? 's' : ''}`)
+          formatTooltipHeader(`${t('charts.alertType')}${point.name}`) +
+          formatTooltipRow(point.color, t('charts.count'), point.y, '') +
+          formatStatRow(t('charts.percentage'), `${point.percentage.toFixed(1)}%`) +
+          formatStatRow(t('charts.outOfTotal'), alertText)
         );
       }
     },
@@ -90,13 +93,13 @@ export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
       }
     },
     series: [{
-      name: 'Alerts',
+      name: t('charts.tabs.alerts'),
       type: 'pie',
       data: alertData
     }],
     legend: { enabled: false },
     credits: { enabled: false }
-  };
+  }), [alertData, totalAlerts, t]);
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;
 };
@@ -108,6 +111,7 @@ interface EnumeratorTrendChartProps {
 export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
   selectedEnumeratorData
 }) => {
+  const { t } = useTranslation('enumerators');
   const trendData = selectedEnumeratorData?.submissionTrend || [];
 
   // Filter dates by selected date range
@@ -136,7 +140,7 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
   const tickInterval = Math.max(1, Math.floor(categories.length / 8));
   const totalSubmissions = data.reduce((sum, val) => sum + val, 0);
 
-  const chartOptions: Highcharts.Options = {
+  const chartOptions: Highcharts.Options = useMemo(() => ({
     chart: {
       type: 'column',
       height: 320,
@@ -145,7 +149,9 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
     },
     title: { text: undefined },
     subtitle: {
-      text: `${totalSubmissions} submission${totalSubmissions !== 1 ? 's' : ''} over ${data.length} day${data.length !== 1 ? 's' : ''}`,
+      text: totalSubmissions === 1 && data.length === 1
+        ? t('charts.submissionsOverDays', { count: totalSubmissions, days: data.length })
+        : t('charts.submissionsOverDaysPlural', { count: totalSubmissions, days: data.length }),
       style: { fontSize: '12px', color: '#666' }
     },
     xAxis: {
@@ -162,7 +168,7 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
       }
     },
     yAxis: {
-      title: { text: 'Submissions' },
+      title: { text: t('charts.submissions') },
       min: 0,
       allowDecimals: false
     },
@@ -180,18 +186,18 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
         const maxValue = Math.max(...allData);
         const avgValue = (allData.reduce((sum: number, v: number) => sum + v, 0) / allData.length).toFixed(1);
         const isPeak = value === maxValue && value > 0;
-        
+
         let content = formatTooltipHeader(String(dateLabel)) +
-          formatTooltipRow(chartColors.primary, 'Submissions', value, '');
-        
+          formatTooltipRow(chartColors.primary, t('charts.submissions'), value, '');
+
         if (isPeak) {
           content += `<div style="margin-top: 6px; padding: 4px 8px; background: rgba(47, 179, 68, 0.1); border-radius: 4px; font-size: 11px; color: ${chartColors.success};">
-            🎯 Peak day
+            ${t('charts.peakDay')}
           </div>`;
         }
-        
+
         content += `<div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #eee; font-size: 11px;">
-          ${formatStatRow('Daily average', avgValue)}
+          ${formatStatRow(t('charts.dailyAverage'), avgValue)}
         </div>`;
         
         return wrapTooltip(content);
@@ -209,13 +215,13 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
       }
     },
     series: [{
-      name: 'Submissions',
+      name: t('charts.submissions'),
       type: 'column',
       data
     }],
     legend: { enabled: false },
     credits: { enabled: false }
-  };
+  }), [categories, data, tickInterval, totalSubmissions, t]);
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;
 }; 

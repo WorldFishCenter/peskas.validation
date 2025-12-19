@@ -100,6 +100,9 @@
     "createUser": "Unda Mtumiaji Mpya",
     "editUser": "Hariri Mtumiaji: ",
     "resetPasswordFor": "Weka Upya Nenosiri kwa ",
-    "resetPasswordWarning": "Onyo: Hii itaweka upya nenosiri la {{username}} mara moja. Hakikisha unawasilisha nenosiri jipya kwa usalama kwa mtumiaji."
+    "resetPasswordWarning": "Onyo: Hii itaweka upya nenosiri la {{username}} mara moja. Hakikisha unawasilisha nenosiri jipya kwa usalama kwa mtumiaji.",
+    "surveyPermissionsTitle": "Ruhusa za Tafiti:",
+    "surveyPermissionsAdminNote": "Wasimamizi wana ufikiaji wa tafiti zote.",
+    "surveyPermissionsUserNote": "Watumiaji wa kawaida wanapangiwa tafiti kwenye Airtable."
   }
 }

@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { IconMoodSmile } from '@tabler/icons-react';
@@ -12,6 +13,8 @@ interface AlertDistributionChartProps {
 const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
   enumerators
 }) => {
+  const { t } = useTranslation('enumerators');
+
   const { alertData, totalAlerts } = useMemo(() => {
     const alertDistribution = enumerators.reduce((counts: Record<string, number>, enumerator) => {
       const submissions = enumerator.filteredSubmissions || enumerator.submissions;
@@ -44,15 +47,15 @@ const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
         <div className="empty-icon">
           <IconMoodSmile size={48} stroke={1.5} className="text-green" />
         </div>
-        <p className="empty-title">No alerts in this period</p>
+        <p className="empty-title">{t('charts.noAlerts')}</p>
         <p className="empty-subtitle text-secondary">
-          All submissions in the selected date range passed validation without issues.
+          {t('charts.noAlertsDescription')}
         </p>
       </div>
     );
   }
 
-  const chartOptions: Highcharts.Options = {
+  const chartOptions: Highcharts.Options = useMemo(() => ({
     chart: {
       type: 'pie',
       height: 480,
@@ -60,7 +63,7 @@ const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
     },
     title: { text: undefined },
     subtitle: {
-      text: `${totalAlerts} total alert${totalAlerts !== 1 ? 's' : ''} detected`,
+      text: totalAlerts === 1 ? t('charts.alertCount', { count: totalAlerts }) : t('charts.alertCountPlural', { count: totalAlerts }),
       style: { fontSize: '13px', color: '#666' }
     },
     tooltip: {
@@ -69,13 +72,13 @@ const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
       formatter: function(this: any) {
         const point = this.point;
         return wrapTooltip(
-          formatTooltipHeader(`Alert: ${point.name}`) +
+          formatTooltipHeader(`${t('charts.alert')}${point.name}`) +
           `<div style="display: flex; justify-content: space-between; margin: 4px 0;">
-            <span style="color: #666;">Count:</span>
+            <span style="color: #666;">${t('charts.count')}</span>
             <span style="font-weight: 600;">${point.y}</span>
           </div>
           <div style="display: flex; justify-content: space-between; margin: 4px 0;">
-            <span style="color: #666;">Share:</span>
+            <span style="color: #666;">${t('charts.share')}</span>
             <span style="font-weight: 600;">${point.percentage.toFixed(1)}%</span>
           </div>`
         );
@@ -115,12 +118,12 @@ const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
       itemStyle: { fontSize: '12px' }
     },
     series: [{
-      name: 'Alerts',
+      name: t('charts.alerts'),
       type: 'pie',
       data: alertData
     }],
     credits: { enabled: false }
-  };
+  }), [alertData, totalAlerts, t]);
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;
 };

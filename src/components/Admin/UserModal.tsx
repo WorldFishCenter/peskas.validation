@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { IconInfoCircle } from '@tabler/icons-react';
 import { createUser, updateUser, CreateUserPayload, User } from '../../api/admin';
 
@@ -10,6 +11,7 @@ interface UserModalProps {
 }
 
 const UserModal: React.FC<UserModalProps> = ({ mode, user, onClose, onSuccess }) => {
+  const { t } = useTranslation('admin');
   const [username, setUsername] = useState('');
   const [name, setName] = useState('');
   const [country, setCountry] = useState<string[]>([]);
@@ -34,12 +36,12 @@ const UserModal: React.FC<UserModalProps> = ({ mode, user, onClose, onSuccess })
 
     // Validation
     if (!username.trim()) {
-      setError('Username is required');
+      setError(t('form.usernameRequired'));
       return;
     }
 
     if (mode === 'create' && !password.trim()) {
-      setError('Password is required');
+      setError(t('form.passwordRequired'));
       return;
     }
 
@@ -78,7 +80,7 @@ const UserModal: React.FC<UserModalProps> = ({ mode, user, onClose, onSuccess })
         }
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError(t('form.unexpectedError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -95,7 +97,7 @@ const UserModal: React.FC<UserModalProps> = ({ mode, user, onClose, onSuccess })
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title">
-                {mode === 'create' ? 'Create New User' : `Edit User: ${user?.username}`}
+                {mode === 'create' ? t('modal.createUser') : `${t('modal.editUser')}${user?.username}`}
               </h5>
               <button type="button" className="btn-close" onClick={onClose}></button>
             </div>
@@ -113,86 +115,86 @@ const UserModal: React.FC<UserModalProps> = ({ mode, user, onClose, onSuccess })
                 <div className="row">
                   <div className="col-lg-6">
                     <div className="mb-3">
-                      <label className="form-label required">Username</label>
+                      <label className="form-label required">{t('form.username')}</label>
                       <input
                         type="text"
                         className="form-control"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         disabled={mode === 'edit' || isSubmitting}
-                        placeholder="Enter username"
+                        placeholder={t('form.usernamePlaceholder')}
                         required
                       />
                       {mode === 'edit' && (
-                        <small className="form-hint">Username cannot be changed</small>
+                        <small className="form-hint">{t('form.usernameCannotChange')}</small>
                       )}
                     </div>
                   </div>
                   <div className="col-lg-6">
                     <div className="mb-3">
-                      <label className="form-label">Full Name</label>
+                      <label className="form-label">{t('form.fullName')}</label>
                       <input
                         type="text"
                         className="form-control"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         disabled={isSubmitting}
-                        placeholder="Enter full name"
+                        placeholder={t('form.fullNamePlaceholder')}
                       />
                     </div>
                   </div>
                 </div>
 
                 <div className="mb-3">
-                  <label className="form-label">Country/Countries</label>
+                  <label className="form-label">{t('form.countryLabel')}</label>
                   <input
                     type="text"
                     className="form-control"
                     value={country.join(', ')}
                     onChange={(e) => setCountry(e.target.value.split(',').map(c => c.trim()).filter(c => c.length > 0))}
                     disabled={isSubmitting}
-                    placeholder="Enter country codes separated by commas (e.g., ZZ, MZ)"
+                    placeholder={t('form.countryPlaceholder')}
                   />
-                  <small className="form-hint">Enter one or more country codes separated by commas</small>
+                  <small className="form-hint">{t('form.countryHint')}</small>
                 </div>
 
                 {mode === 'create' && (
                   <div className="mb-3">
-                    <label className="form-label required">Password</label>
+                    <label className="form-label required">{t('form.password')}</label>
                     <input
                       type="password"
                       className="form-control"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={isSubmitting}
-                      placeholder="Enter password"
+                      placeholder={t('form.passwordPlaceholder')}
                       required
                     />
                   </div>
                 )}
 
                 <div className="mb-3">
-                  <label className="form-label required">Role</label>
+                  <label className="form-label required">{t('form.role')}</label>
                   <select
                     className="form-select"
                     value={role}
                     onChange={(e) => setRole(e.target.value as 'admin' | 'user')}
                     disabled={isSubmitting}
                   >
-                    <option value="user">User</option>
-                    <option value="admin">Administrator</option>
+                    <option value="user">{t('roles.user')}</option>
+                    <option value="admin">{t('roles.admin')}</option>
                   </select>
                   <small className="form-hint">
-                    Administrators have access to all surveys and can manage users
+                    {t('form.adminHint')}
                   </small>
                 </div>
 
                 <div className="alert alert-info">
                   <IconInfoCircle className="icon alert-icon" size={24} stroke={2} />
                   <div>
-                    <strong>Survey Permissions:</strong> Survey assignments are managed through Airtable and synced automatically.
-                    {role === 'admin' && ' Administrators have access to all surveys.'}
-                    {role === 'user' && ' Regular users are assigned surveys in Airtable.'}
+                    <strong>{t('modal.surveyPermissionsTitle')}</strong> {t('form.surveyPermissionsInfo')}
+                    {role === 'admin' && ` ${t('modal.surveyPermissionsAdminNote')}`}
+                    {role === 'user' && ` ${t('modal.surveyPermissionsUserNote')}`}
                   </div>
                 </div>
               </div>
@@ -204,7 +206,7 @@ const UserModal: React.FC<UserModalProps> = ({ mode, user, onClose, onSuccess })
                   onClick={onClose}
                   disabled={isSubmitting}
                 >
-                  Cancel
+                  {t('form.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -214,10 +216,10 @@ const UserModal: React.FC<UserModalProps> = ({ mode, user, onClose, onSuccess })
                   {isSubmitting ? (
                     <>
                       <span className="spinner-border spinner-border-sm me-2"></span>
-                      {mode === 'create' ? 'Creating...' : 'Updating...'}
+                      {mode === 'create' ? t('form.creating') : t('form.updating')}
                     </>
                   ) : (
-                    mode === 'create' ? 'Create User' : 'Update User'
+                    mode === 'create' ? t('form.createUser') : t('form.updateUser')
                   )}
                 </button>
               </div>
