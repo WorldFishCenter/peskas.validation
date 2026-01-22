@@ -60,6 +60,9 @@ console.log('Mounting API endpoints...\n');
 // Authentication endpoints
 mountServerlessFunction('/api/auth/login', path.join(__dirname, '../api/auth/login.js'));
 mountServerlessFunction('/api/auth/me', path.join(__dirname, '../api/auth/me.js'));
+mountServerlessFunction('/api/auth/forgot-password', path.join(__dirname, '../api/auth/forgot-password.js'));
+mountServerlessFunction('/api/auth/validate-reset-token', path.join(__dirname, '../api/auth/validate-reset-token.js'));
+mountServerlessFunction('/api/auth/reset-password', path.join(__dirname, '../api/auth/reset-password.js'));
 
 // KoboToolbox endpoints
 mountServerlessFunction('/api/kobo/submissions', path.join(__dirname, '../api/kobo/submissions.js'));
@@ -106,7 +109,10 @@ app.get('/', (req, res) => {
     endpoints: {
       auth: [
         'POST /api/auth/login',
-        'GET /api/auth/me'
+        'GET /api/auth/me',
+        'POST /api/auth/forgot-password',
+        'GET /api/auth/validate-reset-token',
+        'POST /api/auth/reset-password'
       ],
       kobo: [
         'GET /api/kobo/submissions',

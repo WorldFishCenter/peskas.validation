@@ -1,0 +1,79 @@
+{
+  "framework_decisions": {
+    "ui_library": "Tabler UI (@tabler/core)",
+    "ui_icons": "@tabler/icons-react",
+    "backend_framework": "Express.js",
+    "database": "MongoDB (native driver)",
+    "frontend_state": "Custom hooks + React Context",
+    "table_library": "TanStack Table v8",
+    "charts": "Highcharts",
+    "i18n": "i18next + react-i18next",
+    "routing": "React Router v7",
+    "build_tool": "Vite",
+    "email_service": "AWS SES (for transactional emails)"
+  },
+  "architecture_patterns": {
+    "api_structure": "Vercel serverless functions (api/) + Express dev server (server/)",
+    "auth_pattern": "JWT tokens (lib/jwt.js) + middleware (lib/middleware.js)",
+    "password_reset": "Email-based flow with AWS SES (lib/email.js) + rate limiting (lib/rate-limit.js)",
+    "mongodb_collections": "Dynamic naming: surveys_flags-{asset_id}, enumerators_stats-{asset_id}",
+    "error_responses": "Use lib/response.js helpers (sendSuccess, sendError, sendBadRequest, setCorsHeaders)",
+    "validation": "Use lib/helpers.js (validateObjectId, etc.)",
+    "data_flow": "KoboToolbox → R Pipeline → MongoDB → Portal (MongoDB as single source of truth)"
+  },
+  "external_services": {
+    "kobo_toolbox": "Survey data collection (per-survey configuration in surveys.kobo_config)",
+    "airtable": "Centralized user and survey management (sync via scripts/sync_*_from_airtable.js)",
+    "r_pipeline": "External data processing (fetches from KoboToolbox, calculates alerts, writes to MongoDB)",
+    "aws_ses": "Transactional email delivery (password reset emails, multi-language support)"
+  },
+  "current_session": {
+    "last_feature": "Password reset with AWS SES",
+    "active_files": [
+      "api/auth/forgot-password.js",
+      "api/auth/validate-reset-token.js",
+      "api/auth/reset-password.js",
+      "lib/email.js",
+      "lib/rate-limit.js"
+    ],
+    "pending_todos": [
+      "Add CORS headers to password reset endpoints (CRITICAL)",
+      "Fix rate limiting sliding window logic (HIGH)",
+      "Add reset_token MongoDB index (RECOMMENDED)"
+    ]
+  },
+  "token_optimization_notes": [
+    "Reference docs/ folder by link, don't read entire files unless needed",
+    "Use grep to find patterns instead of reading multiple files",
+    "Check .claude/skills/ for established patterns before researching",
+    "CLAUDE.md contains architecture overview - reference it, don't duplicate",
+    "Read .claude/memory/architecture-decisions.md first to understand recent changes",
+    "Use agents for delegated tasks instead of loading full context",
+    "Password reset pattern documented - reference architecture-decisions.md instead of re-reading implementation"
+  ],
+  "common_patterns": {
+    "api_endpoint": "Use lib/response.js (sendSuccess, sendError, sendBadRequest, setCorsHeaders), lib/middleware.js, lib/db.js",
+    "react_component": "Functional components with TypeScript, use Tabler UI classes",
+    "state_management": "Custom hooks pattern (see src/api/api.ts)",
+    "database_query": "Always validate ObjectIds, use projection, check permissions",
+    "ui_implementation": "Check Tabler docs first at https://tabler.io/docs",
+    "airtable_sync": "Use lib/airtable-sync.js for Airtable operations (users, surveys sync)",
+    "email_sending": "Use lib/email.js for AWS SES with multi-language templates",
+    "rate_limiting": "Use lib/rate-limit.js for MongoDB-based rate limiting with TTL indexes",
+    "password_reset": "Three-endpoint pattern: forgot-password → validate-reset-token → reset-password"
+  },
+  "management_scripts": {
+    "user_sync": "scripts/sync_users_from_airtable.js - Sync users from Airtable with permissions and email",
+    "survey_sync": "scripts/sync_surveys_from_airtable.js - Sync survey metadata from Airtable",
+    "user_creation": "scripts/create_first_admin.js - Create initial admin user",
+    "password_reset_setup": "scripts/prepare_password_reset.js - Database migration for password reset feature",
+    "note": "Airtable integration is optional but recommended for centralized management"
+  },
+  "security_patterns": {
+    "email_enumeration_prevention": "Always return success message, never reveal if user exists",
+    "rate_limiting": "Dual limits (IP + user) to prevent brute force attacks",
+    "token_security": "crypto.randomBytes(32) for 64-char hex tokens, 1-hour expiry, one-time use",
+    "password_hashing": "bcrypt with 10 salt rounds",
+    "cors": "setCorsHeaders(res, req) from lib/response.js - REQUIRED for all API endpoints"
+  }
+}

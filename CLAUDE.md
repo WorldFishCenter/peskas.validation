@@ -2,19 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**Current Version**: 1.4.0 (see [NEWS.md](NEWS.md) for full changelog)
+
 ## 📚 Documentation
 
-All detailed documentation is organized in the **[docs/](docs/)** folder:
-
-- **[docs/DEPLOYMENT_CHECKLIST.md](docs/DEPLOYMENT_CHECKLIST.md)** - Production deployment guide ⭐
-- **[docs/SECURITY_FIXES_COMPLETED.md](docs/SECURITY_FIXES_COMPLETED.md)** - Security hardening details ⭐
-- **[docs/README.md](docs/README.md)** - Complete documentation index
-
-For full documentation index, see [docs/README.md](docs/README.md)
-
----
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+- **[CLAUDE.md](CLAUDE.md)** - This file - comprehensive project guide
+- **[README.md](README.md)** - Quick start and overview
+- **[NEWS.md](NEWS.md)** - Version history and changelog (v1.0.0 - v1.4.0)
+- **[.env.example](.env.example)** - Environment configuration template with detailed comments
 
 ## Development Commands
 
@@ -33,6 +28,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Full Development Setup
 - `npm run dev` - Recommended for development (runs both frontend and backend concurrently)
+
+### Testing
+
+**Current Status**: This project does not currently have a test suite.
+
+When adding tests in the future, consider:
+- Jest for unit/integration tests
+- React Testing Library for component tests
+- Supertest for API endpoint tests
+- Test files should follow pattern: `*.test.ts` or `*.spec.ts`
 
 ## Architecture Overview
 
@@ -119,8 +124,38 @@ This is a full-stack React + Express + MongoDB application for data validation a
   - SubmissionVolumeChart: Total submissions per enumerator
   - SubmissionTrendChart: Submissions over time
   - EnumeratorDetail: Detailed view with filtering by date range
+- **Admin Components**: User management interface (AdminUsers, UserForm, UserPermissions)
+- **HowItWorks**: Onboarding page explaining portal features and workflows
 - **Auth Components**: Login form and AuthContext for state management
 - **Layout**: MainLayout and Navbar with routing
+- **ErrorBoundary**: Global error catcher that prevents full app crashes
+
+#### Shared Utilities (lib/)
+Backend utilities shared between Express server and Vercel serverless functions:
+
+- **response.js** - Standardized API response helpers (`successResponse`, `errorResponse`, `validationErrorResponse`)
+- **db.js** - MongoDB connection management and collection helpers
+- **helpers.js** - Common utilities (ObjectId validation, date formatting, pagination)
+- **jwt.js** - JWT token generation and verification
+- **middleware.js** - Express middleware (`authenticateUser`, `requireAdmin`, CORS setup)
+- **api-utils.js** - KoboToolbox API client functions (edit URLs, validation status updates)
+- **airtable-sync.js** - Airtable integration utilities for data synchronization
+
+**Pattern**: Always use these utilities instead of duplicating logic. Both server/ and api/ import from lib/.
+
+#### Internationalization (i18n)
+- **Supported Languages**: English (en), Portuguese (pt), Swahili (sw)
+- **Translation Files**: Organized by namespace in `public/locales/{lang}/`
+  - `common.json` - Shared UI elements, navigation, buttons
+  - `validation.json` - ValidationTable component strings
+  - `enumerators.json` - EnumeratorPerformance dashboard strings
+  - `admin.json` - Admin interface strings
+  - `guide.json` - Alert guide and help content
+- **Components**:
+  - LanguageSwitcher - Navbar dropdown for language selection
+  - Persists preference to localStorage and user profile
+  - Automatic detection from browser preferences
+- **Implementation**: i18next + react-i18next with lazy loading
 
 #### Custom Hooks (src/api/api.ts)
 - `useFetchSubmissions()` - Fetches and normalizes submission data
@@ -173,6 +208,37 @@ Required environment variables (see `.env.example`):
 - CORS is auto-configured: development allows all origins, production allows `*.vercel.app` domains
 - Only set `ALLOWED_ORIGINS` if you need additional custom domains in production
 
+### Vercel Deployment Configuration
+
+The [vercel.json](vercel.json) file configures Vercel deployment:
+
+```json
+{
+  "version": 2,
+  "buildCommand": "npm run build",          // TypeScript + Vite build
+  "outputDirectory": "dist",                 // Frontend build output
+  "installCommand": "npm install",
+  "rewrites": [
+    {
+      "source": "/((?!api).*)",            // SPA routing - all non-API to index.html
+      "destination": "/index.html"
+    }
+  ],
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 10,                   // 10s timeout for serverless functions
+      "memory": 1024                       // 1GB memory allocation
+    }
+  }
+}
+```
+
+**Deployment Process**:
+1. Frontend builds to `dist/` directory
+2. Serverless functions in `api/` directory deploy automatically
+3. Environment variables configured in Vercel dashboard
+4. CORS auto-configured for *.vercel.app domains in production
+
 ### Key Development Notes
 
 #### Multi-Survey Architecture
@@ -199,3 +265,277 @@ Required environment variables (see `.env.example`):
 - Always ensure to avoid code duplication and redundancy
 - Always ensure to have a clear understanding of the context and implementation logic before making changes
 - "Don't be superficial, be persistent in completing the task"
+
+## Claude Code Configuration
+
+This project uses a structured Claude Code setup for code quality, security, and efficient AI-assisted development.
+
+### Quick Commands
+- `/code-review` - Comprehensive code quality review (uses Code Reviewer agent)
+- `/plan` - Create implementation plan for new features (uses Architect agent)
+- `/build-fix` - Fix TypeScript/ESLint errors automatically
+- `/refactor-clean` - Remove dead code and cleanup codebase
+- `/ui-check` - Validate UI implementation uses Tabler components
+- `/document` - Document significant changes (updates architecture-decisions.md, session-context.json)
+
+### Agents
+
+**Code Reviewer** (`.claude/agents/code-reviewer.md`)
+- Reviews TypeScript, React, Express, and MongoDB patterns
+- Checks for type safety, immutability, framework consistency
+- Validates Tabler UI usage and i18n implementation
+- Provides detailed feedback with examples and references
+
+**Security Reviewer** (`.claude/agents/security-reviewer.md`)
+- Audits authentication and authorization
+- Checks for injection vulnerabilities (SQL/NoSQL)
+- Validates input sanitization and secrets management
+- Reviews MongoDB query safety and CORS configuration
+
+**Architect** (`.claude/agents/architect.md`)
+- Guides system design and architectural decisions
+- Evaluates scalability and performance implications
+- Ensures alignment with multi-survey architecture
+- Provides implementation plans with trade-off analysis
+
+### Skills Library
+
+Organized by domain in `.claude/skills/`:
+
+**Backend Patterns**:
+- `express-api.md` - API response patterns, middleware, error handling
+- `mongodb-patterns.md` - Query safety, indexing, collection naming
+- `authentication.md` - JWT flow, password hashing, authorization
+
+**Frontend Patterns**:
+- `react-typescript.md` - Component structure, type safety, hooks usage
+- `react-hooks.md` - useState, useEffect, custom hooks patterns
+- `tanstack-table.md` - Data table implementation with TanStack Table v8
+- `tabler-ui.md` - Tabler UI components, utilities, icons
+
+**Coding Standards**:
+- `typescript.md` - Type definitions, generics, utility types
+- `immutability.md` - Array/object operations, state updates
+- `framework-consistency.md` - UI framework usage, dependency management
+
+**Security Review**:
+- `checklist.md` - Comprehensive security audit checklist
+
+### Rules (Always Follow)
+
+**Global Rules** (`~/.cursor/rules/`):
+- `security.md` - No hardcoded secrets, validate input, hash passwords
+- `coding-style.md` - TypeScript strict mode, functional components, clear naming
+- `git-workflow.md` - Conventional commits, atomic changes, branch naming
+- `ui-consistency.md` - Framework-first approach, no custom CSS without checking framework
+
+**Project-Specific Rules**:
+- **UI Consistency**: Always use Tabler UI components before creating custom CSS
+- **Backend Consistency**: Always use `lib/` patterns (response.js, db.js, helpers.js)
+- **Security**: Validate ObjectIds, use auth middleware, exclude sensitive fields
+- **Immutability**: Never mutate state directly, always create new arrays/objects
+- **Files**: Keep files under 400 lines, extract when growing too large
+
+### Project-Specific Patterns
+
+**MongoDB Collections**:
+- Static: `users`, `surveys`, `countries`
+- Dynamic: `surveys_flags-{asset_id}`, `enumerators_stats-{asset_id}`
+- Always validate `asset_id` before constructing collection names
+
+**API Structure**:
+- Production: Vercel serverless functions in `api/`
+- Development: Express server in `server/`
+- Shared: Utilities in `lib/` (response.js, db.js, middleware.js, helpers.js)
+
+**Authentication Flow**:
+- JWT tokens with 7-day expiry (lib/jwt.js)
+- `authenticateUser` middleware for protected routes
+- `requireAdmin` middleware for admin-only endpoints
+- Frontend stores token in localStorage
+
+**Frontend State Management**:
+- Custom hooks pattern (src/api/api.ts)
+- React Context for global state (AuthContext, I18nContext)
+- No Redux/MobX - use hooks and context
+
+**Multi-Survey Architecture**:
+- User permissions control survey access
+- Admin users: empty `permissions.surveys` = access all
+- Regular users: only access surveys in `permissions.surveys` array
+- Frontend adapts based on accessible surveys
+
+**UI Framework**:
+- Tabler UI (@tabler/core) - Bootstrap 5 based
+- Icons: @tabler/icons-react only
+- Check https://tabler.io/docs before creating custom components
+- Use utility classes for spacing, colors, layout
+
+### Context Memory & Token Optimization
+
+**Session Context** (`.claude/memory/session-context.json`):
+- Framework decisions (UI library, database, state management)
+- Architecture patterns (API structure, auth, data flow)
+- External services (KoboToolbox, Airtable, R Pipeline)
+- Common patterns (API endpoints, React components, database queries)
+- Token optimization notes (reference by link, use grep, check skills first)
+
+**Architecture Decisions** (`.claude/memory/architecture-decisions.md`):
+- Chronological log of significant changes
+- Includes context, approach, files changed, trade-offs
+- Documents "why" for future reference
+- Reduces need to re-read codebase
+
+**Optimization Strategy**:
+1. Reference session-context.json for current patterns
+2. Check architecture-decisions.md for past decisions
+3. Use skills for established patterns
+4. Reference CLAUDE.md for architecture overview
+5. Only read actual code when implementation details needed
+
+**Token Savings**: ~2000-3000 tokens per reference by using documentation instead of reading multiple files
+
+### Hooks (Automated Checks)
+
+Configured in `~/.cursor/settings.json`:
+
+1. **Console.log Detection**: Warns when editing files with console.log
+2. **Secrets Detection**: Blocks edits with hardcoded secrets (JWT_SECRET, passwords, MongoDB URI)
+3. **Auth Middleware Check**: Warns if API routes lack authentication
+4. **TypeScript Check**: Runs `tsc --noEmit` after editing .ts/.tsx files
+5. **ESLint Check**: Runs eslint after editing JavaScript/TypeScript files
+6. **Custom UI Detection**: Warns about custom CSS classes (check Tabler first)
+
+### Contexts (Mode-Based Behavior)
+
+**Dev Context** (`.claude/contexts/dev.md`):
+- Active during feature development and bug fixes
+- Implementation-focused, makes reasonable assumptions
+- Follows established patterns, optimizes for speed
+- Tests changes in browser, fixes errors proactively
+
+**Review Context** (`.claude/contexts/review.md`):
+- Active during code reviews and audits
+- Thorough and critical, checks against standards
+- Provides detailed feedback with examples
+- Prioritizes issues by severity (critical, high, medium, low)
+
+### Workflow Example
+
+**Adding a New Feature**:
+1. Plan: `/plan Add CSV export to validation table`
+2. Implement: Follow Tabler UI, use TypeScript, add i18n
+3. Fix: `/build-fix` to resolve any type/lint errors
+4. Check UI: `/ui-check` to verify Tabler usage
+5. Review: `/code-review` for quality check
+6. Document: `/document` to update architecture decisions
+
+**Fixing a Bug**:
+1. Understand issue (error messages, browser console)
+2. Fix root cause (not symptoms)
+3. Test thoroughly (reproduce bug, verify fix)
+4. Clean up: Remove debug logs, run `/build-fix`
+5. Review: `/code-review` before committing
+
+**Code Review**:
+1. Switch to review context
+2. Run `/code-review` on changed files
+3. Check security with security-reviewer agent
+4. Verify UI compliance with `/ui-check`
+5. Provide actionable feedback with examples
+
+### Documentation Updates
+
+**When to Use `/document`**:
+- After major feature implementations
+- Architectural changes or decisions
+- New patterns established
+- Framework migrations
+- Security implementations
+- Database schema changes
+
+**What Gets Updated**:
+- `architecture-decisions.md` - Detailed entry with context, approach, trade-offs
+- `session-context.json` - New patterns, utilities, external services
+- Skills library - If pattern used 4+ times across codebase
+
+### Testing the Setup
+
+**Verify Installation**:
+```bash
+# Check .claude/ structure
+ls -R .claude/
+
+# Verify agents
+ls .claude/agents/
+
+# Verify skills
+ls -R .claude/skills/
+
+# Verify commands
+ls .claude/commands/
+
+# Check global rules
+ls ~/.cursor/rules/
+
+# Check hooks
+cat ~/.cursor/settings.json
+```
+
+**Test Commands**:
+```
+# Run a code review
+/code-review src/components/ValidationTable/ValidationTable.tsx
+
+# Plan a feature
+/plan Add user profile page
+
+# Fix build issues
+/build-fix
+
+# Check UI compliance
+/ui-check src/components/
+```
+
+**Test Hooks** (edit a file with console.log or custom CSS to trigger warnings)
+
+### Getting Help
+
+**Documentation**:
+- Architecture: See "Architecture Overview" section in this file
+- Changelog: See [NEWS.md](NEWS.md) for version history and features
+- API: See "API Endpoints" section in this file
+- Deployment: See "Vercel Deployment Configuration" section in this file
+- Environment: See [.env.example](.env.example) for detailed variable documentation
+
+**Claude Code**:
+- Commands: See `.claude/commands/` for detailed usage
+- Skills: See `.claude/skills/` for patterns and examples
+- Agents: See `.claude/agents/` for specialized assistance
+- Rules: See `~/.cursor/rules/` for global standards
+
+**Quick Reference**:
+- Tabler UI: https://tabler.io/docs
+- TanStack Table: https://tanstack.com/table/v8
+- Highcharts: https://www.highcharts.com/docs
+- i18next: https://www.i18next.com
+
+### Maintenance
+
+**Regular Tasks**:
+- Run `/refactor-clean` monthly to remove dead code
+- Update `architecture-decisions.md` for significant changes
+- Review and update skills as patterns evolve
+- Keep `session-context.json` current with new patterns
+
+**Before Major Changes**:
+- Review relevant skills in `.claude/skills/`
+- Check past decisions in `architecture-decisions.md`
+- Use `/plan` for complex features
+- Run `/code-review` after implementation
+
+**Context Optimization**:
+- Reference documentation by link (not full content)
+- Use skills for patterns (don't re-discover)
+- Check session context for framework decisions
+- Only read code when implementation details needed

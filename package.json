@@ -1,7 +1,7 @@
 {
   "name": "validation-zanzibar",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.5.0",
   "type": "module",
   "scripts": {
     "dev:frontend": "vite",
@@ -17,6 +17,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.972.0",
     "@tabler/core": "^1.4.0",
     "@tabler/icons-react": "^3.30.0",
     "@tanstack/match-sorter-utils": "^8.19.4",

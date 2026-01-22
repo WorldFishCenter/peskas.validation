@@ -1,3 +1,45 @@
+# validation-zanzibar 1.5.0
+
+## New Features
+
+- **Password Reset Functionality**
+  - Users can now reset their password via email if they forget it
+  - "Forgot Password?" link on login page
+  - Secure token-based reset flow with 1-hour expiration
+  - Multi-language email templates (English, Portuguese, Swahili)
+  - Rate limiting protection against abuse (10 requests per 24h)
+
+## Security Improvements
+
+- **Password Reset Security Hardening**
+  - Added CORS support for password reset endpoints
+  - Fixed rate limiting to properly reset after 24 hours
+  - Implemented timing attack protection in token validation
+  - All endpoints follow security best practices (input validation, enumeration prevention)
+
+## Backend
+
+- **Email Integration**
+  - Support for Gmail, Outlook, and custom SMTP providers
+  - Configurable via environment variables (see `.env.example`)
+  - Language-aware email content based on user preferences
+
+- **New API Endpoints**
+  - `POST /api/auth/forgot-password` - Request password reset
+  - `POST /api/auth/reset-password` - Reset password with token
+  - `GET /api/auth/validate-reset-token` - Validate reset token
+
+## Database
+
+- New user fields: `reset_token`, `reset_token_expires_at`, `reset_token_created_at`
+- New collection: `password_reset_rate_limits` for tracking requests
+
+## Dependencies
+
+- Added `nodemailer@^6.9.9` for email functionality
+
+---
+
 # validation-zanzibar 1.4.0
 
 ## Features

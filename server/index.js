@@ -477,6 +477,32 @@ app.get('/api/auth/me', authenticateUser, async (req, res) => {
   }
 });
 
+// ========================================
+// Password Reset Routes
+// ========================================
+
+// Request password reset
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const forgotPasswordHandler = require('../api/auth/forgot-password');
+  return forgotPasswordHandler(req, res);
+});
+
+// Validate reset token
+app.get('/api/auth/validate-reset-token', async (req, res) => {
+  const validateTokenHandler = require('../api/auth/validate-reset-token');
+  return validateTokenHandler(req, res);
+});
+
+// Reset password with token
+app.post('/api/auth/reset-password', async (req, res) => {
+  const resetPasswordHandler = require('../api/auth/reset-password');
+  return resetPasswordHandler(req, res);
+});
+
+// ========================================
+// User Management Routes (Admin)
+// ========================================
+
 // Create new user (Admin only)
 app.post('/api/users', authenticateUser, requireAdmin, async (req, res) => {
   try {
