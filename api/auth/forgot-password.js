@@ -54,22 +54,16 @@ module.exports = async (req, res) => {
       active: true
     });
 
-    // SECURITY: Always return success to prevent email enumeration
-    const genericSuccess = {
-      success: true,
-      message: 'If an account with that username/email exists and has a registered email, password reset instructions have been sent.'
-    };
-
-    // Early return if user not found (but don't tell the client)
+    // Return error if user not found
     if (!user) {
       console.log('[PASSWORD_RESET] User not found:', sanitizedIdentifier);
-      return res.status(200).json(genericSuccess);
+      return sendBadRequest(res, 'No account found with that username or email');
     }
 
-    // Early return if no email (but don't tell the client)
+    // Return error if no email registered
     if (!user.email) {
       console.log('[PASSWORD_RESET] User has no email:', user.username);
-      return res.status(200).json(genericSuccess);
+      return sendBadRequest(res, 'This account does not have an email address registered. Please contact an administrator.');
     }
 
     // Rate limiting - User based
@@ -116,13 +110,15 @@ module.exports = async (req, res) => {
         email: user.email,
         ip: clientIp
       });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Password reset instructions have been sent to your email address.'
+      });
     } catch (emailError) {
       console.error('[PASSWORD_RESET] Email sending failed:', emailError);
-      // Don't reveal email failure to prevent enumeration
-      // Log for admin monitoring
+      return sendError(res, 'Failed to send password reset email. Please try again later or contact support.', 500);
     }
-
-    return res.status(200).json(genericSuccess);
 
   } catch (error) {
     console.error('[PASSWORD_RESET] Error:', error);
