@@ -16,31 +16,46 @@
     "api_structure": "Vercel serverless functions (api/) + Express dev server (server/)",
     "auth_pattern": "JWT tokens (lib/jwt.js) + middleware (lib/middleware.js)",
     "password_reset": "Email-based flow with AWS SES (lib/email.js) + rate limiting (lib/rate-limit.js)",
-    "mongodb_collections": "Dynamic naming: surveys_flags-{asset_id}, enumerators_stats-{asset_id}",
+    "permission_filtering": "Use lib/filter-permissions.js (getAccessibleCountries, getAccessibleSurveys, getAccessibleDistricts, applyDownloadPermissions)",
+    "mongodb_collections": "Dynamic naming: surveys_flags-{asset_id}, enumerators_stats-{asset_id}; Static: users, surveys, countries, districts",
     "error_responses": "Use lib/response.js helpers (sendSuccess, sendError, sendBadRequest, setCorsHeaders)",
-    "validation": "Use lib/helpers.js (validateObjectId, etc.)",
-    "data_flow": "KoboToolbox → R Pipeline → MongoDB → Portal (MongoDB as single source of truth)"
+    "validation": "Use lib/helpers.js (validateObjectId, sanitizeCSV, etc.)",
+    "data_flow": "KoboToolbox → R Pipeline → MongoDB → Portal (MongoDB as single source of truth)",
+    "airtable_sync": "Districts, users, surveys synced from Airtable via scripts/sync_*_from_airtable.js (not runtime dependency)"
   },
   "external_services": {
     "kobo_toolbox": "Survey data collection (per-survey configuration in surveys.kobo_config)",
-    "airtable": "Centralized user and survey management (sync via scripts/sync_*_from_airtable.js)",
+    "airtable": "Centralized data source for users, surveys, districts (sync via scripts/sync_*_from_airtable.js - not runtime dependency)",
     "r_pipeline": "External data processing (fetches from KoboToolbox, calculates alerts, writes to MongoDB)",
-    "aws_ses": "Transactional email delivery (password reset emails, multi-language support)"
+    "aws_ses": "Transactional email delivery (password reset emails, multi-language support)",
+    "peskas_api": "Landings data download (api.peskas.org) with X-API-Key auth, input validation, rate limiting (lib/peskas-api.js)"
   },
   "current_session": {
-    "last_feature": "Password reset with AWS SES",
+    "last_feature": "Data download infrastructure refactoring & security hardening",
     "active_files": [
-      "api/auth/forgot-password.js",
-      "api/auth/validate-reset-token.js",
-      "api/auth/reset-password.js",
-      "lib/email.js",
-      "lib/rate-limit.js"
+      "lib/filter-permissions.js",
+      "lib/peskas-api.js",
+      "lib/helpers.js",
+      "api/data-download/metadata.js",
+      "api/data-download/preview.js",
+      "api/data-download/export.js",
+      "scripts/sync_districts_from_airtable.js",
+      "src/components/DataDownload/DataDownload.tsx",
+      "src/components/DataDownload/DownloadFilters.tsx"
     ],
-    "pending_todos": [
-      "Add CORS headers to password reset endpoints (CRITICAL)",
-      "Fix rate limiting sliding window logic (HIGH)",
-      "Add reset_token MongoDB index (RECOMMENDED)"
-    ]
+    "completed_improvements": [
+      "✅ Districts migrated to MongoDB (eliminates runtime Airtable dependency)",
+      "✅ Unified metadata endpoint (3 requests → 1, 60-70% faster)",
+      "✅ Shared permission utilities (lib/filter-permissions.js - removed ~200 lines duplication)",
+      "✅ Input validation for PeSKAS API parameters (security hardening)",
+      "✅ CSV injection sanitization (lib/helpers.js sanitizeCSV)",
+      "✅ Country case mismatch bug fixed (MongoDB 'Zanzibar' vs API 'zanzibar')",
+      "✅ Scope defaulting bug fixed (no longer defaults to 'trip_info')",
+      "✅ Single-select UI for surveys/GAUL codes (radio buttons match API constraint)",
+      "✅ Debug logging removed from production code",
+      "✅ Tabler UI compliance verified (95%)"
+    ],
+    "pending_todos": []
   },
   "token_optimization_notes": [
     "Reference docs/ folder by link, don't read entire files unless needed",
@@ -49,7 +64,9 @@
     "CLAUDE.md contains architecture overview - reference it, don't duplicate",
     "Read .claude/memory/architecture-decisions.md first to understand recent changes",
     "Use agents for delegated tasks instead of loading full context",
-    "Password reset pattern documented - reference architecture-decisions.md instead of re-reading implementation"
+    "Password reset pattern documented - reference architecture-decisions.md instead of re-reading implementation",
+    "PeSKAS API integration documented - reference architecture-decisions.md for external API client pattern, permission filtering, preview-before-download UX",
+    "Data download refactoring documented (2026-01-25) - reference for: shared permission utilities pattern, unified metadata endpoint pattern, Airtable→MongoDB migration pattern, input validation pattern, CSV sanitization pattern"
   ],
   "common_patterns": {
     "api_endpoint": "Use lib/response.js (sendSuccess, sendError, sendBadRequest, setCorsHeaders), lib/middleware.js, lib/db.js",
@@ -57,23 +74,33 @@
     "state_management": "Custom hooks pattern (see src/api/api.ts)",
     "database_query": "Always validate ObjectIds, use projection, check permissions",
     "ui_implementation": "Check Tabler docs first at https://tabler.io/docs",
-    "airtable_sync": "Use lib/airtable-sync.js for Airtable operations (users, surveys sync)",
+    "airtable_sync": "Use scripts/sync_*_from_airtable.js pattern for syncing entities (users, surveys, districts) - NOT runtime dependency",
     "email_sending": "Use lib/email.js for AWS SES with multi-language templates",
     "rate_limiting": "Use lib/rate-limit.js for MongoDB-based rate limiting with TTL indexes",
-    "password_reset": "Three-endpoint pattern: forgot-password → validate-reset-token → reset-password"
+    "password_reset": "Three-endpoint pattern: forgot-password → validate-reset-token → reset-password",
+    "external_api_client": "Use lib/peskas-api.js pattern: rate limiting, custom error class, authentication headers, input validation",
+    "data_download": "Preview-before-download UX: preview endpoint (20 rows + count) → user reviews → export endpoint (full CSV)",
+    "permission_filtering": "Use lib/filter-permissions.js (getAccessibleCountries, getAccessibleSurveys, getAccessibleDistricts, applyDownloadPermissions) - single source of truth",
+    "unified_metadata": "Single endpoint pattern: /api/{feature}/metadata returns all filter options in one request (see api/data-download/metadata.js)",
+    "input_validation": "Validate all external API parameters with regex patterns before sending (see lib/peskas-api.js validateFilters)",
+    "csv_export": "Use lib/helpers.js sanitizeCSV() to prevent formula injection in CSV exports"
   },
   "management_scripts": {
     "user_sync": "scripts/sync_users_from_airtable.js - Sync users from Airtable with permissions and email",
     "survey_sync": "scripts/sync_surveys_from_airtable.js - Sync survey metadata from Airtable",
+    "district_sync": "scripts/sync_districts_from_airtable.js - Sync districts (GAUL codes) from Airtable to MongoDB",
     "user_creation": "scripts/create_first_admin.js - Create initial admin user",
     "password_reset_setup": "scripts/prepare_password_reset.js - Database migration for password reset feature",
-    "note": "Airtable integration is optional but recommended for centralized management"
+    "note": "Airtable integration is optional but recommended for centralized management. All syncs are one-time or scheduled - NOT runtime dependencies."
   },
   "security_patterns": {
     "email_enumeration_prevention": "Always return success message, never reveal if user exists",
     "rate_limiting": "Dual limits (IP + user) to prevent brute force attacks",
     "token_security": "crypto.randomBytes(32) for 64-char hex tokens, 1-hour expiry, one-time use",
     "password_hashing": "bcrypt with 10 salt rounds",
-    "cors": "setCorsHeaders(res, req) from lib/response.js - REQUIRED for all API endpoints"
+    "cors": "setCorsHeaders(res, req) from lib/response.js - REQUIRED for all API endpoints",
+    "input_validation": "Validate all external API parameters with regex patterns (country, status, scope, catch_taxon, survey_id, gaul_2) - see lib/peskas-api.js",
+    "csv_sanitization": "Use lib/helpers.js sanitizeCSV() to prevent formula injection (=, +, -, @, tab, carriage return)",
+    "permission_enforcement": "Server-side only via lib/filter-permissions.js - never trust client-side filtering"
   }
 }

@@ -8,6 +8,7 @@ import ValidationTable from './components/ValidationTable/ValidationTable';
 import MainLayout from './components/Layout/MainLayout';
 import ErrorBoundary from './components/ErrorBoundary';
 import EnumeratorPerformance from './components/EnumeratorPerformance/EnumeratorPerformance';
+import DataDownload from './components/DataDownload/DataDownload';
 import AdminUsers from './components/Admin/AdminUsers';
 import HowItWorks from './components/HowItWorks/HowItWorks';
 
@@ -22,6 +23,11 @@ const AppRoutes: React.FC = () => {
       <Route path="/enumerators" element={
         <ErrorBoundary>
           <EnumeratorPerformance />
+        </ErrorBoundary>
+      } />
+      <Route path="/data-download" element={
+        <ErrorBoundary>
+          <DataDownload />
         </ErrorBoundary>
       } />
       <Route path="/how-it-works" element={

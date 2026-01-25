@@ -1,0 +1,53 @@
+{
+  "title": "Pakua Data",
+  "description": "Pakua data ya kutua kutoka hifadhidata ya PeSKAS kwa vichujio maalum",
+  "filters": {
+    "title": "Vichujio",
+    "country": "Nchi",
+    "selectCountry": "Chagua nchi",
+    "countryHint": "Kubadilisha nchi kutaweka upya uchaguzi wa utafiti na eneo",
+    "selectCountryFirst": "Tafadhali chagua nchi ili kuona tafiti na maeneo ya utawala yaliyopatikana",
+    "noCountryAssigned": "Hakuna nchi zilizopewa akaunti yako ya mtumiaji. Tafadhali wasiliana na msimamizi.",
+    "status": "Hali ya Data",
+    "statusValidated": "Data Iliyothibitishwa",
+    "statusRaw": "Data Ghafi",
+    "statusHint": "Data iliyothibitishwa imekaguliwa na kuidhinishwa",
+    "catchTaxon": "Kichujio cha Spishi",
+    "catchTaxonPlaceholder": "mfano: SKJ, MZZ",
+    "catchTaxonHint": "Chuja kwa msimbo mahususi wa spishi (si lazima)",
+    "scope": "Upeo wa Data",
+    "scopeAll": "Data Yote",
+    "scopeTripInfo": "Taarifa za Safari Tu",
+    "scopeCatchInfo": "Taarifa za Mwambao Tu",
+    "scopeHint": "Chagua kiwango cha undani",
+    "surveys": "Utafiti",
+    "surveysHint": "Chagua tafiti maalum au acha tupu kwa zote",
+    "gaulCodes": "Maeneo ya Utawala",
+    "gaulCodesHint": "Chagua mikoa maalum au acha tupu kwa yote",
+    "previewData": "Angalia Data",
+    "resetFilters": "Weka Upya Vichujio",
+    "loading": "Inapakia..."
+  },
+  "preview": {
+    "title": "Maangalizi ya Data",
+    "showing": "Inaonyesha {{shown}} ya {{total}} safu",
+    "downloadFull": "Pakua Seti Kamili (CSV)",
+    "downloading": "Inapakua...",
+    "filtersApplied": "Vichujio Vimetumika",
+    "largeDatasetWarning": "Seti kubwa ya data (safu {{count}}). Kupakua kunaweza kuchukua dakika kadhaa.",
+    "loading": "Inapata maangalizi...",
+    "noData": "Hakuna data iliyopatikana",
+    "noDataHint": "Jaribu kubadilisha vichujio vyako.",
+    "error": "Hitilafu ya kupakia maangalizi"
+  },
+  "getStarted": {
+    "title": "Tayari Kupakua Data",
+    "description": "Chagua vichujio vyako na ubonyeze Angalia Data kuona sampuli ya matokeo kabla ya kupakua."
+  },
+  "errors": {
+    "downloadFailed": "Kupakua kumeshindikana. Tafadhali jaribu tena.",
+    "invalidDateRange": "Kipindi cha tarehe si sahihi. 'Tarehe Kutoka' lazima iwe kabla ya 'Tarehe Hadi'.",
+    "noCountrySelected": "Tafadhali chagua nchi.",
+    "previewFailed": "Kushindwa kupakia maangalizi. Tafadhali angalia vichujio vyako na ujaribu tena."
+  }
+}

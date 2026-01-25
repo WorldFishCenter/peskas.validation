@@ -87,12 +87,20 @@ mountServerlessFunction('/api/users/:id/accessible-surveys', path.join(__dirname
 mountServerlessFunction('/api/countries', path.join(__dirname, '../api/countries/index.js'));
 mountServerlessFunction('/api/countries/:code', path.join(__dirname, '../api/countries/[code].js'));
 
+// Districts endpoint (GAUL codes from Airtable)
+mountServerlessFunction('/api/districts', path.join(__dirname, '../api/districts/index.js'));
+
 // Enumerator stats endpoint
 mountServerlessFunction('/api/enumerators-stats', path.join(__dirname, '../api/enumerators-stats.js'));
 
 // Admin endpoints
 mountServerlessFunction('/api/admin/sync-users', path.join(__dirname, '../api/admin/sync-users.js'));
 mountServerlessFunction('/api/admin/refresh-enumerator-stats', path.join(__dirname, '../api/admin/refresh-enumerator-stats.js'));
+
+// Data download endpoints (PeSKAS API integration)
+mountServerlessFunction('/api/data-download/metadata', path.join(__dirname, '../api/data-download/metadata.js'));
+mountServerlessFunction('/api/data-download/preview', path.join(__dirname, '../api/data-download/preview.js'));
+mountServerlessFunction('/api/data-download/export', path.join(__dirname, '../api/data-download/export.js'));
 
 console.log('\n✅ All endpoints mounted successfully!\n');
 
@@ -143,11 +151,20 @@ app.get('/', (req, res) => {
         'PATCH /api/countries/:code',
         'DELETE /api/countries/:code'
       ],
+      districts: [
+        'GET /api/districts'
+      ],
       stats: [
         'GET /api/enumerators-stats'
       ],
       admin: [
-        'POST /api/admin/sync-users (requires refactoring)'
+        'POST /api/admin/sync-users (requires refactoring)',
+        'POST /api/admin/refresh-enumerator-stats'
+      ],
+      dataDownload: [
+        'GET /api/data-download/metadata',
+        'GET /api/data-download/preview',
+        'GET /api/data-download/export'
       ]
     }
   });

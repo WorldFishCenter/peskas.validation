@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { IconCheck, IconChartBar, IconUsers, IconHelp } from '@tabler/icons-react';
+import { IconCheck, IconChartBar, IconDownload, IconUsers, IconHelp } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../Auth/AuthContext';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -52,6 +52,14 @@ const Navbar: React.FC = () => {
                     <IconChartBar className="icon" size={24} stroke={2} />
                   </span>
                   <span className="nav-link-title">{t('enumeratorPerformance')}</span>
+                </Link>
+              </li>
+              <li className={`nav-item ${location.pathname === '/data-download' ? 'active' : ''}`}>
+                <Link to="/data-download" className="nav-link">
+                  <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
+                    <IconDownload className="icon" size={24} stroke={2} />
+                  </span>
+                  <span className="nav-link-title">{t('dataDownload')}</span>
                 </Link>
               </li>
               <li className={`nav-item ${location.pathname === '/how-it-works' ? 'active' : ''}`}>

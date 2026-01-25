@@ -6,6 +6,7 @@ import { getApiBaseUrl } from '../utils/apiConfig';
 const API_BASE_URL = getApiBaseUrl();
 
 import { Submission } from '../types/validation';
+import { DownloadFilters, PreviewResponse } from '../types/download';
 
 // Normalize field names for consistent access
 const normalizeSubmissionData = (item: any): any => {
@@ -231,4 +232,266 @@ export const useFetchAlertCodes = (assetId: string | null) => {
   }, [assetId]);
 
   return { alertCodes, isLoading, error };
+};
+
+// ========================================
+// DATA DOWNLOAD HOOKS
+// ========================================
+
+/**
+ * Hook to fetch download preview data
+ *
+ * Fetches the first 20 rows of data based on selected filters
+ * to preview before downloading the full dataset.
+ */
+export const useFetchDownloadPreview = () => {
+  const [data, setData] = useState<any[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [appliedFilters, setAppliedFilters] = useState<DownloadFilters | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchPreview = useCallback(async (filters: DownloadFilters) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Build query string
+      const params = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          if (Array.isArray(value)) {
+            params.append(key, value.join(','));
+          } else {
+            params.append(key, String(value));
+          }
+        }
+      });
+
+      const response = await axios.get<PreviewResponse>(
+        `${API_BASE_URL}/data-download/preview?${params.toString()}`
+      );
+
+      setData(response.data.data);
+      setTotalCount(response.data.total_count);
+      setAppliedFilters(response.data.filters_applied);
+    } catch (err: any) {
+      console.error('Error fetching preview:', err);
+      setError(err.response?.data?.error || 'Failed to fetch preview');
+      setData([]);
+      setTotalCount(0);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return { data, totalCount, appliedFilters, isLoading, error, fetchPreview };
+};
+
+/**
+ * Function to trigger CSV download
+ *
+ * Downloads the full dataset as CSV based on selected filters.
+ * Triggers browser download with appropriate filename.
+ *
+ * @param filters - Download filters to apply
+ * @returns Promise<boolean> - true if download succeeded, false otherwise
+ */
+export const downloadCSV = async (filters: DownloadFilters): Promise<boolean> => {
+  try {
+    // Build query string
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        if (Array.isArray(value)) {
+          params.append(key, value.join(','));
+        } else {
+          params.append(key, String(value));
+        }
+      }
+    });
+
+    const response = await axios.get(
+      `${API_BASE_URL}/data-download/export?${params.toString()}`,
+      {
+        responseType: 'blob' // Important for file download
+      }
+    );
+
+    // Create blob and trigger download
+    const blob = new Blob([response.data], { type: 'text/csv; charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+
+    // Extract filename from Content-Disposition header or use default
+    const contentDisposition = response.headers['content-disposition'];
+    let filename = `peskas-landings-${new Date().toISOString().split('T')[0]}.csv`;
+
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1].replace(/"/g, '');
+      }
+    }
+
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    return true;
+  } catch (err) {
+    console.error('Error downloading CSV:', err);
+    return false;
+  }
+};
+
+/**
+ * Unified hook to fetch all download metadata in one request
+ * Replaces useFetchCountries, useFetchDistricts, useFetchSurveys for better performance
+ *
+ * @param countryId - Optional country filter for districts/surveys
+ */
+export const useFetchDownloadMetadata = (countryId?: string) => {
+  const [metadata, setMetadata] = useState<{
+    countries: any[];
+    districts: any[];
+    surveys: any[];
+    userContext: any;
+  }>({
+    countries: [],
+    districts: [],
+    surveys: [],
+    userContext: null
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchMetadata = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const params = countryId ? `?country_id=${countryId}` : '';
+      const response = await axios.get(`${API_BASE_URL}/data-download/metadata${params}`);
+
+      setMetadata({
+        countries: response.data.countries || [],
+        districts: response.data.districts || [],
+        surveys: response.data.surveys || [],
+        userContext: response.data.user_context || null
+      });
+    } catch (err: any) {
+      console.error('Error fetching download metadata:', err);
+      setError(err.response?.data?.error || 'Failed to load filter metadata');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [countryId]);
+
+  useEffect(() => {
+    fetchMetadata();
+  }, [fetchMetadata]);
+
+  return {
+    metadata,
+    isLoading,
+    error,
+    refetch: fetchMetadata
+  };
+};
+
+/**
+ * Fetch countries for data download filters
+ * @deprecated Use useFetchDownloadMetadata instead for better performance
+ */
+export const useFetchCountries = () => {
+  const [countries, setCountries] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchCountries = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/countries`);
+      setCountries(response.data?.countries || []);
+    } catch (err: any) {
+      console.error('Error fetching countries:', err);
+      setError(err.response?.data?.error || 'Failed to load countries');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCountries();
+  }, [fetchCountries]);
+
+  return { countries, isLoading, error, refetch: fetchCountries };
+};
+
+/**
+ * Fetch districts (GAUL codes) for data download filters
+ * @deprecated Use useFetchDownloadMetadata instead for better performance
+ */
+export const useFetchDistricts = () => {
+  const [districts, setDistricts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDistricts = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/districts`);
+      setDistricts(response.data?.data || []);
+    } catch (err: any) {
+      console.error('Error fetching districts:', err);
+      setError(err.response?.data?.error || 'Failed to load districts');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDistricts();
+  }, [fetchDistricts]);
+
+  return { districts, isLoading, error, refetch: fetchDistricts };
+};
+
+/**
+ * Fetch surveys for data download filters
+ * @deprecated Use useFetchDownloadMetadata instead for better performance
+ */
+export const useFetchSurveys = () => {
+  const [surveys, setSurveys] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSurveys = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/surveys`);
+      setSurveys(response.data?.surveys || []);
+    } catch (err: any) {
+      console.error('Error fetching surveys:', err);
+      setError(err.response?.data?.error || 'Failed to load surveys');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSurveys();
+  }, [fetchSurveys]);
+
+  return { surveys, isLoading, error, refetch: fetchSurveys };
 }; 

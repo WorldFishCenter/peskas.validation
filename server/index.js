@@ -1834,6 +1834,23 @@ app.post('/api/admin/refresh-enumerator-stats', async (req, res) => {
 });
 */
 
+// Data Download endpoints (PeSKAS API integration)
+app.get('/api/data-download/preview', authenticateUser, async (req, res) => {
+  const handler = require('../api/data-download/preview');
+  return handler(req, res);
+});
+
+app.get('/api/data-download/export', authenticateUser, async (req, res) => {
+  const handler = require('../api/data-download/export');
+  return handler(req, res);
+});
+
+// Districts endpoint (fetch GAUL codes from Airtable)
+app.get('/api/districts', authenticateUser, async (req, res) => {
+  const handler = require('../api/districts/index');
+  return handler(req, res);
+});
+
 // Start server after connecting to MongoDB
 connectToMongo().then(() => {
   app.listen(PORT, () => {
