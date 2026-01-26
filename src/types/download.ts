@@ -15,8 +15,8 @@ export interface DownloadFilters {
   /** Array of survey IDs (asset_ids) - filtered by user permissions */
   survey_id?: string[];
 
-  /** Array of GAUL level 2 administrative codes */
-  gaul_2?: string[];
+  /** GAUL level 2 administrative code (single selection) */
+  gaul_2?: string;
 
   /** Data validation status */
   status: 'validated' | 'raw';

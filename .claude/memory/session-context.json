@@ -17,11 +17,11 @@
     "auth_pattern": "JWT tokens (lib/jwt.js) + middleware (lib/middleware.js)",
     "password_reset": "Email-based flow with AWS SES (lib/email.js) + rate limiting (lib/rate-limit.js)",
     "permission_filtering": "Use lib/filter-permissions.js (getAccessibleCountries, getAccessibleSurveys, getAccessibleDistricts, applyDownloadPermissions)",
-    "mongodb_collections": "Dynamic naming: surveys_flags-{asset_id}, enumerators_stats-{asset_id}; Static: users, surveys, countries, districts",
+    "mongodb_collections": "Dynamic naming: surveys_flags-{asset_id}, enumerators_stats-{asset_id}; Static: users, surveys, countries, districts; Infrastructure: sync_audit_log, system_locks",
     "error_responses": "Use lib/response.js helpers (sendSuccess, sendError, sendBadRequest, setCorsHeaders)",
     "validation": "Use lib/helpers.js (validateObjectId, sanitizeCSV, etc.)",
     "data_flow": "KoboToolbox → R Pipeline → MongoDB → Portal (MongoDB as single source of truth)",
-    "airtable_sync": "Districts, users, surveys synced from Airtable via scripts/sync_*_from_airtable.js (not runtime dependency)"
+    "airtable_sync": "Production-hardened sync infrastructure (8/10 readiness): field mapping config (config/airtable-field-mappings.json), pre-sync schema validation, transaction-like safety (lib/sync-transaction.js), audit logging (lib/sync-audit-logger.js), rate limiting (lib/airtable-rate-limiter.js), distributed locks (lib/sync-lock.js), automated cron (vercel.json), webhook support (api/webhooks/airtable-sync.js)"
   },
   "external_services": {
     "kobo_toolbox": "Survey data collection (per-survey configuration in surveys.kobo_config)",
@@ -31,29 +31,37 @@
     "peskas_api": "Landings data download (api.peskas.org) with X-API-Key auth, input validation, rate limiting (lib/peskas-api.js)"
   },
   "current_session": {
-    "last_feature": "Data download infrastructure refactoring & security hardening",
+    "last_feature": "Airtable Integration Production Hardening (3-phase implementation)",
     "active_files": [
-      "lib/filter-permissions.js",
-      "lib/peskas-api.js",
-      "lib/helpers.js",
-      "api/data-download/metadata.js",
-      "api/data-download/preview.js",
-      "api/data-download/export.js",
-      "scripts/sync_districts_from_airtable.js",
-      "src/components/DataDownload/DataDownload.tsx",
-      "src/components/DataDownload/DownloadFilters.tsx"
+      "config/airtable-field-mappings.json",
+      "lib/field-mapper.js",
+      "lib/sync-transaction.js",
+      "lib/airtable-sync-users.js",
+      "lib/sync-audit-logger.js",
+      "lib/airtable-rate-limiter.js",
+      "lib/sync-lock.js",
+      "scripts/sync_all_from_airtable.js",
+      "api/admin/cron-sync-all.js",
+      "api/webhooks/airtable-sync.js",
+      "api/admin/sync-logs.js",
+      "vercel.json",
+      "package.json"
     ],
     "completed_improvements": [
-      "✅ Districts migrated to MongoDB (eliminates runtime Airtable dependency)",
-      "✅ Unified metadata endpoint (3 requests → 1, 60-70% faster)",
-      "✅ Shared permission utilities (lib/filter-permissions.js - removed ~200 lines duplication)",
-      "✅ Input validation for PeSKAS API parameters (security hardening)",
-      "✅ CSV injection sanitization (lib/helpers.js sanitizeCSV)",
-      "✅ Country case mismatch bug fixed (MongoDB 'Zanzibar' vs API 'zanzibar')",
-      "✅ Scope defaulting bug fixed (no longer defaults to 'trip_info')",
-      "✅ Single-select UI for surveys/GAUL codes (radio buttons match API constraint)",
-      "✅ Debug logging removed from production code",
-      "✅ Tabler UI compliance verified (95%)"
+      "✅ Airtable Integration Production Readiness: 3/10 → 8/10",
+      "✅ Centralized field mapping configuration (config/airtable-field-mappings.json)",
+      "✅ Pre-sync schema validation (detects renamed Airtable columns)",
+      "✅ Transaction-like safety with checkpoint/rollback (lib/sync-transaction.js)",
+      "✅ Code consolidation: 3 implementations → 1 canonical (44% code reduction)",
+      "✅ Persistent audit logging to MongoDB (lib/sync-audit-logger.js with uuid)",
+      "✅ Airtable API rate limiting with exponential backoff (lib/airtable-rate-limiter.js)",
+      "✅ Distributed locks preventing concurrent syncs (lib/sync-lock.js)",
+      "✅ Dependency order enforcement: Districts → Surveys → Users",
+      "✅ Automated daily syncs via Vercel cron (2 AM UTC)",
+      "✅ Webhook support for real-time Airtable sync triggers",
+      "✅ Admin API endpoint for viewing sync audit logs",
+      "✅ npm scripts for manual sync operations (sync:all, sync:users, etc.)",
+      "✅ Comprehensive documentation in architecture-decisions.md"
     ],
     "pending_todos": []
   },
@@ -66,7 +74,8 @@
     "Use agents for delegated tasks instead of loading full context",
     "Password reset pattern documented - reference architecture-decisions.md instead of re-reading implementation",
     "PeSKAS API integration documented - reference architecture-decisions.md for external API client pattern, permission filtering, preview-before-download UX",
-    "Data download refactoring documented (2026-01-25) - reference for: shared permission utilities pattern, unified metadata endpoint pattern, Airtable→MongoDB migration pattern, input validation pattern, CSV sanitization pattern"
+    "Data download refactoring documented (2026-01-25) - reference for: shared permission utilities pattern, unified metadata endpoint pattern, Airtable→MongoDB migration pattern, input validation pattern, CSV sanitization pattern",
+    "Airtable hardening documented (2026-01-26) - reference for: field mapping configuration, schema validation, transaction-like safety, audit logging, rate limiting, distributed locks, automated syncs, webhook integration"
   ],
   "common_patterns": {
     "api_endpoint": "Use lib/response.js (sendSuccess, sendError, sendBadRequest, setCorsHeaders), lib/middleware.js, lib/db.js",
@@ -74,9 +83,13 @@
     "state_management": "Custom hooks pattern (see src/api/api.ts)",
     "database_query": "Always validate ObjectIds, use projection, check permissions",
     "ui_implementation": "Check Tabler docs first at https://tabler.io/docs",
-    "airtable_sync": "Use scripts/sync_*_from_airtable.js pattern for syncing entities (users, surveys, districts) - NOT runtime dependency",
+    "airtable_sync": "Production-hardened sync: config/airtable-field-mappings.json for field mappings, lib/field-mapper.js for validation, lib/sync-transaction.js for safety, lib/sync-audit-logger.js for logging, lib/sync-lock.js for concurrency control, scripts/sync_all_from_airtable.js for master sync",
+    "field_mapping": "Use config/airtable-field-mappings.json + lib/field-mapper.js for centralized Airtable field mappings with fallbacks and validation",
+    "sync_transaction": "Use lib/sync-transaction.js SyncTransaction.execute() for checkpoint/rollback safety in data sync operations",
+    "audit_logging": "Use lib/sync-audit-logger.js SyncAuditLogger class with uuid sync_id for persistent MongoDB audit trails",
+    "distributed_locks": "Use lib/sync-lock.js SyncLock.executeWithLock() for preventing concurrent operations (10-minute auto-expiry)",
+    "rate_limiting_external": "Use lib/airtable-rate-limiter.js for Airtable API (5 req/sec + exponential backoff), lib/rate-limit.js for app rate limiting",
     "email_sending": "Use lib/email.js for AWS SES with multi-language templates",
-    "rate_limiting": "Use lib/rate-limit.js for MongoDB-based rate limiting with TTL indexes",
     "password_reset": "Three-endpoint pattern: forgot-password → validate-reset-token → reset-password",
     "external_api_client": "Use lib/peskas-api.js pattern: rate limiting, custom error class, authentication headers, input validation",
     "data_download": "Preview-before-download UX: preview endpoint (20 rows + count) → user reviews → export endpoint (full CSV)",
@@ -86,12 +99,16 @@
     "csv_export": "Use lib/helpers.js sanitizeCSV() to prevent formula injection in CSV exports"
   },
   "management_scripts": {
-    "user_sync": "scripts/sync_users_from_airtable.js - Sync users from Airtable with permissions and email",
-    "survey_sync": "scripts/sync_surveys_from_airtable.js - Sync survey metadata from Airtable",
-    "district_sync": "scripts/sync_districts_from_airtable.js - Sync districts (GAUL codes) from Airtable to MongoDB",
+    "master_sync": "scripts/sync_all_from_airtable.js - Master sync enforcing dependency order (Districts → Surveys → Users) with lib/sync-transaction.js safety",
+    "user_sync": "scripts/sync_users_from_airtable.js - Sync users from Airtable (uses lib/airtable-sync-users.js canonical implementation)",
+    "survey_sync": "scripts/sync_surveys_from_airtable.js - Sync survey metadata from Airtable with schema validation",
+    "district_sync": "scripts/sync_districts_from_airtable.cjs - Sync districts (GAUL codes) from Airtable to MongoDB with schema validation",
     "user_creation": "scripts/create_first_admin.js - Create initial admin user",
     "password_reset_setup": "scripts/prepare_password_reset.js - Database migration for password reset feature",
-    "note": "Airtable integration is optional but recommended for centralized management. All syncs are one-time or scheduled - NOT runtime dependencies."
+    "npm_scripts": "npm run sync:all (master sync), sync:users, sync:surveys, sync:districts (individual syncs)",
+    "automation": "Vercel cron job (daily 2 AM UTC) via api/admin/cron-sync-all.js, optional webhooks via api/webhooks/airtable-sync.js",
+    "monitoring": "GET api/admin/sync-logs for viewing audit logs (pagination, filtering by entity_type)",
+    "note": "Production-hardened sync infrastructure (8/10 readiness): field mapping config, schema validation, transaction safety, audit logging, rate limiting, distributed locks, automated cron, webhook support"
   },
   "security_patterns": {
     "email_enumeration_prevention": "Always return success message, never reveal if user exists",

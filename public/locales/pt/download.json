@@ -1,6 +1,6 @@
 {
   "title": "Download de Dados",
-  "description": "Baixe dados de desembarques da base de dados PeSKAS com filtros personalizados",
+  "description": "Baixe dados de desembarques da base de dados PESKAS com filtros personalizados",
   "filters": {
     "title": "Filtros",
     "country": "País",
@@ -14,16 +14,26 @@
     "statusHint": "Dados validados foram revisados e aprovados",
     "catchTaxon": "Filtro de Espécies",
     "catchTaxonPlaceholder": "ex: SKJ, MZZ",
-    "catchTaxonHint": "Filtrar por código de espécie específico (opcional)",
+    "catchTaxonHint": "Insira um código de espécie específico (ex: SKJ, YFT) ou deixe vazio para todas as espécies",
+    "catchTaxonHelpLink": "#species-codes-reference",
     "scope": "Escopo de Dados",
     "scopeAll": "Todos os Dados",
     "scopeTripInfo": "Apenas Informações da Viagem",
     "scopeCatchInfo": "Apenas Informações da Captura",
     "scopeHint": "Escolha o nível de detalhe",
+    "scopeGroupDefault": "Padrão",
+    "scopeGroupFiltered": "Visualizações Filtradas",
+    "scopeHelpLink": "#data-scope-explanation",
     "surveys": "Pesquisas",
     "surveysHint": "Selecione pesquisas específicas ou deixe vazio para todas",
     "gaulCodes": "Área Administrativa",
     "gaulCodesHint": "Selecione uma área ou deixe vazio para todas",
+    "gaulGroupAll": "Todas as Áreas",
+    "gaulGroupDistricts": "Distritos Específicos",
+    "gaulAll": "Todos os Distritos",
+    "gaulHelpLink": "#gaul-codes-explanation",
+    "countryHelpLink": "#country-selection",
+    "statusHelpLink": "#data-validation-status",
     "previewData": "Visualizar Dados",
     "resetFilters": "Redefinir Filtros",
     "loading": "Carregando..."
@@ -49,5 +59,8 @@
     "invalidDateRange": "Intervalo de datas inválido. 'Data Inicial' deve ser anterior a 'Data Final'.",
     "noCountrySelected": "Por favor, selecione um país.",
     "previewFailed": "Falha ao carregar visualização. Por favor, verifique seus filtros e tente novamente."
+  },
+  "common": {
+    "learnMore": "Saiba mais"
   }
 }

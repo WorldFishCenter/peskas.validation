@@ -1,6 +1,6 @@
 {
   "title": "Data Download",
-  "description": "Download landings data from the PeSKAS database with custom filters",
+  "description": "Download landings data from the PESKAS database with custom filters",
   "filters": {
     "title": "Filters",
     "country": "Country",
@@ -14,16 +14,26 @@
     "statusHint": "Validated data has been reviewed and approved",
     "catchTaxon": "Species Filter",
     "catchTaxonPlaceholder": "e.g., SKJ, MZZ",
-    "catchTaxonHint": "Filter by specific species code (optional)",
+    "catchTaxonHint": "Enter a specific species code (e.g., SKJ, YFT) or leave empty for all species",
+    "catchTaxonHelpLink": "#species-codes-reference",
     "scope": "Data Scope",
     "scopeAll": "All Data",
     "scopeTripInfo": "Trip Information Only",
     "scopeCatchInfo": "Catch Information Only",
     "scopeHint": "Choose the level of detail",
+    "scopeGroupDefault": "Default",
+    "scopeGroupFiltered": "Filtered Views",
+    "scopeHelpLink": "#data-scope-explanation",
     "surveys": "Survey",
     "surveysHint": "Select one survey or leave empty for all",
     "gaulCodes": "Administrative Area",
     "gaulCodesHint": "Select one area or leave empty for all",
+    "gaulGroupAll": "All Areas",
+    "gaulGroupDistricts": "Specific Districts",
+    "gaulAll": "All Districts",
+    "gaulHelpLink": "#gaul-codes-explanation",
+    "countryHelpLink": "#country-selection",
+    "statusHelpLink": "#data-validation-status",
     "previewData": "Preview Data",
     "resetFilters": "Reset Filters",
     "loading": "Loading..."
@@ -49,5 +59,8 @@
     "invalidDateRange": "Invalid date range. 'Date From' must be before 'Date To'.",
     "noCountrySelected": "Please select a country.",
     "previewFailed": "Failed to load preview. Please check your filters and try again."
+  },
+  "common": {
+    "learnMore": "Learn more"
   }
 }

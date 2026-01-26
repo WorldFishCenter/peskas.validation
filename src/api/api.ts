@@ -261,7 +261,10 @@ export const useFetchDownloadPreview = () => {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
           if (Array.isArray(value)) {
-            params.append(key, value.join(','));
+            // Only append if array has items
+            if (value.length > 0) {
+              params.append(key, value.join(','));
+            }
           } else {
             params.append(key, String(value));
           }
@@ -304,7 +307,10 @@ export const downloadCSV = async (filters: DownloadFilters): Promise<boolean> =>
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
         if (Array.isArray(value)) {
-          params.append(key, value.join(','));
+          // Only append if array has items
+          if (value.length > 0) {
+            params.append(key, value.join(','));
+          }
         } else {
           params.append(key, String(value));
         }
@@ -353,8 +359,9 @@ export const downloadCSV = async (filters: DownloadFilters): Promise<boolean> =>
  * Replaces useFetchCountries, useFetchDistricts, useFetchSurveys for better performance
  *
  * @param countryId - Optional country filter for districts/surveys
+ * @param surveyId - Optional survey filter for districts (cascade filtering)
  */
-export const useFetchDownloadMetadata = (countryId?: string) => {
+export const useFetchDownloadMetadata = (countryId?: string, surveyId?: string) => {
   const [metadata, setMetadata] = useState<{
     countries: any[];
     districts: any[];
@@ -374,8 +381,13 @@ export const useFetchDownloadMetadata = (countryId?: string) => {
     setError(null);
 
     try {
-      const params = countryId ? `?country_id=${countryId}` : '';
-      const response = await axios.get(`${API_BASE_URL}/data-download/metadata${params}`);
+      const params = new URLSearchParams();
+      if (countryId) params.append('country_id', countryId);
+      if (surveyId) params.append('survey_id', surveyId);
+
+      const queryString = params.toString();
+      const url = `${API_BASE_URL}/data-download/metadata${queryString ? `?${queryString}` : ''}`;
+      const response = await axios.get(url);
 
       setMetadata({
         countries: response.data.countries || [],
@@ -389,7 +401,7 @@ export const useFetchDownloadMetadata = (countryId?: string) => {
     } finally {
       setIsLoading(false);
     }
-  }, [countryId]);
+  }, [countryId, surveyId]);
 
   useEffect(() => {
     fetchMetadata();

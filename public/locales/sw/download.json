@@ -1,6 +1,6 @@
 {
   "title": "Pakua Data",
-  "description": "Pakua data ya kutua kutoka hifadhidata ya PeSKAS kwa vichujio maalum",
+  "description": "Pakua data ya kutua kutoka hifadhidata ya PESKAS kwa vichujio maalum",
   "filters": {
     "title": "Vichujio",
     "country": "Nchi",
@@ -14,16 +14,26 @@
     "statusHint": "Data iliyothibitishwa imekaguliwa na kuidhinishwa",
     "catchTaxon": "Kichujio cha Spishi",
     "catchTaxonPlaceholder": "mfano: SKJ, MZZ",
-    "catchTaxonHint": "Chuja kwa msimbo mahususi wa spishi (si lazima)",
+    "catchTaxonHint": "Weka msimbo mahususi wa spishi (mfano: SKJ, YFT) au acha tupu kwa spishi zote",
+    "catchTaxonHelpLink": "#species-codes-reference",
     "scope": "Upeo wa Data",
     "scopeAll": "Data Yote",
     "scopeTripInfo": "Taarifa za Safari Tu",
     "scopeCatchInfo": "Taarifa za Mwambao Tu",
     "scopeHint": "Chagua kiwango cha undani",
+    "scopeGroupDefault": "Kawaida",
+    "scopeGroupFiltered": "Mwonekano Uliochujwa",
+    "scopeHelpLink": "#data-scope-explanation",
     "surveys": "Utafiti",
     "surveysHint": "Chagua tafiti maalum au acha tupu kwa zote",
     "gaulCodes": "Maeneo ya Utawala",
     "gaulCodesHint": "Chagua mikoa maalum au acha tupu kwa yote",
+    "gaulGroupAll": "Maeneo Yote",
+    "gaulGroupDistricts": "Wilaya Maalum",
+    "gaulAll": "Wilaya Zote",
+    "gaulHelpLink": "#gaul-codes-explanation",
+    "countryHelpLink": "#country-selection",
+    "statusHelpLink": "#data-validation-status",
     "previewData": "Angalia Data",
     "resetFilters": "Weka Upya Vichujio",
     "loading": "Inapakia..."
@@ -49,5 +59,8 @@
     "invalidDateRange": "Kipindi cha tarehe si sahihi. 'Tarehe Kutoka' lazima iwe kabla ya 'Tarehe Hadi'.",
     "noCountrySelected": "Tafadhali chagua nchi.",
     "previewFailed": "Kushindwa kupakia maangalizi. Tafadhali angalia vichujio vyako na ujaribu tena."
+  },
+  "common": {
+    "learnMore": "Jifunze zaidi"
   }
 }

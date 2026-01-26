@@ -5,7 +5,7 @@
  * GET requires authentication, POST requires admin
  */
 
-const { withMiddleware, authenticateUser, requireAdmin } = require('../../lib/middleware');
+const { withMiddleware, authenticateUser } = require('../../lib/middleware');
 const { getDb } = require('../../lib/db');
 const { sendBadRequest, sendServerError, setCorsHeaders } = require('../../lib/response');
 

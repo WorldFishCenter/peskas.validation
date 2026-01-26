@@ -64,7 +64,6 @@ export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
     },
     tooltip: {
       ...pieTooltipConfig,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       formatter: function(this: any) {
         const point = this.point;
         const totalAlerts = this.series.data.reduce((sum: number, p: any) => sum + (p.y || 0), 0);
@@ -174,7 +173,6 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
     },
     tooltip: {
       ...columnTooltipConfig,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       formatter: function(this: any) {
         // Get formatted date from category axis
         const dateLabel = this.key || 

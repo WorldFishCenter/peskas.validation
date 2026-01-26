@@ -55,15 +55,6 @@ const getSurveyFlagsCollection = (assetId) => {
   return `surveys_flags-${assetId}`;
 };
 
-// Helper to get all asset IDs from surveys collection
-const getAllAssetIds = async () => {
-  const database = getDb();
-  if (!database) return [];
-
-  const surveys = await database.collection('surveys').find({ active: true }).toArray();
-  return surveys.map(s => s.asset_id);
-};
-
 // Connect to MongoDB
 async function connectToMongo() {
   try {

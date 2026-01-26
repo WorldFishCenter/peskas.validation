@@ -68,7 +68,6 @@ const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
     },
     tooltip: {
       ...baseTooltipConfig,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       formatter: function(this: any) {
         const point = this.point;
         return wrapTooltip(

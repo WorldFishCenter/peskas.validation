@@ -79,7 +79,6 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
     tooltip: {
       ...baseTooltipConfig,
       shared: true,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       formatter: function(this: any) {
         const points = this.points || [];
         const activePoints = points.filter((p: any) => (p.y || 0) > 0);

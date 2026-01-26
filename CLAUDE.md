@@ -108,6 +108,14 @@ This is a full-stack React + Express + MongoDB application for data validation a
 - `POST /api/users` - Admin: Create new user
 - `PATCH /api/users/:id` - Admin: Update user
 - `DELETE /api/users/:id` - Admin: Delete user
+- `GET /api/data-download/metadata` - Unified endpoint returning countries, surveys, districts filtered by user permissions
+- `GET /api/data-download/preview` - Fetch first 20 rows from PeSKAS API with permission-based filtering
+- `GET /api/data-download/export` - Export full dataset as CSV from PeSKAS API (max 1M rows, sanitized for formula injection)
+
+#### Data Download Feature - Known Limitations
+- **Survey ID filtering**: Currently disabled - PeSKAS API uses different survey identifiers than MongoDB `surveys.asset_id`. Requires ID mapping table or PeSKAS API update to support.
+- **GAUL code filtering**: Only supports single district per request (PeSKAS API limitation). Multiple districts require separate API calls and client-side merging.
+- **API authentication**: Shared `PESKAS_API_KEY` for all users (no per-user rate limiting). Consider per-country or per-user API keys in future for better access control.
 
 #### Frontend Components
 - **ValidationTable**: Main data validation interface with filtering, sorting, and status updates

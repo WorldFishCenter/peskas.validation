@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { IconSearch, IconX, IconInfoCircle } from '@tabler/icons-react';
+import { IconSearch, IconX, IconInfoCircle, IconExternalLink } from '@tabler/icons-react';
 import { DownloadFilters as FiltersType } from '../../types/download';
 import { useFetchDownloadMetadata } from '../../api/api';
 
@@ -25,24 +25,24 @@ const DownloadFilters: React.FC<DownloadFiltersProps> = ({
   const isAdmin = user?.role === 'admin';
 
   // Fetch all metadata in one request (pre-filtered by server)
+  // Pass selected survey to enable cascade filtering (Country → Survey → Districts)
   const { metadata, isLoading: loadingMetadata } = useFetchDownloadMetadata(
-    isAdmin ? filters.country : undefined
+    isAdmin ? filters.country : undefined,
+    filters.survey_id?.[0] // Pass selected survey for district filtering
   );
   const { countries, districts, surveys } = metadata;
 
   const handleChange = (field: keyof FiltersType, value: any) => {
-    // If country changes, reset survey and GAUL selections
+    // CASCADE: Country → Survey → Districts
     if (field === 'country') {
-      setFilters({ ...filters, [field]: value, survey_id: [], gaul_2: [] });
+      // Reset survey and GAUL selections when country changes
+      setFilters({ ...filters, [field]: value, survey_id: [], gaul_2: '' });
+    } else if (field === 'survey_id') {
+      // Reset GAUL selection when survey changes (districts will be filtered by survey)
+      setFilters({ ...filters, [field]: value, gaul_2: '' });
     } else {
       setFilters({ ...filters, [field]: value });
     }
-  };
-
-  const handleGaulCodeSelect = (code: string) => {
-    // Single-select: if already selected, deselect; otherwise select
-    const updated = filters.gaul_2?.[0] === code ? [] : [code];
-    handleChange('gaul_2', updated);
   };
 
   const handleSurveySelect = (assetId: string) => {
@@ -77,7 +77,13 @@ const DownloadFilters: React.FC<DownloadFiltersProps> = ({
               <option key={c.code} value={c.code}>{c.name}</option>
             ))}
           </select>
-          <small className="form-hint">{t('filters.countryHint')}</small>
+          <small className="form-hint">
+            {t('filters.countryHint')}{' '}
+            <a href={t('filters.countryHelpLink')} target="_blank" rel="noopener noreferrer" className="link-secondary">
+              <IconExternalLink className="icon icon-inline" size={14} />
+              {t('common.learnMore')}
+            </a>
+          </small>
         </div>
       )}
 
@@ -92,7 +98,13 @@ const DownloadFilters: React.FC<DownloadFiltersProps> = ({
           <option value="validated">{t('filters.statusValidated')}</option>
           <option value="raw">{t('filters.statusRaw')}</option>
         </select>
-        <small className="form-hint">{t('filters.statusHint')}</small>
+        <small className="form-hint">
+          {t('filters.statusHint')}{' '}
+          <a href={t('filters.statusHelpLink')} target="_blank" rel="noopener noreferrer" className="link-secondary">
+            <IconExternalLink className="icon icon-inline" size={14} />
+            {t('common.learnMore')}
+          </a>
+        </small>
       </div>
 
       {/* Scope Selector */}
@@ -103,11 +115,21 @@ const DownloadFilters: React.FC<DownloadFiltersProps> = ({
           value={filters.scope || ''}
           onChange={(e) => handleChange('scope', e.target.value)}
         >
-          <option value="">{t('filters.scopeAll')}</option>
-          <option value="trip_info">{t('filters.scopeTripInfo')}</option>
-          <option value="catch_info">{t('filters.scopeCatchInfo')}</option>
+          <optgroup label={t('filters.scopeGroupDefault')}>
+            <option value="">{t('filters.scopeAll')}</option>
+          </optgroup>
+          <optgroup label={t('filters.scopeGroupFiltered')}>
+            <option value="trip_info">{t('filters.scopeTripInfo')}</option>
+            <option value="catch_info">{t('filters.scopeCatchInfo')}</option>
+          </optgroup>
         </select>
-        <small className="form-hint">{t('filters.scopeHint')}</small>
+        <small className="form-hint">
+          {t('filters.scopeHint')}{' '}
+          <a href={t('filters.scopeHelpLink')} target="_blank" rel="noopener noreferrer" className="link-secondary">
+            <IconExternalLink className="icon icon-inline" size={14} />
+            {t('common.learnMore')}
+          </a>
+        </small>
       </div>
 
       {/* Catch Taxon */}
@@ -120,7 +142,13 @@ const DownloadFilters: React.FC<DownloadFiltersProps> = ({
           value={filters.catch_taxon || ''}
           onChange={(e) => handleChange('catch_taxon', e.target.value)}
         />
-        <small className="form-hint">{t('filters.catchTaxonHint')}</small>
+        <small className="form-hint">
+          {t('filters.catchTaxonHint')}{' '}
+          <a href={t('filters.catchTaxonHelpLink')} target="_blank" rel="noopener noreferrer" className="link-secondary">
+            <IconExternalLink className="icon icon-inline" size={14} />
+            {t('common.learnMore')}
+          </a>
+        </small>
       </div>
 
       {/* Divider for advanced filters */}
@@ -151,25 +179,50 @@ const DownloadFilters: React.FC<DownloadFiltersProps> = ({
         </div>
       )}
 
-      {/* GAUL Codes (Single-select) */}
-      {filteredDistricts.length > 0 && (
+      {/* GAUL Codes (Single-select Dropdown) */}
+      {(isAdmin || filteredDistricts.length > 0) && (
         <div className="mb-3">
           <label className="form-label">{t('filters.gaulCodes')}</label>
-          <div className="form-selectgroup">
-            {filteredDistricts.map(district => (
-              <label key={district.code} className="form-selectgroup-item">
-                <input
-                  type="radio"
-                  name="gaul_select"
-                  className="form-selectgroup-input"
-                  checked={filters.gaul_2?.[0] === district.code || false}
-                  onChange={() => handleGaulCodeSelect(district.code)}
-                />
-                <span className="form-selectgroup-label">{district.name}</span>
-              </label>
-            ))}
-          </div>
-          <small className="form-hint">{t('filters.gaulCodesHint')}</small>
+          <select
+            className="form-select"
+            value={filters.gaul_2 || ''}
+            onChange={(e) => handleChange('gaul_2', e.target.value)}
+            disabled={loadingMetadata || (isAdmin && !filters.country) || (isAdmin && filteredSurveys.length > 0 && filters.survey_id?.length === 0) || filteredDistricts.length === 0}
+          >
+            <optgroup label={t('filters.gaulGroupAll')}>
+              <option value="">{t('filters.gaulAll')}</option>
+            </optgroup>
+            {filteredDistricts.length > 0 && (
+              <optgroup label={t('filters.gaulGroupDistricts')}>
+                {filteredDistricts.map(district => (
+                  <option key={district.code} value={district.code}>
+                    {district.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+          </select>
+          <small className="form-hint">
+            {loadingMetadata ? t('filters.loading') : (
+              <>
+                {isAdmin && !filters.country ? (
+                  'Select a country first'
+                ) : isAdmin && filteredSurveys.length > 0 && (!filters.survey_id || filters.survey_id.length === 0) ? (
+                  'Select a survey to see available districts'
+                ) : filteredDistricts.length === 0 && filters.survey_id && filters.survey_id.length > 0 ? (
+                  'No districts available for selected survey'
+                ) : (
+                  <>
+                    {t('filters.gaulCodesHint')}{' '}
+                    <a href={t('filters.gaulHelpLink')} target="_blank" rel="noopener noreferrer" className="link-secondary">
+                      <IconExternalLink className="icon icon-inline" size={14} />
+                      {t('common.learnMore')}
+                    </a>
+                  </>
+                )}
+              </>
+            )}
+          </small>
         </div>
       )}
 

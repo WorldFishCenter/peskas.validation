@@ -1,0 +1,83 @@
+{
+  "users": {
+    "username": {
+      "airtable_fields": ["username", "user", "name"],
+      "required": true,
+      "validation": "lowercase_trim"
+    },
+    "email": {
+      "airtable_fields": ["email", "Email"],
+      "required": false,
+      "validation": "email_format"
+    },
+    "form_id": {
+      "airtable_fields": ["asset", "Asset", "Form ID", "kobo_form_id", "form_id"],
+      "required": true,
+      "mapping_table": "forms"
+    },
+    "country": {
+      "airtable_fields": ["Country", "country"],
+      "required": true,
+      "mapping_table": "countries"
+    },
+    "role": {
+      "airtable_fields": ["permission", "Permission", "role"],
+      "required": true,
+      "allowed_values": ["admin", "user"]
+    },
+    "gaul_codes": {
+      "airtable_fields": ["gaul 2", "GAUL 2", "gaul_codes"],
+      "required": false,
+      "mapping_table": "districts"
+    },
+    "enumerators": {
+      "airtable_fields": ["enumerators", "Enumerators"],
+      "required": false,
+      "mapping_table": "enumerators"
+    }
+  },
+  "surveys": {
+    "asset_id": {
+      "airtable_fields": ["Form ID"],
+      "required": true,
+      "validation": "alphanumeric"
+    },
+    "name": {
+      "airtable_fields": ["Form Name", "name"],
+      "required": true
+    },
+    "country_id": {
+      "airtable_fields": ["Associated Countries", "Country"],
+      "required": true
+    },
+    "active": {
+      "airtable_fields": ["Status"],
+      "required": true,
+      "mapping": {
+        "Deployed": true,
+        "Draft": false,
+        "Archived": false
+      }
+    }
+  },
+  "districts": {
+    "code": {
+      "airtable_fields": ["FAO District (Gaul 2 Code)", "Gaul 2 Code", "gaul_2"],
+      "required": true,
+      "validation": "numeric"
+    },
+    "name": {
+      "airtable_fields": ["District", "Gaul 2 Name", "name"],
+      "required": true
+    },
+    "country_id": {
+      "airtable_fields": ["Country"],
+      "required": true
+    },
+    "asset_ids": {
+      "airtable_fields": ["Asset ID", "asset_ids"],
+      "required": false,
+      "validation": "comma_separated"
+    }
+  }
+}

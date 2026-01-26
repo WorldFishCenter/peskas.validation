@@ -1,5 +1,5 @@
 const { getDb } = require('../../lib/db');
-const { sendBadRequest, sendError, setCorsHeaders } = require('../../lib/response');
+const { sendError, setCorsHeaders } = require('../../lib/response');
 const crypto = require('crypto');
 
 module.exports = async (req, res) => {
@@ -111,8 +111,8 @@ async function applyTimingDelay(startTime) {
   const minDuration = 100; // Minimum 100ms response time
   const elapsed = Date.now() - startTime;
   const delay = Math.max(0, minDuration - elapsed);
-  
+
   if (delay > 0) {
     await new Promise(resolve => setTimeout(resolve, delay));
   }
-};
+}

@@ -6,7 +6,7 @@
  */
 
 const { withMiddleware, authenticateUser } = require('../../lib/middleware');
-const { sendSuccess, sendServerError, setCorsHeaders } = require('../../lib/response');
+const { sendServerError, setCorsHeaders } = require('../../lib/response');
 
 async function handler(req, res) {
   // Set CORS headers

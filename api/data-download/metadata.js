@@ -9,14 +9,25 @@
  * This replaces 3 separate endpoints (/api/countries, /api/districts, /api/surveys)
  * for data download use case, reducing HTTP requests and frontend complexity.
  *
- * Query Parameters:
- * - country_id (optional): Filter districts and surveys by country
+ * @access Protected - Requires JWT authentication
+ * @permission Filtered by user's country/survey/GAUL code permissions
+ *
+ * Query Parameters (all optional, snake_case format):
+ * @queryparam {string} country_id - Filter districts and surveys by country code (case-insensitive)
+ * @queryparam {string} survey_id - Filter districts by survey asset_id (cascade filtering)
+ *
+ * Response Format:
+ * {
+ *   countries: [{ code, name, active }],
+ *   districts: [{ code, name, country_id, survey_label }],
+ *   surveys: [{ asset_id, name, country_id, active }],
+ *   user_context: { role, country, has_survey_restrictions, has_gaul_restrictions }
+ * }
  *
  * @module api/data-download/metadata
  */
 
 const { withMiddleware, authenticateUser } = require('../../lib/middleware');
-const { getDb } = require('../../lib/db');
 const {
   getAccessibleCountries,
   getAccessibleDistricts,
@@ -44,35 +55,18 @@ async function handler(req, res) {
   }
 
   try {
-    // 1. Fetch user from DB with permissions
-    const database = await getDb();
-    const user = await database.collection('users').findOne(
-      { username: req.user.username },
-      {
-        projection: {
-          username: 1,
-          role: 1,
-          country: 1,
-          permissions: 1
-        }
-      }
-    );
+    // 1. Extract optional filters
+    // Note: req.user is populated by authenticateUser middleware with full user data
+    const { country_id, survey_id } = req.query;
 
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-
-    // 2. Extract optional country filter
-    const { country_id } = req.query;
-
-    // 3. Fetch all metadata in parallel using shared utilities
+    // 2. Fetch all metadata in parallel using shared utilities
     const [countries, districts, surveys] = await Promise.all([
-      getAccessibleCountries(user),
-      getAccessibleDistricts(user, country_id),
-      getAccessibleSurveys(user, country_id)
+      getAccessibleCountries(req.user),
+      getAccessibleDistricts(req.user, country_id, survey_id), // Pass survey_id for cascade filtering
+      getAccessibleSurveys(req.user, country_id)
     ]);
 
-    // 4. Format response
+    // 3. Format response
     return sendSuccess(res, {
       countries: countries.map(c => ({
         code: c.code,
@@ -92,10 +86,10 @@ async function handler(req, res) {
         active: s.active
       })),
       user_context: {
-        role: user.role,
-        country: user.country,
-        has_survey_restrictions: user.permissions?.surveys && user.permissions.surveys.length > 0,
-        has_gaul_restrictions: user.permissions?.gaul_codes && user.permissions.gaul_codes.length > 0
+        role: req.user.role,
+        country: req.user.country,
+        has_survey_restrictions: req.user.permissions?.surveys && req.user.permissions.surveys.length > 0,
+        has_gaul_restrictions: req.user.permissions?.gaul_codes && req.user.permissions.gaul_codes.length > 0
       }
     });
 

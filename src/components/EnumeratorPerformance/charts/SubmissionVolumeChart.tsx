@@ -53,7 +53,6 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = ({
     },
     tooltip: {
       ...baseTooltipConfig,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       formatter: function(this: any) {
         // Get enumerator name from category axis
         const categoryName = this.key || 

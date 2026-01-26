@@ -9,7 +9,7 @@ const bcrypt = require('bcryptjs');
 const { withMiddleware, authenticateUser, requireAdmin } = require('../../../lib/middleware');
 const { getDb } = require('../../../lib/db');
 const { validateObjectId } = require('../../../lib/helpers');
-const { sendNotFound, sendBadRequest, sendServerError, setCorsHeaders } = require('../../../lib/response');
+const { setCorsHeaders } = require('../../../lib/response');
 
 async function handler(req, res) {
   setCorsHeaders(res, req);

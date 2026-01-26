@@ -6,16 +6,38 @@
  * Admin users can select any country and GAUL codes.
  * Regular users are restricted to their assigned country and GAUL codes.
  *
+ * @access Protected - Requires JWT authentication
+ * @permission Filtered by user's country/survey/GAUL code permissions
+ *
+ * Query Parameters (all optional, snake_case format):
+ * @queryparam {string} country - Country code (lowercase, e.g., "zanzibar", "mozambique")
+ *                                Admin: required parameter
+ *                                Regular user: uses first assigned country from user.country[0]
+ * @queryparam {string} survey_id - Survey asset_id (currently NOT sent to PeSKAS API - see limitation)
+ * @queryparam {string} gaul_2 - District GAUL code (single value only, e.g., "12345")
+ * @queryparam {string} status - Data validation status: "validated" or "raw" (default: "validated")
+ * @queryparam {string} catch_taxon - FAO ASFIS species code (3 letters, e.g., "SKJ", "YFT")
+ * @queryparam {string} scope - Data scope: "trip_info" or "catch_info" (optional)
+ *
+ * Known Limitations:
+ * - survey_id filtering is disabled (PeSKAS uses different survey identifiers)
+ * - gaul_2 only supports single district (PeSKAS API limitation)
+ *
+ * Response Format:
+ * {
+ *   data: [{...landing records...}],
+ *   total_count: number,
+ *   filters_applied: {...actual filters sent to PeSKAS API...}
+ * }
+ *
  * @module api/data-download/preview
  */
 
 const { withMiddleware, authenticateUser } = require('../../lib/middleware');
-const { getDb } = require('../../lib/db');
 const { fetchLandingsData, PeskasAPIError } = require('../../lib/peskas-api');
 const { applyDownloadPermissions } = require('../../lib/filter-permissions');
 const {
   sendSuccess,
-  sendBadRequest,
   sendServerError,
   setCorsHeaders
 } = require('../../lib/response');
@@ -36,40 +58,23 @@ async function handler(req, res) {
   }
 
   try {
-    // 1. Fetch user from DB with permissions
-    const database = await getDb();
-    const user = await database.collection('users').findOne(
-      { username: req.user.username },
-      {
-        projection: {
-          username: 1,
-          role: 1,
-          country: 1,
-          permissions: 1
-        }
-      }
-    );
-
-    if (!user) {
-      return sendBadRequest(res, 'User not found');
-    }
-
-    // 2. Apply permission-based filtering using shared utility
-    // Note: applyDownloadPermissions reads country, survey_id, gaul_2 from req.query
+    // 1. Apply permission-based filtering using shared utility
+    // Note: req.user is populated by authenticateUser middleware with full user data
+    // applyDownloadPermissions reads country, survey_id, gaul_2 from req.query
     const {
       effectiveCountry,
-      effectiveSurveyIds,
+      effectiveSurveyIds, // eslint-disable-line no-unused-vars -- Reserved for future survey_id filtering
       effectiveGaulCodes
-    } = await applyDownloadPermissions(user, req.query);
+    } = await applyDownloadPermissions(req.user, req.query);
 
-    // 3. Extract additional query parameters for API filters
+    // 2. Extract additional query parameters for API filters
     const {
       status = 'validated',
       catch_taxon,
       scope
     } = req.query;
 
-    // 4. Build API filters
+    // 3. Build API filters
     // PeSKAS API requires lowercase country codes
     const apiFilters = {
       country: effectiveCountry.toLowerCase(),
@@ -80,10 +85,11 @@ async function handler(req, res) {
     if (scope && scope.trim()) {
       apiFilters.scope = scope.trim();
     }
-    if (effectiveSurveyIds.length > 0) {
-      // PeSKAS API doesn't support multiple survey IDs - use first one
-      apiFilters.survey_id = effectiveSurveyIds[0];
-    }
+    // TEMPORARY: Survey ID filtering disabled - PeSKAS API uses different survey IDs
+    // TODO: Map MongoDB survey IDs to PeSKAS API survey IDs or remove survey filter
+    // if (effectiveSurveyIds.length > 0) {
+    //   apiFilters.survey_id = effectiveSurveyIds[0];
+    // }
     if (effectiveGaulCodes.length > 0) {
       // PeSKAS API doesn't support multiple gaul_2 codes - use first one
       apiFilters.gaul_2 = effectiveGaulCodes[0];
@@ -92,10 +98,10 @@ async function handler(req, res) {
       apiFilters.catch_taxon = catch_taxon.trim();
     }
 
-    // 5. Fetch preview data (20 rows)
+    // 4. Fetch preview data (20 rows)
     const apiResponse = await fetchLandingsData(apiFilters, 20);
 
-    // 6. Extract data and count
+    // 5. Extract data and count
     let data = [];
     let totalCount = 0;
 
@@ -113,7 +119,7 @@ async function handler(req, res) {
       totalCount = 0;
     }
 
-    // 7. Return success response
+    // 6. Return success response
     return sendSuccess(res, {
       data: data,
       total_count: totalCount,

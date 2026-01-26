@@ -1,7 +1,7 @@
 const { getDb } = require('../../lib/db');
 const { sendPasswordResetEmail } = require('../../lib/email');
 const { checkPasswordResetRateLimit } = require('../../lib/rate-limit');
-const { sendSuccess, sendBadRequest, sendError, setCorsHeaders } = require('../../lib/response');
+const { sendBadRequest, sendError, setCorsHeaders } = require('../../lib/response');
 const crypto = require('crypto');
 
 module.exports = async (req, res) => {

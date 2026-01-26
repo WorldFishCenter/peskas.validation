@@ -58,7 +58,6 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
     tooltip: {
       ...baseTooltipConfig,
       shared: true,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       formatter: function(this: any) {
         // Get category name from points array (more reliable than this.x for category axes)
         const categoryName = this.points && this.points.length > 0 
