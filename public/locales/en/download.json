@@ -14,7 +14,7 @@
     "statusHint": "Validated data has been reviewed and approved",
     "catchTaxon": "Species Filter",
     "catchTaxonPlaceholder": "e.g., SKJ, MZZ",
-    "catchTaxonHint": "Enter a specific species code (e.g., SKJ, YFT) or leave empty for all species",
+    "catchTaxonHint": "Enter a specific species code (e.g., SKJ, YFT) or <strong>leave empty for all species</strong>",
     "catchTaxonHelpLink": "#species-codes-reference",
     "scope": "Data Scope",
     "scopeAll": "All Data",
