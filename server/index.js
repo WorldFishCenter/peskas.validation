@@ -205,7 +205,54 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
         previous: null,
         results: [],
         page: page,
-        limit: limit
+        limit: limit,
+        metadata: {
+          accessible_surveys: []
+        }
+      });
+    }
+
+    // PERFORMANCE OPTIMIZATION: Filter by specific survey_id if provided
+    // This prevents admin users from loading ALL surveys simultaneously
+    const surveyIdFilter = req.query.survey_id;
+
+    if (surveyIdFilter) {
+      // User selected a specific survey - filter to just that one
+      accessibleSurveys = accessibleSurveys.filter(s => s.asset_id === surveyIdFilter);
+
+      if (accessibleSurveys.length === 0) {
+        return res.json({
+          count: 0,
+          next: null,
+          previous: null,
+          results: [],
+          page: page,
+          limit: limit,
+          message: 'Survey not found or access denied',
+          metadata: {
+            accessible_surveys: []
+          }
+        });
+      }
+    } else if (accessibleSurveys.length > 1) {
+      // Multiple surveys available but no selection - require explicit choice
+      // This prevents accidentally loading ALL surveys (especially for admins)
+      return res.json({
+        count: 0,
+        next: null,
+        previous: null,
+        results: [],
+        page: page,
+        limit: limit,
+        message: 'Please select a survey to view submissions',
+        metadata: {
+          accessible_surveys: accessibleSurveys.map(s => ({
+            asset_id: s.asset_id,
+            name: s.name,
+            country_id: s.country_id,
+            alert_codes: s.alert_codes || {} // Include alert codes
+          }))
+        }
       });
     }
 
@@ -223,6 +270,15 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
       const collectionName = getSurveyFlagsCollection(survey.asset_id);
 
       try {
+        // PERFORMANCE OPTIMIZATION: Apply limit at MongoDB level
+        // This prevents loading all documents into memory before pagination
+        // Note: For backward compatibility, we support large limits but log warnings
+        const effectiveLimit = limit > 10000 ? 10000 : limit;
+
+        if (limit > 10000) {
+          console.warn(`⚠️  Large limit requested (${limit}), capping at ${effectiveLimit} per survey for ${user.username}`);
+        }
+
         // Fetch submissions with filters and projection (only needed fields)
         const mongoSubmissions = await database.collection(collectionName)
           .find(
@@ -246,6 +302,7 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
             }
           )
           .sort({ submission_date: -1 })
+          .limit(effectiveLimit) // ← CRITICAL FIX: Limit at database level
           .toArray();
 
         return {
@@ -314,7 +371,8 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
         accessible_surveys: accessibleSurveys.map(s => ({
           asset_id: s.asset_id,
           name: s.name,
-          country_id: s.country_id
+          country_id: s.country_id,
+          alert_codes: s.alert_codes || {} // PERFORMANCE: Include alert codes to avoid separate API calls
         }))
       }
     };
@@ -348,7 +406,9 @@ app.patch('/api/submissions/:id/validation_status', authenticateUser, async (req
 
     const collectionName = getSurveyFlagsCollection(asset_id);
 
-    await database.collection(collectionName).updateOne(
+    // PERFORMANCE FIX: Use findOneAndUpdate to return updated document
+    // This enables optimistic updates on the frontend (no full reload needed)
+    const result = await database.collection(collectionName).findOneAndUpdate(
       { submission_id: id },
       {
         $set: {
@@ -357,8 +417,47 @@ app.patch('/api/submissions/:id/validation_status', authenticateUser, async (req
           validated_by: req.user.username  // Track who made the update
         }
       },
-      { upsert: true }
+      {
+        upsert: true,
+        returnDocument: 'after', // Return the document AFTER update
+        projection: {
+          submission_id: 1,
+          submission_date: 1,
+          vessel_number: 1,
+          catch_number: 1,
+          submitted_by: 1,
+          validation_status: 1,
+          validated_at: 1,
+          validated_by: 1,
+          alert_flag: 1,
+          _id: 0
+        }
+      }
     );
+
+    if (!result.value) {
+      return res.status(404).json({ success: false, error: 'Submission not found' });
+    }
+
+    // Get survey metadata for the response
+    const survey = await database.collection('surveys').findOne({ asset_id });
+
+    // Format response to match submission structure
+    const updatedSubmission = {
+      submission_id: result.value.submission_id,
+      submission_date: result.value.submission_date,
+      vessel_number: result.value.vessel_number || '',
+      catch_number: result.value.catch_number || '',
+      submitted_by: result.value.submitted_by || '',
+      validation_status: result.value.validation_status || 'validation_status_on_hold',
+      validated_at: result.value.validated_at || result.value.submission_date,
+      validated_by: result.value.validated_by || '',
+      alert_flag: result.value.alert_flag || '',
+      alert_flags: result.value.alert_flag ? result.value.alert_flag.split(', ') : [],
+      asset_id: asset_id,
+      survey_name: survey?.name || 'Unknown Survey',
+      survey_country: survey?.country_id || ''
+    };
 
     // Clear submissions cache for all users (data changed)
     const keys = cache.keys();
@@ -368,7 +467,11 @@ app.patch('/api/submissions/:id/validation_status', authenticateUser, async (req
       }
     });
 
-    res.json({ success: true, message: `Validation status correctly updated for submission ${id}` });
+    res.json({
+      success: true,
+      message: `Validation status correctly updated for submission ${id}`,
+      data: updatedSubmission // PERFORMANCE FIX: Return updated document for optimistic UI update
+    });
   } catch (error) {
     console.error('Error updating validation status:', error);
     res.status(500).json({ error: 'Failed to update validation status' });

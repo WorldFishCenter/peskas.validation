@@ -16,7 +16,8 @@ interface QualityRankingChartProps {
   enumerators: EnumeratorData[];
 }
 
-const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
+// PERFORMANCE FIX: Wrap in React.memo to prevent unnecessary re-renders
+const QualityRankingChart: React.FC<QualityRankingChartProps> = React.memo(({
   enumerators
 }) => {
   const { t } = useTranslation('enumerators');
@@ -124,6 +125,8 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = ({
   }), [sortedEnumerators, t]);
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;
-};
+}, (prevProps, nextProps) => {
+  return JSON.stringify(prevProps.enumerators) === JSON.stringify(nextProps.enumerators);
+});
 
 export default QualityRankingChart; 

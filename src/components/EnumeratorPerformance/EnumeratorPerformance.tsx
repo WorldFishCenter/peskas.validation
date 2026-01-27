@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetchEnumeratorStats } from '../../api/api';
 import { ChartTabType, DetailTabType, EnumeratorData } from './types';
@@ -54,58 +54,74 @@ const EnumeratorPerformance: React.FC = () => {
   // Use the same hook as ValidationTable - rawData is already in the correct format
   const { surveyAlertCodes } = useContextualAlertCodes(rawData as any);
 
-  // Extract available surveys from raw data - do this only once when rawData changes
-  useEffect(() => {
-    if (rawData && rawData.length > 0) {
-      // Extract unique surveys
-      const surveys = new Set<string>();
-      rawData.forEach((item: any) => {
-        if (item.survey_name) surveys.add(item.survey_name);
-      });
-      const surveysArray = Array.from(surveys).sort();
-      setAvailableSurveys(surveysArray);
+  // PERFORMANCE FIX: Use useMemo instead of useEffect for survey extraction
+  // This prevents unnecessary re-computations on every render
+  const availableSurveysComputed = useMemo(() => {
+    if (!rawData || rawData.length === 0) return [];
 
-      // Auto-select first survey if multiple surveys and none selected
-      if (surveysArray.length > 1 && !selectedSurvey) {
-        setSelectedSurvey(surveysArray[0]);
-      } else if (surveysArray.length === 1) {
-        // If only one survey, select it automatically
-        setSelectedSurvey(surveysArray[0]);
-      }
-    }
+    // Extract unique surveys
+    const surveys = new Set<string>();
+    rawData.forEach((item: any) => {
+      if (item.survey_name) surveys.add(item.survey_name);
+    });
+    return Array.from(surveys).sort();
   }, [rawData]);
 
-  // Process data filtered by selected survey
+  // Update state and auto-select when available surveys change
   useEffect(() => {
-    if (rawData && rawData.length > 0) {
-      // Filter raw data by selected survey first
-      let filteredRawData = rawData;
-      if (selectedSurvey) {
-        filteredRawData = rawData.filter((item: any) => item.survey_name === selectedSurvey);
+    setAvailableSurveys(availableSurveysComputed);
 
-        // Set survey country based on selected survey
-        const surveyItem = filteredRawData.find((item: any) => item.survey_country);
-        setSurveyCountry(surveyItem?.survey_country || '');
-      } else {
-        setSurveyCountry('');
-      }
+    // Auto-select first survey if multiple surveys and none selected
+    if (availableSurveysComputed.length > 1 && !selectedSurvey) {
+      setSelectedSurvey(availableSurveysComputed[0]);
+    } else if (availableSurveysComputed.length === 1) {
+      // If only one survey, select it automatically
+      setSelectedSurvey(availableSurveysComputed[0]);
+    }
+  }, [availableSurveysComputed, selectedSurvey]);
 
-      // Process only the filtered data
-      const processed = processEnumeratorData(filteredRawData);
-      setProcessedData(processed);
+  // PERFORMANCE FIX: Use useMemo for data filtering and processing
+  // This prevents unnecessary re-computations on every render
+  const filteredRawData = useMemo(() => {
+    if (!rawData || rawData.length === 0) return [];
 
-      // Set default selected enumerator from processed data
-      if (processed.length > 0 && !selectedEnumerator) {
-        setSelectedEnumerator(processed[0].name);
-      } else if (processed.length > 0 && selectedEnumerator) {
-        // Check if selected enumerator exists in the new processed data
-        const exists = processed.some(e => e.name === selectedEnumerator);
-        if (!exists) {
-          setSelectedEnumerator(processed[0].name);
-        }
+    if (selectedSurvey) {
+      return rawData.filter((item: any) => item.survey_name === selectedSurvey);
+    }
+    return rawData;
+  }, [rawData, selectedSurvey]);
+
+  // Extract survey country from filtered data
+  useEffect(() => {
+    if (filteredRawData.length > 0 && selectedSurvey) {
+      const surveyItem = filteredRawData.find((item: any) => item.survey_country);
+      setSurveyCountry(surveyItem?.survey_country || '');
+    } else {
+      setSurveyCountry('');
+    }
+  }, [filteredRawData, selectedSurvey]);
+
+  // PERFORMANCE FIX: Memoize processed enumerator data
+  const processedDataComputed = useMemo(() => {
+    if (filteredRawData.length === 0) return [];
+    return processEnumeratorData(filteredRawData);
+  }, [filteredRawData]);
+
+  // Update state and handle enumerator selection
+  useEffect(() => {
+    setProcessedData(processedDataComputed);
+
+    // Set default selected enumerator from processed data
+    if (processedDataComputed.length > 0 && !selectedEnumerator) {
+      setSelectedEnumerator(processedDataComputed[0].name);
+    } else if (processedDataComputed.length > 0 && selectedEnumerator) {
+      // Check if selected enumerator exists in the new processed data
+      const exists = processedDataComputed.some(e => e.name === selectedEnumerator);
+      if (!exists) {
+        setSelectedEnumerator(processedDataComputed[0].name);
       }
     }
-  }, [rawData, selectedSurvey]); // Re-process when survey changes
+  }, [processedDataComputed, selectedEnumerator]);
 
   // Compute min/max dates from processedData - reset when survey changes
   useEffect(() => {

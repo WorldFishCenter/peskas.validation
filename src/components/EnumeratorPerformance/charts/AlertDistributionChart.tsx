@@ -10,7 +10,8 @@ interface AlertDistributionChartProps {
   enumerators: EnumeratorData[];
 }
 
-const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
+// PERFORMANCE FIX: Wrap in React.memo to prevent unnecessary re-renders
+const AlertDistributionChart: React.FC<AlertDistributionChartProps> = React.memo(({
   enumerators
 }) => {
   const { t } = useTranslation('enumerators');
@@ -125,6 +126,10 @@ const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
   }), [alertData, totalAlerts, t]);
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison: only re-render if enumerators data actually changed
+  // Deep comparison on enumerators array to prevent unnecessary chart re-renders
+  return JSON.stringify(prevProps.enumerators) === JSON.stringify(nextProps.enumerators);
+});
 
 export default AlertDistributionChart; 

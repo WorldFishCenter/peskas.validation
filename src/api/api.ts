@@ -27,24 +27,54 @@ const normalizeSubmissionData = (item: any): any => {
 };
 
 // Hook to fetch submissions
-export const useFetchSubmissions = () => {
+// PERFORMANCE OPTIMIZATION: Enhanced hook with survey selection and reduced limits
+export const useFetchSubmissions = (surveyId?: string | null) => {
   const [data, setData] = useState<Submission[]>([]);
   const [accessibleSurveys, setAccessibleSurveys] = useState<any[]>([]);
+  const [alertCodes, setAlertCodes] = useState<Record<string, any>>({});
+  const [selectedSurvey, setSelectedSurvey] = useState<string | null>(surveyId || null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (forcedSurveyId?: string | null) => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // Fetch with high limit to get all data (backward compatible)
-      // The server default is 1000, but we request more to ensure we get everything
+      const surveyToFetch = forcedSurveyId !== undefined ? forcedSurveyId : selectedSurvey;
+
+      // PERFORMANCE FIX: Reduced limit from 100000 to 1000
+      // This dramatically reduces data transfer and client-side processing
+      const params: any = {
+        limit: 1000 // Reduced from 100000 for better performance
+      };
+
+      // Include survey_id if selected
+      if (surveyToFetch) {
+        params.survey_id = surveyToFetch;
+      }
+
       const response = await axios.get(`${API_BASE_URL}/kobo/submissions`, {
-        params: {
-          limit: 100000 // High limit to get all data
-        }
+        params
       });
+
+      // Handle case where backend requires survey selection
+      if (response.data.message === 'Please select a survey to view submissions') {
+        setData([]);
+        if (response.data.metadata?.accessible_surveys) {
+          const surveys = response.data.metadata.accessible_surveys;
+          setAccessibleSurveys(surveys);
+
+          // Auto-select first survey if not already selected
+          if (surveys.length > 0 && !surveyToFetch) {
+            const firstSurvey = surveys[0].asset_id;
+            setSelectedSurvey(firstSurvey);
+            // Recursively fetch with first survey selected
+            return fetchData(firstSurvey);
+          }
+        }
+        return;
+      }
 
       // Process and normalize all data
       const processedData = response.data.results.map(normalizeSubmissionData);
@@ -53,7 +83,18 @@ export const useFetchSubmissions = () => {
 
       // Store accessible surveys metadata
       if (response.data.metadata?.accessible_surveys) {
-        setAccessibleSurveys(response.data.metadata.accessible_surveys);
+        const surveys = response.data.metadata.accessible_surveys;
+        setAccessibleSurveys(surveys);
+
+        // PERFORMANCE FIX: Extract alert codes from surveys metadata (batched response)
+        // This eliminates separate API calls for each survey's alert codes
+        const codesMap: Record<string, any> = {};
+        surveys.forEach((survey: any) => {
+          if (survey.alert_codes) {
+            codesMap[survey.asset_id] = survey.alert_codes;
+          }
+        });
+        setAlertCodes(codesMap);
       }
     } catch (err) {
       console.error('Error fetching submissions:', err);
@@ -63,21 +104,38 @@ export const useFetchSubmissions = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [selectedSurvey]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  return { data, accessibleSurveys, isLoading, error, refetch: fetchData };
+  return {
+    data,
+    accessibleSurveys,
+    alertCodes, // PERFORMANCE FIX: Return batched alert codes from metadata
+    selectedSurvey,
+    setSelectedSurvey: (surveyId: string | null) => {
+      setSelectedSurvey(surveyId);
+      fetchData(surveyId);
+    },
+    isLoading,
+    error,
+    refetch: fetchData
+  };
 };
 
-// Hook to update validation status
+// PERFORMANCE OPTIMIZATION: Enhanced hook with optimistic updates support
 export const useUpdateValidationStatus = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
 
-  const updateStatus = async (submissionId: string, status: string, assetId?: string) => {
+  const updateStatus = async (
+    submissionId: string,
+    status: string,
+    assetId?: string,
+    onOptimisticUpdate?: (updatedSubmission: any) => void
+  ) => {
     try {
       setIsUpdating(true);
       setUpdateMessage(null);
@@ -88,11 +146,17 @@ export const useUpdateValidationStatus = () => {
       });
 
       setUpdateMessage(response.data.message || `Validation status correctly updated for submission ${submissionId}`);
-      return true;
+
+      // PERFORMANCE FIX: If backend returns updated document, trigger optimistic update
+      if (response.data.data && onOptimisticUpdate) {
+        onOptimisticUpdate(response.data.data);
+      }
+
+      return { success: true, data: response.data.data };
     } catch (err) {
       console.error('Error updating validation status:', err);
       setUpdateMessage('Error updating validation status. Please try again.');
-      return false;
+      return { success: false, data: null };
     } finally {
       setIsUpdating(false);
     }

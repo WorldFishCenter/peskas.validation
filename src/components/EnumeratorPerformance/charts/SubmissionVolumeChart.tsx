@@ -16,7 +16,8 @@ interface SubmissionVolumeChartProps {
   onEnumeratorSelect: (name: string) => void;
 }
 
-const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = ({
+// PERFORMANCE FIX: Wrap in React.memo to prevent unnecessary re-renders
+const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = React.memo(({
   enumerators,
   onEnumeratorSelect
 }) => {
@@ -108,6 +109,11 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = ({
   }), [sortedEnumerators, t, onEnumeratorSelect]);
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;
-};
+}, (prevProps, nextProps) => {
+  return (
+    JSON.stringify(prevProps.enumerators) === JSON.stringify(nextProps.enumerators) &&
+    prevProps.onEnumeratorSelect === nextProps.onEnumeratorSelect
+  );
+});
 
 export default SubmissionVolumeChart; 

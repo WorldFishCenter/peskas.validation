@@ -18,7 +18,8 @@ interface AlertDistributionChartProps {
   selectedEnumeratorData: EnumeratorData;
 }
 
-export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
+// PERFORMANCE FIX: Wrap in React.memo to prevent unnecessary re-renders
+export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = React.memo(({
   selectedEnumeratorData
 }) => {
   const { t } = useTranslation('enumerators');
@@ -101,13 +102,16 @@ export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
   }), [alertData, totalAlerts, t]);
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;
-};
+}, (prevProps, nextProps) => {
+  return JSON.stringify(prevProps.selectedEnumeratorData) === JSON.stringify(nextProps.selectedEnumeratorData);
+});
 
 interface EnumeratorTrendChartProps {
   selectedEnumeratorData: EnumeratorData;
 }
 
-export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
+// PERFORMANCE FIX: Wrap in React.memo to prevent unnecessary re-renders
+export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = React.memo(({
   selectedEnumeratorData
 }) => {
   const { t } = useTranslation('enumerators');
@@ -222,4 +226,6 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
   }), [categories, data, tickInterval, totalSubmissions, t]);
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;
-}; 
+}, (prevProps, nextProps) => {
+  return JSON.stringify(prevProps.selectedEnumeratorData) === JSON.stringify(nextProps.selectedEnumeratorData);
+}); 
