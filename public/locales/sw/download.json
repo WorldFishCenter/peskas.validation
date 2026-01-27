@@ -48,7 +48,32 @@
     "loading": "Inapata maangalizi...",
     "noData": "Hakuna data iliyopatikana",
     "noDataHint": "Jaribu kubadilisha vichujio vyako.",
-    "error": "Hitilafu ya kupakia maangalizi"
+    "error": "Hitilafu ya kupakia maangalizi",
+    "dataDictionary": "Kamusi ya Data",
+    "viewFieldDescriptions": "Angalia maelezo ya sehemu"
+  },
+  "metadata": {
+    "title": "Kamusi ya Data",
+    "fieldInfo": "Taarifa za Sehemu",
+    "subtitle": "Maelezo ya sehemu na aina za data kwa seti ya data ya kutua",
+    "searchPlaceholder": "Tafuta sehemu...",
+    "noMetadata": "Maelezo ya sehemu hayapatikani kwa sasa",
+    "loading": "Inapakia maelezo ya sehemu...",
+    "fieldName": "Jina la Sehemu",
+    "description": "Maelezo",
+    "type": "Aina",
+    "unit": "Kitengo",
+    "example": "Mfano",
+    "range": "Kiwango",
+    "values": "Thamani Zinazowezekana",
+    "noResults": "Hakuna sehemu zinazofanana na utafutaji wako",
+    "types": {
+      "string": "Maandishi",
+      "integer": "Nambari (kamili)",
+      "float": "Nambari (desimali)",
+      "datetime": "Tarehe/Saa",
+      "boolean": "Ndio/Hapana"
+    }
   },
   "getStarted": {
     "title": "Tayari Kupakua Data",

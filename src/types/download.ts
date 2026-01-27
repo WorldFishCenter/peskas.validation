@@ -123,3 +123,60 @@ export interface PreviewResponse {
  * Download status
  */
 export type DownloadStatus = 'idle' | 'previewing' | 'downloading' | 'success' | 'error';
+
+/**
+ * Field description from PeSKAS API metadata
+ *
+ * Comprehensive documentation for a single data field including type,
+ * unit, examples, and semantic information.
+ *
+ * Based on: https://github.com/WorldFishCenter/peskas-api/blob/main/src/peskas_api/schema/field_metadata.py
+ */
+export interface FieldDescription {
+  /** Field identifier */
+  name?: string;
+
+  /** Human-readable description explaining what this field represents */
+  description: string;
+
+  /** Data type: 'string', 'integer', 'float', 'date', 'datetime' */
+  data_type?: string;
+
+  /** Unit of measurement (e.g., 'kg', 'cm', 'hours', 'meters') */
+  unit?: string;
+
+  /** Sample data instances (array of examples) */
+  examples?: any[];
+
+  /** Enumerated categorical options (possible values) */
+  possible_values?: string[];
+
+  /** Numeric min/max bounds (tuple: [min, max]) */
+  value_range?: [number | null, number | null] | null;
+
+  /** Whether field is mandatory */
+  required?: boolean;
+
+  /** Formal ontology definition URL for semantic web interoperability */
+  ontology_url?: string;
+
+  /** Documentation or dataset catalog links */
+  url?: string;
+}
+
+/**
+ * Field metadata response from API
+ *
+ * Contains metadata for all fields in the landings dataset,
+ * optionally filtered by scope (trip_info or catch_info).
+ */
+export interface FieldMetadata {
+  /** Map of field names to their descriptions */
+  fields: Record<string, FieldDescription>;
+
+  /** The scope filter applied (if any) */
+  scope?: string;
+
+  /** Optional message (e.g., when metadata is unavailable) */
+  message?: string;
+}

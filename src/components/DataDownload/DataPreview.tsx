@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useReactTable,
@@ -6,8 +6,11 @@ import {
   flexRender,
   ColumnDef
 } from '@tanstack/react-table';
-import { IconDownload, IconAlertCircle } from '@tabler/icons-react';
+import { IconDownload, IconAlertCircle, IconBook } from '@tabler/icons-react';
 import { DownloadFilters } from '../../types/download';
+import { useFetchFieldMetadata } from '../../api/api';
+import FieldInfoIcon from './FieldInfoIcon';
+import FieldMetadataModal from './FieldMetadataModal';
 
 interface DataPreviewProps {
   data: Record<string, any>[];
@@ -30,14 +33,47 @@ const DataPreview: React.FC<DataPreviewProps> = ({
 }) => {
   const { t } = useTranslation('download');
 
-  // Generate columns dynamically from data
+  // Metadata state management
+  const [showMetadataModal, setShowMetadataModal] = useState(false);
+  const [selectedField, setSelectedField] = useState<string | null>(null);
+  const {
+    metadata,
+    isLoading: metadataLoading,
+    error: metadataError,
+    fetchMetadata
+  } = useFetchFieldMetadata(appliedFilters?.scope);
+
+  // Handle field info icon click
+  const handleFieldInfoClick = (fieldName: string) => {
+    if (!metadata && !metadataLoading) {
+      fetchMetadata(); // Lazy load on first click
+    }
+    setSelectedField(fieldName);
+    setShowMetadataModal(true);
+  };
+
+  // Handle Data Dictionary button click
+  const handleDataDictionaryClick = () => {
+    if (!metadata && !metadataLoading) {
+      fetchMetadata(); // Lazy load on first click
+    }
+    setSelectedField(null); // No specific field highlighted
+    setShowMetadataModal(true);
+  };
+
+  // Generate columns dynamically from data with info icons
   const columns = useMemo<ColumnDef<Record<string, any>>[]>(() => {
     if (!data || data.length === 0) return [];
 
     const firstRow = data[0];
     return Object.keys(firstRow).map(key => ({
       accessorKey: key,
-      header: () => key.replace(/_/g, ' ').toUpperCase(),
+      header: () => (
+        <div className="d-flex align-items-center">
+          <span>{key.replace(/_/g, ' ').toUpperCase()}</span>
+          <FieldInfoIcon fieldName={key} onClick={handleFieldInfoClick} />
+        </div>
+      ),
       cell: info => {
         const value = info.getValue();
         // Handle null/undefined values
@@ -99,23 +135,34 @@ const DataPreview: React.FC<DataPreviewProps> = ({
   }
 
   return (
-    <div className="card">
-      <div className="card-header d-flex justify-content-between align-items-center">
-        <div>
-          <h3 className="card-title">{t('preview.title')}</h3>
-          <p className="text-muted mb-0">
-            {t('preview.showing', { shown: data.length, total: totalCount.toLocaleString() })}
-          </p>
+    <>
+      <div className="card">
+        <div className="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <h3 className="card-title">{t('preview.title')}</h3>
+            <p className="text-muted mb-0">
+              {t('preview.showing', { shown: data.length, total: totalCount.toLocaleString() })}
+            </p>
+          </div>
+          <div className="btn-list">
+            <button
+              className="btn btn-ghost-secondary"
+              onClick={handleDataDictionaryClick}
+              title={t('preview.viewFieldDescriptions')}
+            >
+              <IconBook className="icon me-2" size={18} />
+              {t('preview.dataDictionary')}
+            </button>
+            <button
+              className="btn btn-success"
+              onClick={onDownload}
+              disabled={isDownloading}
+            >
+              <IconDownload className="icon me-2" size={18} />
+              {isDownloading ? t('preview.downloading') : t('preview.downloadFull')}
+            </button>
+          </div>
         </div>
-        <button
-          className="btn btn-success"
-          onClick={onDownload}
-          disabled={isDownloading}
-        >
-          <IconDownload className="icon me-2" size={18} />
-          {isDownloading ? t('preview.downloading') : t('preview.downloadFull')}
-        </button>
-      </div>
 
       {/* Applied Filters Summary */}
       {appliedFilters && (
@@ -196,7 +243,19 @@ const DataPreview: React.FC<DataPreviewProps> = ({
           {isDownloading ? t('preview.downloading') : t('preview.downloadFull')}
         </button>
       </div>
-    </div>
+      </div>
+
+      {/* Field Metadata Modal */}
+      {showMetadataModal && (
+        <FieldMetadataModal
+          onClose={() => setShowMetadataModal(false)}
+          metadata={metadata}
+          isLoading={metadataLoading}
+          error={metadataError}
+          highlightField={selectedField || undefined}
+        />
+      )}
+    </>
   );
 };
 

@@ -6,7 +6,7 @@ import { getApiBaseUrl } from '../utils/apiConfig';
 const API_BASE_URL = getApiBaseUrl();
 
 import { Submission } from '../types/validation';
-import { DownloadFilters, PreviewResponse } from '../types/download';
+import { DownloadFilters, PreviewResponse, FieldMetadata } from '../types/download';
 
 // Normalize field names for consistent access
 const normalizeSubmissionData = (item: any): any => {
@@ -477,6 +477,75 @@ export const useFetchDownloadMetadata = (countryId?: string, surveyId?: string) 
     error,
     refetch: fetchMetadata
   };
+};
+
+/**
+ * Hook to fetch field metadata from PeSKAS API
+ *
+ * Fetches comprehensive field documentation including descriptions, data types,
+ * units, examples, and categorical values. Used to enhance UX with field
+ * descriptions in the Data Download feature.
+ *
+ * Features:
+ * - Lazy loading: Only fetches when fetchMetadata() is called
+ * - Session caching: Stores in sessionStorage to avoid repeated requests
+ * - Scope filtering: Optional scope parameter to filter by trip_info or catch_info
+ *
+ * @param scope - Optional scope filter ('trip_info' or 'catch_info')
+ * @returns Object with metadata, loading/error states, and fetch function
+ */
+export const useFetchFieldMetadata = (scope?: string) => {
+  const [metadata, setMetadata] = useState<FieldMetadata | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Generate cache key based on scope
+  const cacheKey = `peskas_metadata_${scope || 'all'}`;
+
+  const fetchMetadata = useCallback(async () => {
+    // Check sessionStorage cache first
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        setMetadata(JSON.parse(cached));
+        return;
+      }
+    } catch (err) {
+      console.warn('Failed to read metadata from cache:', err);
+      // Continue to fetch from API
+    }
+
+    // Fetch from API
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const params = new URLSearchParams();
+      if (scope) params.append('scope', scope);
+
+      const response = await axios.get<FieldMetadata>(
+        `${API_BASE_URL}/data-download/metadata-fields${params.toString() ? `?${params.toString()}` : ''}`
+      );
+
+      setMetadata(response.data);
+
+      // Cache in sessionStorage
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify(response.data));
+      } catch (err) {
+        console.warn('Failed to cache metadata:', err);
+        // Continue even if caching fails
+      }
+    } catch (err: any) {
+      console.error('Error fetching field metadata:', err);
+      setError(err.response?.data?.error || 'Failed to load field descriptions');
+      setMetadata(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [scope, cacheKey]);
+
+  return { metadata, isLoading, error, fetchMetadata };
 };
 
 /**

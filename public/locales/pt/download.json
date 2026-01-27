@@ -48,7 +48,32 @@
     "loading": "Buscando visualização...",
     "noData": "Nenhum dado encontrado",
     "noDataHint": "Tente ajustar seus filtros.",
-    "error": "Erro ao carregar visualização"
+    "error": "Erro ao carregar visualização",
+    "dataDictionary": "Dicionário de Dados",
+    "viewFieldDescriptions": "Ver descrições dos campos"
+  },
+  "metadata": {
+    "title": "Dicionário de Dados",
+    "fieldInfo": "Informações do Campo",
+    "subtitle": "Descrições de campos e tipos de dados para o conjunto de dados de desembarques",
+    "searchPlaceholder": "Pesquisar campos...",
+    "noMetadata": "Descrições de campos não estão disponíveis no momento",
+    "loading": "Carregando descrições de campos...",
+    "fieldName": "Nome do Campo",
+    "description": "Descrição",
+    "type": "Tipo",
+    "unit": "Unidade",
+    "example": "Exemplo",
+    "range": "Intervalo",
+    "values": "Valores Possíveis",
+    "noResults": "Nenhum campo corresponde à sua pesquisa",
+    "types": {
+      "string": "Texto",
+      "integer": "Número (inteiro)",
+      "float": "Número (decimal)",
+      "datetime": "Data/Hora",
+      "boolean": "Sim/Não"
+    }
   },
   "getStarted": {
     "title": "Pronto para Baixar Dados",

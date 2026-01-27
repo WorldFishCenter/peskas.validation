@@ -31,18 +31,19 @@
     "peskas_api": "Landings data download (api.peskas.org) with X-API-Key auth, input validation, rate limiting (lib/peskas-api.js)"
   },
   "current_session": {
-    "last_feature": "Comprehensive Performance Optimization (3-phase implementation)",
+    "last_feature": "PeSKAS API Metadata Integration for Enhanced Field Documentation",
     "active_files": [
-      "scripts/add_performance_indexes.cjs",
-      "server/index.js",
+      "api/data-download/metadata-fields.js",
+      "lib/peskas-api.js",
+      "server/dev.js",
+      "src/types/download.ts",
       "src/api/api.ts",
-      "src/components/EnumeratorPerformance/EnumeratorPerformance.tsx",
-      "src/components/EnumeratorPerformance/charts/AlertDistributionChart.tsx",
-      "src/components/EnumeratorPerformance/charts/QualityRankingChart.tsx",
-      "src/components/EnumeratorPerformance/charts/SubmissionTrendChart.tsx",
-      "src/components/EnumeratorPerformance/charts/SubmissionVolumeChart.tsx",
-      "src/components/EnumeratorPerformance/charts/EnumeratorDetailCharts.tsx",
-      "PERFORMANCE_IMPROVEMENTS.md"
+      "src/components/DataDownload/FieldInfoIcon.tsx",
+      "src/components/DataDownload/FieldMetadataModal.tsx",
+      "src/components/DataDownload/DataPreview.tsx",
+      "public/locales/en/download.json",
+      "public/locales/pt/download.json",
+      "public/locales/sw/download.json"
     ],
     "completed_improvements": [
       "✅ Performance Optimization: 90-95% load time reduction (30-60s → 2-3s for admins)",
@@ -68,7 +69,19 @@
       "✅ Automated daily syncs via Vercel cron (2 AM UTC)",
       "✅ Webhook support for real-time Airtable sync triggers",
       "✅ Admin API endpoint for viewing sync audit logs",
-      "✅ npm scripts for manual sync operations (sync:all, sync:users, etc.)"
+      "✅ npm scripts for manual sync operations (sync:all, sync:users, etc.)",
+      "✅ PeSKAS API metadata integration: Enhanced Data Download UX with field descriptions",
+      "✅ Hybrid UX pattern: Column info icons + Data Dictionary modal",
+      "✅ Lazy loading with sessionStorage caching (1s first load, instant after)",
+      "✅ Conditional modal behavior: Single field view vs all fields view",
+      "✅ Comprehensive field documentation: description, unit, examples, ranges, URLs",
+      "✅ TypeScript interfaces matching PeSKAS API schema (FieldDescription, FieldMetadata)",
+      "✅ Full i18n support (en, pt, sw) for metadata UI",
+      "✅ Backend endpoint: api/data-download/metadata-fields.js with graceful degradation",
+      "✅ Frontend components: FieldInfoIcon.tsx, FieldMetadataModal.tsx",
+      "✅ User feedback iterations: Fixed URL fields, removed type column, correct field names, single-field modal",
+      "✅ Followed AlertGuideModal pattern for consistency",
+      "✅ Non-intrusive implementation (doesn't slow preview)"
     ],
     "pending_todos": []
   },
@@ -83,7 +96,8 @@
     "PeSKAS API integration documented - reference architecture-decisions.md for external API client pattern, permission filtering, preview-before-download UX",
     "Data download refactoring documented (2026-01-25) - reference for: shared permission utilities pattern, unified metadata endpoint pattern, Airtable→MongoDB migration pattern, input validation pattern, CSV sanitization pattern",
     "Airtable hardening documented (2026-01-26) - reference for: field mapping configuration, schema validation, transaction-like safety, audit logging, rate limiting, distributed locks, automated syncs, webhook integration",
-    "Performance optimization documented (2026-01-27) - reference PERFORMANCE_IMPROVEMENTS.md and architecture-decisions.md for: database indexing pattern, survey-based loading, MongoDB-level pagination, batched API responses, optimistic updates, React.memo with custom comparison, useMemo for expensive operations"
+    "Performance optimization documented (2026-01-27) - reference PERFORMANCE_IMPROVEMENTS.md and architecture-decisions.md for: database indexing pattern, survey-based loading, MongoDB-level pagination, batched API responses, optimistic updates, React.memo with custom comparison, useMemo for expensive operations",
+    "PeSKAS API metadata integration documented (2026-01-27) - reference architecture-decisions.md for: lazy loading with sessionStorage caching pattern, conditional modal behavior (single field vs all fields), TanStack Table column enhancement with info icons, useFetchFieldMetadata hook pattern, comprehensive field documentation display (description, unit, examples, ranges, URLs)"
   ],
   "common_patterns": {
     "api_endpoint": "Use lib/response.js (sendSuccess, sendError, sendBadRequest, setCorsHeaders), lib/middleware.js, lib/db.js",
@@ -111,7 +125,11 @@
     "permission_filtering": "Use lib/filter-permissions.js (getAccessibleCountries, getAccessibleSurveys, getAccessibleDistricts, applyDownloadPermissions) - single source of truth",
     "unified_metadata": "Single endpoint pattern: /api/{feature}/metadata returns all filter options in one request (see api/data-download/metadata.js)",
     "input_validation": "Validate all external API parameters with regex patterns before sending (see lib/peskas-api.js validateFilters)",
-    "csv_export": "Use lib/helpers.js sanitizeCSV() to prevent formula injection in CSV exports"
+    "csv_export": "Use lib/helpers.js sanitizeCSV() to prevent formula injection in CSV exports",
+    "field_metadata_display": "Use lazy loading + sessionStorage caching pattern for external API metadata (see useFetchFieldMetadata hook in src/api/api.ts)",
+    "conditional_modal": "Implement single-item vs all-items modal behavior with highlightField prop (see FieldMetadataModal.tsx)",
+    "column_info_icons": "Enhance TanStack Table headers with info icons for contextual help (see DataPreview.tsx column definitions)",
+    "peskas_metadata": "Use api/data-download/metadata-fields.js for authenticated PeSKAS API metadata access with graceful degradation"
   },
   "management_scripts": {
     "master_sync": "scripts/sync_all_from_airtable.js - Master sync enforcing dependency order (Districts → Surveys → Users) with lib/sync-transaction.js safety",

@@ -48,7 +48,32 @@
     "loading": "Fetching preview...",
     "noData": "No data found",
     "noDataHint": "Try adjusting your filters.",
-    "error": "Error loading preview"
+    "error": "Error loading preview",
+    "dataDictionary": "Data Dictionary",
+    "viewFieldDescriptions": "View field descriptions"
+  },
+  "metadata": {
+    "title": "Data Dictionary",
+    "fieldInfo": "Field Information",
+    "subtitle": "Field descriptions and data types for the landings dataset",
+    "searchPlaceholder": "Search fields...",
+    "noMetadata": "Field descriptions are currently unavailable",
+    "loading": "Loading field descriptions...",
+    "fieldName": "Field Name",
+    "description": "Description",
+    "type": "Type",
+    "unit": "Unit",
+    "example": "Example",
+    "range": "Range",
+    "values": "Possible Values",
+    "noResults": "No fields match your search",
+    "types": {
+      "string": "Text",
+      "integer": "Number (whole)",
+      "float": "Number (decimal)",
+      "datetime": "Date/Time",
+      "boolean": "Yes/No"
+    }
   },
   "getStarted": {
     "title": "Ready to Download Data",
