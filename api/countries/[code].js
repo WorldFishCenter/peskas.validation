@@ -5,7 +5,7 @@
  * GET requires authentication, PATCH/DELETE require admin
  */
 
-const { withMiddleware, authenticateUser, requireAdmin } = require('../../lib/middleware');
+const { withMiddleware, authenticateUser } = require('../../lib/middleware');
 const { getDb } = require('../../lib/db');
 const { sendNotFound, sendBadRequest, sendForbidden, sendServerError, setCorsHeaders } = require('../../lib/response');
 

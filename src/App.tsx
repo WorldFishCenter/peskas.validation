@@ -1,12 +1,14 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './components/Auth/AuthContext';
 import { I18nProvider } from './i18n/I18nContext';
 import Login from './components/Auth/Login';
+import ResetPassword from './components/Auth/ResetPassword';
 import ValidationTable from './components/ValidationTable/ValidationTable';
 import MainLayout from './components/Layout/MainLayout';
 import ErrorBoundary from './components/ErrorBoundary';
 import EnumeratorPerformance from './components/EnumeratorPerformance/EnumeratorPerformance';
+import DataDownload from './components/DataDownload/DataDownload';
 import AdminUsers from './components/Admin/AdminUsers';
 import HowItWorks from './components/HowItWorks/HowItWorks';
 
@@ -21,6 +23,11 @@ const AppRoutes: React.FC = () => {
       <Route path="/enumerators" element={
         <ErrorBoundary>
           <EnumeratorPerformance />
+        </ErrorBoundary>
+      } />
+      <Route path="/data-download" element={
+        <ErrorBoundary>
+          <DataDownload />
         </ErrorBoundary>
       } />
       <Route path="/how-it-works" element={
@@ -55,7 +62,19 @@ const AppContent: React.FC = () => {
 
   return (
     <MainLayout>
-      {isAuthenticated ? <AppRoutes /> : <Login />}
+      {!isAuthenticated ? (
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/reset-password/:token" element={
+            <ErrorBoundary>
+              <ResetPassword />
+            </ErrorBoundary>
+          } />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      ) : (
+        <AppRoutes />
+      )}
     </MainLayout>
   );
 };

@@ -3,15 +3,24 @@ import { IconAlertTriangle, IconUser, IconLock, IconMail, IconLanguage, IconChec
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './AuthContext';
 import { useI18n } from '../../i18n/I18nContext';
+import { requestPasswordReset } from '../../api/auth';
 
 const Login: React.FC = () => {
   const { t } = useTranslation('auth');
+  const { t: tCommon } = useTranslation('common');
   const { i18n } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const { login, loading } = useAuth();
   const { changeLanguage, availableLanguages } = useI18n();
+
+  // Forgot password modal state
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [resetIdentifier, setResetIdentifier] = useState('');
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
   
   // Find current language configuration
   const currentLang = availableLanguages.find(l => l.code === i18n.language) || availableLanguages[0];
@@ -41,6 +50,32 @@ const Login: React.FC = () => {
       e.stopPropagation();
       handleLogin();
     }
+  };
+
+  const handleForgotPassword = async () => {
+    setResetError(null);
+
+    if (!resetIdentifier.trim()) {
+      setResetError(t('forgotPassword.validationError'));
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      await requestPasswordReset(resetIdentifier);
+      setResetSent(true);
+    } catch (err: any) {
+      setResetError(err.message || t('errors.emailSendFailed'));
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const closeForgotPasswordModal = () => {
+    setShowForgotPasswordModal(false);
+    setResetIdentifier('');
+    setResetSent(false);
+    setResetError(null);
   };
 
   return (
@@ -126,7 +161,7 @@ const Login: React.FC = () => {
             )}
 
             <div className="mb-3">
-              <label className="form-label">{t('login.username')}</label>
+              <label className="form-label">{t('login.usernameOrEmail')}</label>
               <div className="input-group input-group-flat">
                 <span className="input-group-text">
                   <IconUser className="icon" size={24} stroke={2} />
@@ -134,7 +169,7 @@ const Login: React.FC = () => {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder={t('login.usernamePlaceholder')}
+                  placeholder={t('login.usernameOrEmailPlaceholder')}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -145,7 +180,19 @@ const Login: React.FC = () => {
             </div>
 
             <div className="mb-3">
-              <label className="form-label">{t('login.password')}</label>
+              <label className="form-label">
+                <div className="d-flex justify-content-between align-items-center">
+                  <span>{t('login.password')}</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPasswordModal(true)}
+                    className="btn btn-link link-secondary p-0"
+                    style={{ fontSize: '0.875rem', textDecoration: 'none' }}
+                  >
+                    {t('login.forgotPassword')}
+                  </button>
+                </div>
+              </label>
               <div className="input-group input-group-flat">
                 <span className="input-group-text">
                   <IconLock className="icon" size={24} stroke={2} />
@@ -211,6 +258,104 @@ const Login: React.FC = () => {
             WorldFish Center © 2025
           </a>
         </div>
+
+        {/* Forgot Password Modal */}
+        {showForgotPasswordModal && (
+          <div className="modal modal-blur fade show" style={{ display: 'block' }} tabIndex={-1}>
+            <div className="modal-dialog modal-sm modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">{t('forgotPassword.title')}</h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={closeForgotPasswordModal}
+                    aria-label="Close"
+                  />
+                </div>
+                <div className="modal-body">
+                  {resetSent ? (
+                    <div className="text-center py-3">
+                      <div className="text-success mb-3">
+                        <IconMail size={48} />
+                      </div>
+                      <h3 className="mb-3">{t('forgotPassword.successTitle')}</h3>
+                      <p className="text-secondary">{t('forgotPassword.successMessage')}</p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-secondary mb-3">{t('forgotPassword.subtitle')}</p>
+
+                      {resetError && (
+                        <div className="alert alert-danger alert-dismissible" role="alert">
+                          <div className="d-flex">
+                            <div>{resetError}</div>
+                            <button
+                              type="button"
+                              className="btn-close"
+                              onClick={() => setResetError(null)}
+                              aria-label="Close"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mb-3">
+                        <label className="form-label">{t('forgotPassword.identifier')}</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder={t('forgotPassword.identifierPlaceholder')}
+                          value={resetIdentifier}
+                          onChange={(e) => setResetIdentifier(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleForgotPassword();
+                            }
+                          }}
+                          autoFocus
+                          disabled={resetLoading}
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className="modal-footer">
+                  {resetSent ? (
+                    <button
+                      type="button"
+                      className="btn btn-primary w-100"
+                      onClick={closeForgotPasswordModal}
+                    >
+                      {t('forgotPassword.backToLogin')}
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-link link-secondary"
+                        onClick={closeForgotPasswordModal}
+                        disabled={resetLoading}
+                      >
+                        {tCommon('buttons.cancel')}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-primary ms-auto"
+                        onClick={handleForgotPassword}
+                        disabled={resetLoading}
+                      >
+                        {resetLoading ? t('forgotPassword.sending') : t('forgotPassword.sendInstructions')}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {showForgotPasswordModal && <div className="modal-backdrop fade show" onClick={closeForgotPasswordModal} />}
       </div>
     </div>
   );

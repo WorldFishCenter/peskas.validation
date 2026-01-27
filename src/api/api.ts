@@ -6,6 +6,7 @@ import { getApiBaseUrl } from '../utils/apiConfig';
 const API_BASE_URL = getApiBaseUrl();
 
 import { Submission } from '../types/validation';
+import { DownloadFilters, PreviewResponse, FieldMetadata } from '../types/download';
 
 // Normalize field names for consistent access
 const normalizeSubmissionData = (item: any): any => {
@@ -26,24 +27,54 @@ const normalizeSubmissionData = (item: any): any => {
 };
 
 // Hook to fetch submissions
-export const useFetchSubmissions = () => {
+// PERFORMANCE OPTIMIZATION: Enhanced hook with survey selection and reduced limits
+export const useFetchSubmissions = (surveyId?: string | null) => {
   const [data, setData] = useState<Submission[]>([]);
   const [accessibleSurveys, setAccessibleSurveys] = useState<any[]>([]);
+  const [alertCodes, setAlertCodes] = useState<Record<string, any>>({});
+  const [selectedSurvey, setSelectedSurvey] = useState<string | null>(surveyId || null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (forcedSurveyId?: string | null) => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // Fetch with high limit to get all data (backward compatible)
-      // The server default is 1000, but we request more to ensure we get everything
+      const surveyToFetch = forcedSurveyId !== undefined ? forcedSurveyId : selectedSurvey;
+
+      // PERFORMANCE FIX: Reduced limit from 100000 to 1000
+      // This dramatically reduces data transfer and client-side processing
+      const params: any = {
+        limit: 1000 // Reduced from 100000 for better performance
+      };
+
+      // Include survey_id if selected
+      if (surveyToFetch) {
+        params.survey_id = surveyToFetch;
+      }
+
       const response = await axios.get(`${API_BASE_URL}/kobo/submissions`, {
-        params: {
-          limit: 100000 // High limit to get all data
-        }
+        params
       });
+
+      // Handle case where backend requires survey selection
+      if (response.data.message === 'Please select a survey to view submissions') {
+        setData([]);
+        if (response.data.metadata?.accessible_surveys) {
+          const surveys = response.data.metadata.accessible_surveys;
+          setAccessibleSurveys(surveys);
+
+          // Auto-select first survey if not already selected
+          if (surveys.length > 0 && !surveyToFetch) {
+            const firstSurvey = surveys[0].asset_id;
+            setSelectedSurvey(firstSurvey);
+            // Recursively fetch with first survey selected
+            return fetchData(firstSurvey);
+          }
+        }
+        return;
+      }
 
       // Process and normalize all data
       const processedData = response.data.results.map(normalizeSubmissionData);
@@ -52,7 +83,18 @@ export const useFetchSubmissions = () => {
 
       // Store accessible surveys metadata
       if (response.data.metadata?.accessible_surveys) {
-        setAccessibleSurveys(response.data.metadata.accessible_surveys);
+        const surveys = response.data.metadata.accessible_surveys;
+        setAccessibleSurveys(surveys);
+
+        // PERFORMANCE FIX: Extract alert codes from surveys metadata (batched response)
+        // This eliminates separate API calls for each survey's alert codes
+        const codesMap: Record<string, any> = {};
+        surveys.forEach((survey: any) => {
+          if (survey.alert_codes) {
+            codesMap[survey.asset_id] = survey.alert_codes;
+          }
+        });
+        setAlertCodes(codesMap);
       }
     } catch (err) {
       console.error('Error fetching submissions:', err);
@@ -62,21 +104,38 @@ export const useFetchSubmissions = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [selectedSurvey]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  return { data, accessibleSurveys, isLoading, error, refetch: fetchData };
+  return {
+    data,
+    accessibleSurveys,
+    alertCodes, // PERFORMANCE FIX: Return batched alert codes from metadata
+    selectedSurvey,
+    setSelectedSurvey: (surveyId: string | null) => {
+      setSelectedSurvey(surveyId);
+      fetchData(surveyId);
+    },
+    isLoading,
+    error,
+    refetch: fetchData
+  };
 };
 
-// Hook to update validation status
+// PERFORMANCE OPTIMIZATION: Enhanced hook with optimistic updates support
 export const useUpdateValidationStatus = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
 
-  const updateStatus = async (submissionId: string, status: string, assetId?: string) => {
+  const updateStatus = async (
+    submissionId: string,
+    status: string,
+    assetId?: string,
+    onOptimisticUpdate?: (updatedSubmission: any) => void
+  ) => {
     try {
       setIsUpdating(true);
       setUpdateMessage(null);
@@ -87,11 +146,17 @@ export const useUpdateValidationStatus = () => {
       });
 
       setUpdateMessage(response.data.message || `Validation status correctly updated for submission ${submissionId}`);
-      return true;
+
+      // PERFORMANCE FIX: If backend returns updated document, trigger optimistic update
+      if (response.data.data && onOptimisticUpdate) {
+        onOptimisticUpdate(response.data.data);
+      }
+
+      return { success: true, data: response.data.data };
     } catch (err) {
       console.error('Error updating validation status:', err);
       setUpdateMessage('Error updating validation status. Please try again.');
-      return false;
+      return { success: false, data: null };
     } finally {
       setIsUpdating(false);
     }
@@ -231,4 +296,347 @@ export const useFetchAlertCodes = (assetId: string | null) => {
   }, [assetId]);
 
   return { alertCodes, isLoading, error };
+};
+
+// ========================================
+// DATA DOWNLOAD HOOKS
+// ========================================
+
+/**
+ * Hook to fetch download preview data
+ *
+ * Fetches the first 20 rows of data based on selected filters
+ * to preview before downloading the full dataset.
+ */
+export const useFetchDownloadPreview = () => {
+  const [data, setData] = useState<any[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [appliedFilters, setAppliedFilters] = useState<DownloadFilters | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchPreview = useCallback(async (filters: DownloadFilters) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Build query string
+      const params = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          if (Array.isArray(value)) {
+            // Only append if array has items
+            if (value.length > 0) {
+              params.append(key, value.join(','));
+            }
+          } else {
+            params.append(key, String(value));
+          }
+        }
+      });
+
+      const response = await axios.get<PreviewResponse>(
+        `${API_BASE_URL}/data-download/preview?${params.toString()}`
+      );
+
+      setData(response.data.data);
+      setTotalCount(response.data.total_count);
+      setAppliedFilters(response.data.filters_applied);
+    } catch (err: any) {
+      console.error('Error fetching preview:', err);
+      setError(err.response?.data?.error || 'Failed to fetch preview');
+      setData([]);
+      setTotalCount(0);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return { data, totalCount, appliedFilters, isLoading, error, fetchPreview };
+};
+
+/**
+ * Function to trigger CSV download
+ *
+ * Downloads the full dataset as CSV based on selected filters.
+ * Triggers browser download with appropriate filename.
+ *
+ * @param filters - Download filters to apply
+ * @returns Promise<boolean> - true if download succeeded, false otherwise
+ */
+export const downloadCSV = async (filters: DownloadFilters): Promise<boolean> => {
+  try {
+    // Build query string
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        if (Array.isArray(value)) {
+          // Only append if array has items
+          if (value.length > 0) {
+            params.append(key, value.join(','));
+          }
+        } else {
+          params.append(key, String(value));
+        }
+      }
+    });
+
+    const response = await axios.get(
+      `${API_BASE_URL}/data-download/export?${params.toString()}`,
+      {
+        responseType: 'blob' // Important for file download
+      }
+    );
+
+    // Create blob and trigger download
+    const blob = new Blob([response.data], { type: 'text/csv; charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+
+    // Extract filename from Content-Disposition header or use default
+    const contentDisposition = response.headers['content-disposition'];
+    let filename = `peskas-landings-${new Date().toISOString().split('T')[0]}.csv`;
+
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1].replace(/"/g, '');
+      }
+    }
+
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    return true;
+  } catch (err) {
+    console.error('Error downloading CSV:', err);
+    return false;
+  }
+};
+
+/**
+ * Unified hook to fetch all download metadata in one request
+ * Replaces useFetchCountries, useFetchDistricts, useFetchSurveys for better performance
+ *
+ * @param countryId - Optional country filter for districts/surveys
+ * @param surveyId - Optional survey filter for districts (cascade filtering)
+ */
+export const useFetchDownloadMetadata = (countryId?: string, surveyId?: string) => {
+  const [metadata, setMetadata] = useState<{
+    countries: any[];
+    districts: any[];
+    surveys: any[];
+    userContext: any;
+  }>({
+    countries: [],
+    districts: [],
+    surveys: [],
+    userContext: null
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchMetadata = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const params = new URLSearchParams();
+      if (countryId) params.append('country_id', countryId);
+      if (surveyId) params.append('survey_id', surveyId);
+
+      const queryString = params.toString();
+      const url = `${API_BASE_URL}/data-download/metadata${queryString ? `?${queryString}` : ''}`;
+      const response = await axios.get(url);
+
+      setMetadata({
+        countries: response.data.countries || [],
+        districts: response.data.districts || [],
+        surveys: response.data.surveys || [],
+        userContext: response.data.user_context || null
+      });
+    } catch (err: any) {
+      console.error('Error fetching download metadata:', err);
+      setError(err.response?.data?.error || 'Failed to load filter metadata');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [countryId, surveyId]);
+
+  useEffect(() => {
+    fetchMetadata();
+  }, [fetchMetadata]);
+
+  return {
+    metadata,
+    isLoading,
+    error,
+    refetch: fetchMetadata
+  };
+};
+
+/**
+ * Hook to fetch field metadata from PeSKAS API
+ *
+ * Fetches comprehensive field documentation including descriptions, data types,
+ * units, examples, and categorical values. Used to enhance UX with field
+ * descriptions in the Data Download feature.
+ *
+ * Features:
+ * - Lazy loading: Only fetches when fetchMetadata() is called
+ * - Session caching: Stores in sessionStorage to avoid repeated requests
+ * - Scope filtering: Optional scope parameter to filter by trip_info or catch_info
+ *
+ * @param scope - Optional scope filter ('trip_info' or 'catch_info')
+ * @returns Object with metadata, loading/error states, and fetch function
+ */
+export const useFetchFieldMetadata = (scope?: string) => {
+  const [metadata, setMetadata] = useState<FieldMetadata | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Generate cache key based on scope
+  const cacheKey = `peskas_metadata_${scope || 'all'}`;
+
+  const fetchMetadata = useCallback(async () => {
+    // Check sessionStorage cache first
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        setMetadata(JSON.parse(cached));
+        return;
+      }
+    } catch (err) {
+      console.warn('Failed to read metadata from cache:', err);
+      // Continue to fetch from API
+    }
+
+    // Fetch from API
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const params = new URLSearchParams();
+      if (scope) params.append('scope', scope);
+
+      const response = await axios.get<FieldMetadata>(
+        `${API_BASE_URL}/data-download/metadata-fields${params.toString() ? `?${params.toString()}` : ''}`
+      );
+
+      setMetadata(response.data);
+
+      // Cache in sessionStorage
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify(response.data));
+      } catch (err) {
+        console.warn('Failed to cache metadata:', err);
+        // Continue even if caching fails
+      }
+    } catch (err: any) {
+      console.error('Error fetching field metadata:', err);
+      setError(err.response?.data?.error || 'Failed to load field descriptions');
+      setMetadata(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [scope, cacheKey]);
+
+  return { metadata, isLoading, error, fetchMetadata };
+};
+
+/**
+ * Fetch countries for data download filters
+ * @deprecated Use useFetchDownloadMetadata instead for better performance
+ */
+export const useFetchCountries = () => {
+  const [countries, setCountries] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchCountries = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/countries`);
+      setCountries(response.data?.countries || []);
+    } catch (err: any) {
+      console.error('Error fetching countries:', err);
+      setError(err.response?.data?.error || 'Failed to load countries');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCountries();
+  }, [fetchCountries]);
+
+  return { countries, isLoading, error, refetch: fetchCountries };
+};
+
+/**
+ * Fetch districts (GAUL codes) for data download filters
+ * @deprecated Use useFetchDownloadMetadata instead for better performance
+ */
+export const useFetchDistricts = () => {
+  const [districts, setDistricts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDistricts = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/districts`);
+      setDistricts(response.data?.data || []);
+    } catch (err: any) {
+      console.error('Error fetching districts:', err);
+      setError(err.response?.data?.error || 'Failed to load districts');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDistricts();
+  }, [fetchDistricts]);
+
+  return { districts, isLoading, error, refetch: fetchDistricts };
+};
+
+/**
+ * Fetch surveys for data download filters
+ * @deprecated Use useFetchDownloadMetadata instead for better performance
+ */
+export const useFetchSurveys = () => {
+  const [surveys, setSurveys] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSurveys = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/surveys`);
+      setSurveys(response.data?.surveys || []);
+    } catch (err: any) {
+      console.error('Error fetching surveys:', err);
+      setError(err.response?.data?.error || 'Failed to load surveys');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSurveys();
+  }, [fetchSurveys]);
+
+  return { surveys, isLoading, error, refetch: fetchSurveys };
 }; 

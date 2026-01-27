@@ -18,7 +18,8 @@ interface AlertDistributionChartProps {
   selectedEnumeratorData: EnumeratorData;
 }
 
-export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
+// PERFORMANCE FIX: Wrap in React.memo to prevent unnecessary re-renders
+export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = React.memo(({
   selectedEnumeratorData
 }) => {
   const { t } = useTranslation('enumerators');
@@ -64,7 +65,6 @@ export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
     },
     tooltip: {
       ...pieTooltipConfig,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       formatter: function(this: any) {
         const point = this.point;
         const totalAlerts = this.series.data.reduce((sum: number, p: any) => sum + (p.y || 0), 0);
@@ -102,13 +102,16 @@ export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = ({
   }), [alertData, totalAlerts, t]);
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;
-};
+}, (prevProps, nextProps) => {
+  return JSON.stringify(prevProps.selectedEnumeratorData) === JSON.stringify(nextProps.selectedEnumeratorData);
+});
 
 interface EnumeratorTrendChartProps {
   selectedEnumeratorData: EnumeratorData;
 }
 
-export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
+// PERFORMANCE FIX: Wrap in React.memo to prevent unnecessary re-renders
+export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = React.memo(({
   selectedEnumeratorData
 }) => {
   const { t } = useTranslation('enumerators');
@@ -174,7 +177,6 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
     },
     tooltip: {
       ...columnTooltipConfig,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       formatter: function(this: any) {
         // Get formatted date from category axis
         const dateLabel = this.key || 
@@ -224,4 +226,6 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = ({
   }), [categories, data, tickInterval, totalSubmissions, t]);
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;
-}; 
+}, (prevProps, nextProps) => {
+  return JSON.stringify(prevProps.selectedEnumeratorData) === JSON.stringify(nextProps.selectedEnumeratorData);
+}); 

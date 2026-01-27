@@ -12,7 +12,6 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
-const fs = require('fs');
 const { connectToDatabase } = require('../lib/db');
 
 // Load environment variables
@@ -60,6 +59,9 @@ console.log('Mounting API endpoints...\n');
 // Authentication endpoints
 mountServerlessFunction('/api/auth/login', path.join(__dirname, '../api/auth/login.js'));
 mountServerlessFunction('/api/auth/me', path.join(__dirname, '../api/auth/me.js'));
+mountServerlessFunction('/api/auth/forgot-password', path.join(__dirname, '../api/auth/forgot-password.js'));
+mountServerlessFunction('/api/auth/validate-reset-token', path.join(__dirname, '../api/auth/validate-reset-token.js'));
+mountServerlessFunction('/api/auth/reset-password', path.join(__dirname, '../api/auth/reset-password.js'));
 
 // KoboToolbox endpoints
 mountServerlessFunction('/api/kobo/submissions', path.join(__dirname, '../api/kobo/submissions.js'));
@@ -84,12 +86,21 @@ mountServerlessFunction('/api/users/:id/accessible-surveys', path.join(__dirname
 mountServerlessFunction('/api/countries', path.join(__dirname, '../api/countries/index.js'));
 mountServerlessFunction('/api/countries/:code', path.join(__dirname, '../api/countries/[code].js'));
 
+// Districts endpoint (GAUL codes from Airtable)
+mountServerlessFunction('/api/districts', path.join(__dirname, '../api/districts/index.js'));
+
 // Enumerator stats endpoint
 mountServerlessFunction('/api/enumerators-stats', path.join(__dirname, '../api/enumerators-stats.js'));
 
 // Admin endpoints
 mountServerlessFunction('/api/admin/sync-users', path.join(__dirname, '../api/admin/sync-users.js'));
 mountServerlessFunction('/api/admin/refresh-enumerator-stats', path.join(__dirname, '../api/admin/refresh-enumerator-stats.js'));
+
+// Data download endpoints (PeSKAS API integration)
+mountServerlessFunction('/api/data-download/metadata', path.join(__dirname, '../api/data-download/metadata.js'));
+mountServerlessFunction('/api/data-download/preview', path.join(__dirname, '../api/data-download/preview.js'));
+mountServerlessFunction('/api/data-download/export', path.join(__dirname, '../api/data-download/export.js'));
+mountServerlessFunction('/api/data-download/metadata-fields', path.join(__dirname, '../api/data-download/metadata-fields.js'));
 
 console.log('\n✅ All endpoints mounted successfully!\n');
 
@@ -106,7 +117,10 @@ app.get('/', (req, res) => {
     endpoints: {
       auth: [
         'POST /api/auth/login',
-        'GET /api/auth/me'
+        'GET /api/auth/me',
+        'POST /api/auth/forgot-password',
+        'GET /api/auth/validate-reset-token',
+        'POST /api/auth/reset-password'
       ],
       kobo: [
         'GET /api/kobo/submissions',
@@ -137,11 +151,21 @@ app.get('/', (req, res) => {
         'PATCH /api/countries/:code',
         'DELETE /api/countries/:code'
       ],
+      districts: [
+        'GET /api/districts'
+      ],
       stats: [
         'GET /api/enumerators-stats'
       ],
       admin: [
-        'POST /api/admin/sync-users (requires refactoring)'
+        'POST /api/admin/sync-users (requires refactoring)',
+        'POST /api/admin/refresh-enumerator-stats'
+      ],
+      dataDownload: [
+        'GET /api/data-download/metadata',
+        'GET /api/data-download/preview',
+        'GET /api/data-download/export',
+        'GET /api/data-download/metadata-fields'
       ]
     }
   });
@@ -157,7 +181,7 @@ app.use((req, res) => {
 });
 
 // Error handler
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({
     error: 'Internal server error',

@@ -1,0 +1,91 @@
+{
+  "title": "Pakua Data",
+  "description": "Pakua data ya kutua kutoka hifadhidata ya PESKAS kwa vichujio maalum",
+  "filters": {
+    "title": "Vichujio",
+    "country": "Nchi",
+    "selectCountry": "Chagua nchi",
+    "countryHint": "Kubadilisha nchi kutaweka upya uchaguzi wa utafiti na eneo",
+    "selectCountryFirst": "Tafadhali chagua nchi ili kuona tafiti na maeneo ya utawala yaliyopatikana",
+    "noCountryAssigned": "Hakuna nchi zilizopewa akaunti yako ya mtumiaji. Tafadhali wasiliana na msimamizi.",
+    "status": "Hali ya Data",
+    "statusValidated": "Data Iliyothibitishwa",
+    "statusRaw": "Data Ghafi",
+    "statusHint": "Data iliyothibitishwa imekaguliwa na kuidhinishwa",
+    "catchTaxon": "Kichujio cha Spishi",
+    "catchTaxonPlaceholder": "mfano: SKJ, MZZ",
+    "catchTaxonHint": "Weka msimbo mahususi wa spishi (mfano: SKJ, YFT) au acha tupu kwa spishi zote",
+    "catchTaxonHelpLink": "#species-codes-reference",
+    "scope": "Upeo wa Data",
+    "scopeAll": "Data Yote",
+    "scopeTripInfo": "Taarifa za Safari Tu",
+    "scopeCatchInfo": "Taarifa za Mwambao Tu",
+    "scopeHint": "Chagua kiwango cha undani",
+    "scopeGroupDefault": "Kawaida",
+    "scopeGroupFiltered": "Mwonekano Uliochujwa",
+    "scopeHelpLink": "#data-scope-explanation",
+    "surveys": "Utafiti",
+    "surveysHint": "Chagua tafiti maalum au acha tupu kwa zote",
+    "gaulCodes": "Maeneo ya Utawala",
+    "gaulCodesHint": "Chagua mikoa maalum au acha tupu kwa yote",
+    "gaulGroupAll": "Maeneo Yote",
+    "gaulGroupDistricts": "Wilaya Maalum",
+    "gaulAll": "Wilaya Zote",
+    "gaulHelpLink": "#gaul-codes-explanation",
+    "countryHelpLink": "#country-selection",
+    "statusHelpLink": "#data-validation-status",
+    "previewData": "Angalia Data",
+    "resetFilters": "Weka Upya Vichujio",
+    "loading": "Inapakia..."
+  },
+  "preview": {
+    "title": "Maangalizi ya Data",
+    "showing": "Inaonyesha {{shown}} ya {{total}} safu",
+    "downloadFull": "Pakua Seti Kamili (CSV)",
+    "downloading": "Inapakua...",
+    "filtersApplied": "Vichujio Vimetumika",
+    "largeDatasetWarning": "Seti kubwa ya data (safu {{count}}). Kupakua kunaweza kuchukua dakika kadhaa.",
+    "loading": "Inapata maangalizi...",
+    "noData": "Hakuna data iliyopatikana",
+    "noDataHint": "Jaribu kubadilisha vichujio vyako.",
+    "error": "Hitilafu ya kupakia maangalizi",
+    "dataDictionary": "Kamusi ya Data",
+    "viewFieldDescriptions": "Angalia maelezo ya sehemu"
+  },
+  "metadata": {
+    "title": "Kamusi ya Data",
+    "fieldInfo": "Taarifa za Sehemu",
+    "subtitle": "Maelezo ya sehemu na aina za data kwa seti ya data ya kutua",
+    "searchPlaceholder": "Tafuta sehemu...",
+    "noMetadata": "Maelezo ya sehemu hayapatikani kwa sasa",
+    "loading": "Inapakia maelezo ya sehemu...",
+    "fieldName": "Jina la Sehemu",
+    "description": "Maelezo",
+    "type": "Aina",
+    "unit": "Kitengo",
+    "example": "Mfano",
+    "range": "Kiwango",
+    "values": "Thamani Zinazowezekana",
+    "noResults": "Hakuna sehemu zinazofanana na utafutaji wako",
+    "types": {
+      "string": "Maandishi",
+      "integer": "Nambari (kamili)",
+      "float": "Nambari (desimali)",
+      "datetime": "Tarehe/Saa",
+      "boolean": "Ndio/Hapana"
+    }
+  },
+  "getStarted": {
+    "title": "Tayari Kupakua Data",
+    "description": "Chagua vichujio vyako na ubonyeze Angalia Data kuona sampuli ya matokeo kabla ya kupakua."
+  },
+  "errors": {
+    "downloadFailed": "Kupakua kumeshindikana. Tafadhali jaribu tena.",
+    "invalidDateRange": "Kipindi cha tarehe si sahihi. 'Tarehe Kutoka' lazima iwe kabla ya 'Tarehe Hadi'.",
+    "noCountrySelected": "Tafadhali chagua nchi.",
+    "previewFailed": "Kushindwa kupakia maangalizi. Tafadhali angalia vichujio vyako na ujaribu tena."
+  },
+  "common": {
+    "learnMore": "Jifunze zaidi"
+  }
+}

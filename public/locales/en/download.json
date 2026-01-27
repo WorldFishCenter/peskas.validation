@@ -1,0 +1,91 @@
+{
+  "title": "Data Download",
+  "description": "Download landings data from the PESKAS database with custom filters",
+  "filters": {
+    "title": "Filters",
+    "country": "Country",
+    "selectCountry": "Select a country",
+    "countryHint": "Changing the country will reset survey and area selections",
+    "selectCountryFirst": "Please select a country to see available surveys and administrative areas",
+    "noCountryAssigned": "No countries assigned to your user account. Please contact an administrator.",
+    "status": "Data Status",
+    "statusValidated": "Validated Data",
+    "statusRaw": "Raw Data",
+    "statusHint": "Validated data has been reviewed and approved",
+    "catchTaxon": "Species Filter",
+    "catchTaxonPlaceholder": "e.g., SKJ, MZZ",
+    "catchTaxonHint": "Enter a specific species code (e.g., SKJ, YFT) or leave empty for all species",
+    "catchTaxonHelpLink": "#species-codes-reference",
+    "scope": "Data Scope",
+    "scopeAll": "All Data",
+    "scopeTripInfo": "Trip Information Only",
+    "scopeCatchInfo": "Catch Information Only",
+    "scopeHint": "Choose the level of detail",
+    "scopeGroupDefault": "Default",
+    "scopeGroupFiltered": "Filtered Views",
+    "scopeHelpLink": "#data-scope-explanation",
+    "surveys": "Survey",
+    "surveysHint": "Select one survey or leave empty for all",
+    "gaulCodes": "Administrative Area",
+    "gaulCodesHint": "Select one area or leave empty for all",
+    "gaulGroupAll": "All Areas",
+    "gaulGroupDistricts": "Specific Districts",
+    "gaulAll": "All Districts",
+    "gaulHelpLink": "#gaul-codes-explanation",
+    "countryHelpLink": "#country-selection",
+    "statusHelpLink": "#data-validation-status",
+    "previewData": "Preview Data",
+    "resetFilters": "Reset Filters",
+    "loading": "Loading..."
+  },
+  "preview": {
+    "title": "Data Preview",
+    "showing": "Showing {{shown}} of {{total}} rows",
+    "downloadFull": "Download Full Dataset (CSV)",
+    "downloading": "Downloading...",
+    "filtersApplied": "Filters Applied",
+    "largeDatasetWarning": "Large dataset ({{count}} rows). Download may take several minutes.",
+    "loading": "Fetching preview...",
+    "noData": "No data found",
+    "noDataHint": "Try adjusting your filters.",
+    "error": "Error loading preview",
+    "dataDictionary": "Data Dictionary",
+    "viewFieldDescriptions": "View field descriptions"
+  },
+  "metadata": {
+    "title": "Data Dictionary",
+    "fieldInfo": "Field Information",
+    "subtitle": "Field descriptions and data types for the landings dataset",
+    "searchPlaceholder": "Search fields...",
+    "noMetadata": "Field descriptions are currently unavailable",
+    "loading": "Loading field descriptions...",
+    "fieldName": "Field Name",
+    "description": "Description",
+    "type": "Type",
+    "unit": "Unit",
+    "example": "Example",
+    "range": "Range",
+    "values": "Possible Values",
+    "noResults": "No fields match your search",
+    "types": {
+      "string": "Text",
+      "integer": "Number (whole)",
+      "float": "Number (decimal)",
+      "datetime": "Date/Time",
+      "boolean": "Yes/No"
+    }
+  },
+  "getStarted": {
+    "title": "Ready to Download Data",
+    "description": "Select your filters and click Preview Data to see a sample of the results before downloading."
+  },
+  "errors": {
+    "downloadFailed": "Download failed. Please try again.",
+    "invalidDateRange": "Invalid date range. 'Date From' must be before 'Date To'.",
+    "noCountrySelected": "Please select a country.",
+    "previewFailed": "Failed to load preview. Please check your filters and try again."
+  },
+  "common": {
+    "learnMore": "Learn more"
+  }
+}

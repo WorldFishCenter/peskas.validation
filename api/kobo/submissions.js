@@ -9,7 +9,7 @@
 const { withMiddleware, authenticateUser } = require('../../lib/middleware');
 const { getDb } = require('../../lib/db');
 const { getSurveyFlagsCollection } = require('../../lib/helpers');
-const { sendSuccess, sendUnauthorized, sendServerError, setCorsHeaders } = require('../../lib/response');
+const { sendUnauthorized, sendServerError, setCorsHeaders } = require('../../lib/response');
 
 async function handler(req, res) {
   // Set CORS headers

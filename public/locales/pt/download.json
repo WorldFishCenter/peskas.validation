@@ -1,0 +1,91 @@
+{
+  "title": "Download de Dados",
+  "description": "Baixe dados de desembarques da base de dados PESKAS com filtros personalizados",
+  "filters": {
+    "title": "Filtros",
+    "country": "País",
+    "selectCountry": "Selecione um país",
+    "countryHint": "Alterar o país redefinirá as seleções de pesquisa e área",
+    "selectCountryFirst": "Por favor, selecione um país para ver pesquisas e áreas administrativas disponíveis",
+    "noCountryAssigned": "Nenhum país atribuído à sua conta de usuário. Entre em contato com um administrador.",
+    "status": "Status dos Dados",
+    "statusValidated": "Dados Validados",
+    "statusRaw": "Dados Brutos",
+    "statusHint": "Dados validados foram revisados e aprovados",
+    "catchTaxon": "Filtro de Espécies",
+    "catchTaxonPlaceholder": "ex: SKJ, MZZ",
+    "catchTaxonHint": "Insira um código de espécie específico (ex: SKJ, YFT) ou deixe vazio para todas as espécies",
+    "catchTaxonHelpLink": "#species-codes-reference",
+    "scope": "Escopo de Dados",
+    "scopeAll": "Todos os Dados",
+    "scopeTripInfo": "Apenas Informações da Viagem",
+    "scopeCatchInfo": "Apenas Informações da Captura",
+    "scopeHint": "Escolha o nível de detalhe",
+    "scopeGroupDefault": "Padrão",
+    "scopeGroupFiltered": "Visualizações Filtradas",
+    "scopeHelpLink": "#data-scope-explanation",
+    "surveys": "Pesquisas",
+    "surveysHint": "Selecione pesquisas específicas ou deixe vazio para todas",
+    "gaulCodes": "Área Administrativa",
+    "gaulCodesHint": "Selecione uma área ou deixe vazio para todas",
+    "gaulGroupAll": "Todas as Áreas",
+    "gaulGroupDistricts": "Distritos Específicos",
+    "gaulAll": "Todos os Distritos",
+    "gaulHelpLink": "#gaul-codes-explanation",
+    "countryHelpLink": "#country-selection",
+    "statusHelpLink": "#data-validation-status",
+    "previewData": "Visualizar Dados",
+    "resetFilters": "Redefinir Filtros",
+    "loading": "Carregando..."
+  },
+  "preview": {
+    "title": "Visualização de Dados",
+    "showing": "Mostrando {{shown}} de {{total}} linhas",
+    "downloadFull": "Baixar Conjunto Completo (CSV)",
+    "downloading": "Baixando...",
+    "filtersApplied": "Filtros Aplicados",
+    "largeDatasetWarning": "Conjunto de dados grande ({{count}} linhas). O download pode levar vários minutos.",
+    "loading": "Buscando visualização...",
+    "noData": "Nenhum dado encontrado",
+    "noDataHint": "Tente ajustar seus filtros.",
+    "error": "Erro ao carregar visualização",
+    "dataDictionary": "Dicionário de Dados",
+    "viewFieldDescriptions": "Ver descrições dos campos"
+  },
+  "metadata": {
+    "title": "Dicionário de Dados",
+    "fieldInfo": "Informações do Campo",
+    "subtitle": "Descrições de campos e tipos de dados para o conjunto de dados de desembarques",
+    "searchPlaceholder": "Pesquisar campos...",
+    "noMetadata": "Descrições de campos não estão disponíveis no momento",
+    "loading": "Carregando descrições de campos...",
+    "fieldName": "Nome do Campo",
+    "description": "Descrição",
+    "type": "Tipo",
+    "unit": "Unidade",
+    "example": "Exemplo",
+    "range": "Intervalo",
+    "values": "Valores Possíveis",
+    "noResults": "Nenhum campo corresponde à sua pesquisa",
+    "types": {
+      "string": "Texto",
+      "integer": "Número (inteiro)",
+      "float": "Número (decimal)",
+      "datetime": "Data/Hora",
+      "boolean": "Sim/Não"
+    }
+  },
+  "getStarted": {
+    "title": "Pronto para Baixar Dados",
+    "description": "Selecione seus filtros e clique em Visualizar Dados para ver uma amostra dos resultados antes de baixar."
+  },
+  "errors": {
+    "downloadFailed": "Download falhou. Por favor, tente novamente.",
+    "invalidDateRange": "Intervalo de datas inválido. 'Data Inicial' deve ser anterior a 'Data Final'.",
+    "noCountrySelected": "Por favor, selecione um país.",
+    "previewFailed": "Falha ao carregar visualização. Por favor, verifique seus filtros e tente novamente."
+  },
+  "common": {
+    "learnMore": "Saiba mais"
+  }
+}

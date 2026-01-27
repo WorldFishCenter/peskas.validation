@@ -10,7 +10,8 @@ interface SubmissionTrendChartProps {
   uniqueDates: string[];
 }
 
-const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
+// PERFORMANCE FIX: Wrap in React.memo to prevent unnecessary re-renders
+const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = React.memo(({
   enumerators,
   uniqueDates
 }) => {
@@ -79,7 +80,6 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
     tooltip: {
       ...baseTooltipConfig,
       shared: true,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       formatter: function(this: any) {
         const points = this.points || [];
         const activePoints = points.filter((p: any) => (p.y || 0) > 0);
@@ -157,6 +157,11 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = ({
   }), [sortedDates, formattedDates, tickInterval, topEnumerators, t]);
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;
-};
+}, (prevProps, nextProps) => {
+  return (
+    JSON.stringify(prevProps.enumerators) === JSON.stringify(nextProps.enumerators) &&
+    JSON.stringify(prevProps.uniqueDates) === JSON.stringify(nextProps.uniqueDates)
+  );
+});
 
 export default SubmissionTrendChart; 

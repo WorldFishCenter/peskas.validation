@@ -8,8 +8,8 @@
 const bcrypt = require('bcryptjs');
 const { getDb } = require('../../lib/db');
 const { generateToken } = require('../../lib/jwt');
-const { sendSuccess, sendBadRequest, sendUnauthorized, sendServerError, setCorsHeaders } = require('../../lib/response');
-const { isValidUsername, sanitizeString } = require('../../lib/api-utils');
+const { sendBadRequest, sendServerError, setCorsHeaders } = require('../../lib/response');
+const { sanitizeString } = require('../../lib/api-utils');
 
 module.exports = async function handler(req, res) {
   // Set CORS headers
@@ -26,18 +26,18 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { username: rawUsername, password } = req.body;
+    const { username: rawIdentifier, password } = req.body;
 
     // Validate input types
-    if (!rawUsername || typeof rawUsername !== 'string' || !password || typeof password !== 'string') {
-      return sendBadRequest(res, 'Username and password required');
+    if (!rawIdentifier || typeof rawIdentifier !== 'string' || !password || typeof password !== 'string') {
+      return sendBadRequest(res, 'Username/email and password required');
     }
 
-    // Sanitize username
-    const username = sanitizeString(rawUsername, 50).toLowerCase();
+    // Sanitize identifier (username or email)
+    const identifier = sanitizeString(rawIdentifier, 100).toLowerCase();
 
-    // Validate username format
-    if (!isValidUsername(username)) {
+    // Validate identifier length
+    if (identifier.length < 1 || identifier.length > 100) {
       return res.status(401).json({ success: false, error: 'Invalid username or password' });
     }
 
@@ -53,9 +53,12 @@ module.exports = async function handler(req, res) {
       return sendServerError(res, 'Authentication system not configured');
     }
 
-    // Find user by username
+    // Find user by username OR email
     const user = await database.collection('users').findOne({
-      username: username
+      $or: [
+        { username: identifier },
+        { email: identifier }
+      ]
     });
 
     if (!user) {
