@@ -14,7 +14,7 @@
     "statusHint": "Dados validados foram revisados e aprovados",
     "catchTaxon": "Filtro de Espécies",
     "catchTaxonPlaceholder": "ex: SKJ, MZZ",
-    "catchTaxonHint": "Insira um código de espécie específico (ex: SKJ, YFT) ou deixe vazio para todas as espécies",
+    "catchTaxonHint": "Insira um código de espécie específico (ex: SKJ, YFT) ou <strong>deixe vazio para todas as espécies</strong>",
     "catchTaxonHelpLink": "#species-codes-reference",
     "scope": "Escopo de Dados",
     "scopeAll": "Todos os Dados",

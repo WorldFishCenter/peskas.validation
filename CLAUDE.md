@@ -183,17 +183,54 @@ Backend utilities shared between Express server and Vercel serverless functions:
   - `create_first_admin.js` - Interactive admin user creation
   - `create_admin_simple.js` - Quick admin creation (CLI args)
   - `delete_user.js` - Delete user by username
-  - `sync_users_from_airtable.js` - Sync users from Airtable (with survey permissions)
-- **Survey Configuration**:
-  - `list_surveys.R` / `list_surveys.cjs` - List all surveys with their configuration status
+  - `prepare_password_reset.js` - Prepare password reset for users
+- **Airtable Sync** (used by GitHub Actions):
+  - `sync_all_from_airtable.js` - Master sync script (districts → surveys → users)
+  - `sync_districts_from_airtable.cjs` - Sync districts from Airtable
+  - `sync_surveys_from_airtable.js` - Sync surveys from Airtable
+  - `sync_users_from_airtable.js` - Sync users from Airtable
+- **Survey Configuration** (R scripts):
+  - `list_surveys.R` - List all surveys with their configuration status
   - `update_single_survey.R` - Configure one survey at a time (kobo_config + alert_codes)
-  - `update_all_surveys.R` / `update_all_surveys.cjs` - Batch configure all surveys
-  - `sync_surveys_from_airtable.js` - Sync survey metadata from Airtable
-- **Migration & Setup**:
-  - `migrate_to_multi_country.js` - Migrate from single-survey to multi-survey architecture
-  - `seed_initial_data.js` - Seed initial countries and surveys
-- **Testing**:
-  - `test_airtable_fetch.js` - Test Airtable API connection
+  - `update_all_surveys.R` - Batch configure all surveys
+- **Performance**:
+  - `add_performance_indexes.cjs` - Add MongoDB indexes for query optimization
+
+### Automated Airtable Sync (GitHub Actions)
+
+User management and permissions are automatically synced from Airtable using GitHub Actions.
+
+**Workflow**: [`.github/workflows/sync-airtable.yml`](.github/workflows/sync-airtable.yml)
+
+- **Schedule**: Daily at 2:00 AM UTC (automated)
+- **Manual Trigger**: Via GitHub Actions UI or API
+- **Sync Order**: Districts → Surveys → Users (respects dependencies)
+- **Features**:
+  - ✅ Retry logic (3 attempts with 30s delay)
+  - ✅ Comprehensive error handling and validation
+  - ✅ Audit logs stored as GitHub artifacts (30 days)
+  - ✅ Slack notifications on failure (optional)
+  - ✅ Manual trigger with selective sync (all/districts/surveys/users)
+  - ✅ Platform-agnostic (works with any hosting provider)
+
+**Setup Guide**: [`.github/AIRTABLE_SYNC_SETUP.md`](.github/AIRTABLE_SYNC_SETUP.md)
+
+**Required GitHub Secrets**:
+- `MONGODB_VALIDATION_URI` - MongoDB connection string
+- `MONGODB_VALIDATION_DB` - Database name
+- `AIRTABLE_BASE_ID` - Airtable base ID
+- `AIRTABLE_TOKEN` - Airtable personal access token
+- `SLACK_WEBHOOK_URL` - Slack webhook (optional, for notifications)
+
+**Manual Sync Options**:
+1. **GitHub UI**: Actions → Sync Airtable to MongoDB → Run workflow
+2. **CLI**: `npm run sync:all` (runs `scripts/sync_all_from_airtable.js`)
+3. **Individual syncs**: `npm run sync:users`, `npm run sync:surveys`, `npm run sync:districts`
+
+**Migration Notes**:
+- Replaced previous Vercel cron job (removed from `vercel.json`)
+- Same sync scripts used (`scripts/sync_*_from_airtable.js`)
+- Vercel endpoint `/api/admin/cron-sync-all` kept as backup (not scheduled)
 
 ### Environment Configuration
 

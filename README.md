@@ -8,7 +8,7 @@ A scalable web portal for validating KoboToolbox survey submissions with multi-s
 - **Enumerator Performance Dashboard** - Track submission quality, error rates, and trends with interactive charts
 - **Multi-Survey Support** - Manage multiple surveys across different KoboToolbox servers
 - **Role-Based Access Control** - Admin and user roles with survey-level permissions
-- **Airtable Integration** - Centralized user and survey management with automated sync
+- **Airtable Integration** - Centralized user and survey management with automated GitHub Actions sync
 - **MongoDB-First Architecture** - Fast performance with MongoDB as single source of truth
 
 ## Tech Stack
@@ -99,17 +99,41 @@ All management scripts are in the `scripts/` directory:
 ```bash
 # User Management
 node scripts/create_first_admin.js         # Create admin user (interactive)
-node scripts/sync_users_from_airtable.js   # Sync users from Airtable
+node scripts/create_admin_simple.js        # Create admin user (CLI args)
+node scripts/delete_user.js                # Delete user by username
 
-# Survey Configuration
-node scripts/list_surveys.cjs              # List all surveys
+# Survey Configuration (R scripts)
+Rscript scripts/list_surveys.R             # List all surveys
 Rscript scripts/update_single_survey.R     # Configure one survey
-node scripts/sync_surveys_from_airtable.js # Sync surveys from Airtable
+Rscript scripts/update_all_surveys.R       # Batch configure all surveys
 
-# Initial Setup
-node scripts/seed_initial_data.js          # Seed countries and surveys
-node scripts/migrate_to_multi_country.js   # Migrate existing database
+# Performance
+node scripts/add_performance_indexes.cjs   # Add MongoDB indexes for optimization
 ```
+
+### Automated Airtable Sync
+
+User and survey management is automatically synced from Airtable using **GitHub Actions**.
+
+- **📅 Schedule**: Daily at 2:00 AM UTC (automated)
+- **🎮 Manual Trigger**: Via GitHub Actions UI, CLI, or npm scripts
+- **🔄 Sync Order**: Districts → Surveys → Users
+- **✅ Features**: Retry logic, error handling, audit logs, Slack notifications
+
+**Quick Start**:
+1. Configure GitHub Secrets (see [Setup Guide](.github/AIRTABLE_SYNC_SETUP.md))
+2. Test: Actions → Run workflow → Select sync type
+3. View logs and artifacts in GitHub Actions tab
+
+**Manual Sync Options**:
+```bash
+npm run sync:all        # Sync everything (recommended)
+npm run sync:users      # Sync only users
+npm run sync:surveys    # Sync only surveys
+npm run sync:districts  # Sync only districts
+```
+
+For detailed setup instructions, see [`.github/AIRTABLE_SYNC_SETUP.md`](.github/AIRTABLE_SYNC_SETUP.md)
 
 ## Architecture
 

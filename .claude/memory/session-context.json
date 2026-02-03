@@ -31,19 +31,15 @@
     "peskas_api": "Landings data download (api.peskas.org) with X-API-Key auth, input validation, rate limiting (lib/peskas-api.js)"
   },
   "current_session": {
-    "last_feature": "PeSKAS API Metadata Integration for Enhanced Field Documentation",
+    "last_feature": "GitHub Actions Migration & Scripts Cleanup",
     "active_files": [
-      "api/data-download/metadata-fields.js",
-      "lib/peskas-api.js",
-      "server/dev.js",
-      "src/types/download.ts",
-      "src/api/api.ts",
-      "src/components/DataDownload/FieldInfoIcon.tsx",
-      "src/components/DataDownload/FieldMetadataModal.tsx",
-      "src/components/DataDownload/DataPreview.tsx",
-      "public/locales/en/download.json",
-      "public/locales/pt/download.json",
-      "public/locales/sw/download.json"
+      ".github/workflows/sync-airtable.yml",
+      ".github/AIRTABLE_SYNC_SETUP.md",
+      ".github/TESTING_CHECKLIST.md",
+      "vercel.json",
+      "CLAUDE.md",
+      "README.md",
+      "scripts/ (13 files remaining after cleanup)"
     ],
     "completed_improvements": [
       "✅ Performance Optimization: 90-95% load time reduction (30-60s → 2-3s for admins)",
@@ -81,7 +77,16 @@
       "✅ Frontend components: FieldInfoIcon.tsx, FieldMetadataModal.tsx",
       "✅ User feedback iterations: Fixed URL fields, removed type column, correct field names, single-field modal",
       "✅ Followed AlertGuideModal pattern for consistency",
-      "✅ Non-intrusive implementation (doesn't slow preview)"
+      "✅ Non-intrusive implementation (doesn't slow preview)",
+      "✅ Migrated Airtable sync from Vercel cron to GitHub Actions (2026-02-03)",
+      "✅ GitHub Actions workflow with retry logic, notifications, artifact storage",
+      "✅ Comprehensive setup guide (.github/AIRTABLE_SYNC_SETUP.md)",
+      "✅ Testing checklist with 5 test scenarios (.github/TESTING_CHECKLIST.md)",
+      "✅ Removed Vercel cron from vercel.json (kept endpoint as backup)",
+      "✅ Scripts folder cleanup: 35 → 13 files (63% reduction)",
+      "✅ Removed 21 stale files: migrations, duplicates, debug scripts, obsolete files",
+      "✅ Updated documentation to match reality (CLAUDE.md, README.md)",
+      "✅ All deleted files preserved in git history for recovery"
     ],
     "pending_todos": []
   },
@@ -97,7 +102,9 @@
     "Data download refactoring documented (2026-01-25) - reference for: shared permission utilities pattern, unified metadata endpoint pattern, Airtable→MongoDB migration pattern, input validation pattern, CSV sanitization pattern",
     "Airtable hardening documented (2026-01-26) - reference for: field mapping configuration, schema validation, transaction-like safety, audit logging, rate limiting, distributed locks, automated syncs, webhook integration",
     "Performance optimization documented (2026-01-27) - reference PERFORMANCE_IMPROVEMENTS.md and architecture-decisions.md for: database indexing pattern, survey-based loading, MongoDB-level pagination, batched API responses, optimistic updates, React.memo with custom comparison, useMemo for expensive operations",
-    "PeSKAS API metadata integration documented (2026-01-27) - reference architecture-decisions.md for: lazy loading with sessionStorage caching pattern, conditional modal behavior (single field vs all fields), TanStack Table column enhancement with info icons, useFetchFieldMetadata hook pattern, comprehensive field documentation display (description, unit, examples, ranges, URLs)"
+    "PeSKAS API metadata integration documented (2026-01-27) - reference architecture-decisions.md for: lazy loading with sessionStorage caching pattern, conditional modal behavior (single field vs all fields), TanStack Table column enhancement with info icons, useFetchFieldMetadata hook pattern, comprehensive field documentation display (description, unit, examples, ranges, URLs)",
+    "GitHub Actions migration documented (2026-02-03) - reference architecture-decisions.md for: Vercel cron → GitHub Actions pattern, comprehensive workflow setup (retry logic, notifications, artifact storage, concurrency control), secrets configuration, testing checklist, troubleshooting guide",
+    "Scripts folder cleanup documented (2026-02-03) - reference architecture-decisions.md for audit process: categorization (active/one-time/debug/obsolete/duplicate), deletion strategy (keep 13 essential scripts), documentation synchronization (CLAUDE.md, README.md)"
   ],
   "common_patterns": {
     "api_endpoint": "Use lib/response.js (sendSuccess, sendError, sendBadRequest, setCorsHeaders), lib/middleware.js, lib/db.js",
@@ -129,19 +136,25 @@
     "field_metadata_display": "Use lazy loading + sessionStorage caching pattern for external API metadata (see useFetchFieldMetadata hook in src/api/api.ts)",
     "conditional_modal": "Implement single-item vs all-items modal behavior with highlightField prop (see FieldMetadataModal.tsx)",
     "column_info_icons": "Enhance TanStack Table headers with info icons for contextual help (see DataPreview.tsx column definitions)",
-    "peskas_metadata": "Use api/data-download/metadata-fields.js for authenticated PeSKAS API metadata access with graceful degradation"
+    "peskas_metadata": "Use api/data-download/metadata-fields.js for authenticated PeSKAS API metadata access with graceful degradation",
+    "github_actions_workflow": "Use .github/workflows/sync-airtable.yml pattern: scheduled triggers, manual dispatch with inputs, retry logic (nick-fields/retry@v3), environment validation, artifact storage, Slack notifications, concurrency control",
+    "scripts_organization": "Keep only active, documented scripts (13 files: 4 user mgmt, 4 sync, 3 R survey config, 1 performance, 1 README); Remove debug/test scripts, one-time migrations, duplicates; Update CLAUDE.md and README.md to match reality"
   },
   "management_scripts": {
     "master_sync": "scripts/sync_all_from_airtable.js - Master sync enforcing dependency order (Districts → Surveys → Users) with lib/sync-transaction.js safety",
     "user_sync": "scripts/sync_users_from_airtable.js - Sync users from Airtable (uses lib/airtable-sync-users.js canonical implementation)",
     "survey_sync": "scripts/sync_surveys_from_airtable.js - Sync survey metadata from Airtable with schema validation",
     "district_sync": "scripts/sync_districts_from_airtable.cjs - Sync districts (GAUL codes) from Airtable to MongoDB with schema validation",
-    "user_creation": "scripts/create_first_admin.js - Create initial admin user",
+    "user_creation": "scripts/create_first_admin.js - Interactive admin creation, scripts/create_admin_simple.js - CLI admin creation",
+    "user_deletion": "scripts/delete_user.js - Delete user by username",
     "password_reset_setup": "scripts/prepare_password_reset.js - Database migration for password reset feature",
+    "survey_config": "Rscript scripts/list_surveys.R - List surveys, Rscript scripts/update_single_survey.R - Configure one survey, Rscript scripts/update_all_surveys.R - Batch configure",
+    "performance": "scripts/add_performance_indexes.cjs - Add MongoDB indexes for query optimization",
     "npm_scripts": "npm run sync:all (master sync), sync:users, sync:surveys, sync:districts (individual syncs)",
-    "automation": "Vercel cron job (daily 2 AM UTC) via api/admin/cron-sync-all.js, optional webhooks via api/webhooks/airtable-sync.js",
-    "monitoring": "GET api/admin/sync-logs for viewing audit logs (pagination, filtering by entity_type)",
-    "note": "Production-hardened sync infrastructure (8/10 readiness): field mapping config, schema validation, transaction safety, audit logging, rate limiting, distributed locks, automated cron, webhook support"
+    "automation": "GitHub Actions workflow (daily 2 AM UTC) via .github/workflows/sync-airtable.yml with retry logic, notifications, artifact storage; Vercel endpoint (api/admin/cron-sync-all.js) kept as emergency backup; Optional webhooks via api/webhooks/airtable-sync.js",
+    "monitoring": "GitHub Actions tab for workflow runs, GET api/admin/sync-logs for audit logs (pagination, filtering by entity_type), Slack notifications on failure/success",
+    "cleanup_note": "Scripts folder cleaned (2026-02-03): removed 21 stale files (migrations, duplicates, debug scripts), kept 13 active scripts, documentation updated to match reality",
+    "note": "Production-hardened sync infrastructure (8/10 readiness): field mapping config, schema validation, transaction safety, audit logging, rate limiting, distributed locks, automated cron (GitHub Actions + Vercel backup), webhook support"
   },
   "security_patterns": {
     "email_enumeration_prevention": "Always return success message, never reveal if user exists",

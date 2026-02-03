@@ -14,7 +14,7 @@
     "statusHint": "Data iliyothibitishwa imekaguliwa na kuidhinishwa",
     "catchTaxon": "Kichujio cha Spishi",
     "catchTaxonPlaceholder": "mfano: SKJ, MZZ",
-    "catchTaxonHint": "Weka msimbo mahususi wa spishi (mfano: SKJ, YFT) au acha tupu kwa spishi zote",
+    "catchTaxonHint": "Weka msimbo mahususi wa spishi (mfano: SKJ, YFT) au <strong>acha tupu kwa spishi zote</strong>",
     "catchTaxonHelpLink": "#species-codes-reference",
     "scope": "Upeo wa Data",
     "scopeAll": "Data Yote",

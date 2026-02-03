@@ -79,10 +79,6 @@ const DownloadFilters: React.FC<DownloadFiltersProps> = ({
           </select>
           <small className="form-hint">
             {t('filters.countryHint')}{' '}
-            <a href={t('filters.countryHelpLink')} target="_blank" rel="noopener noreferrer" className="link-secondary">
-              <IconExternalLink className="icon icon-inline" size={14} />
-              {t('common.learnMore')}
-            </a>
           </small>
         </div>
       )}
@@ -100,10 +96,6 @@ const DownloadFilters: React.FC<DownloadFiltersProps> = ({
         </select>
         <small className="form-hint">
           {t('filters.statusHint')}{' '}
-          <a href={t('filters.statusHelpLink')} target="_blank" rel="noopener noreferrer" className="link-secondary">
-            <IconExternalLink className="icon icon-inline" size={14} />
-            {t('common.learnMore')}
-          </a>
         </small>
       </div>
 
@@ -125,10 +117,6 @@ const DownloadFilters: React.FC<DownloadFiltersProps> = ({
         </select>
         <small className="form-hint">
           {t('filters.scopeHint')}{' '}
-          <a href={t('filters.scopeHelpLink')} target="_blank" rel="noopener noreferrer" className="link-secondary">
-            <IconExternalLink className="icon icon-inline" size={14} />
-            {t('common.learnMore')}
-          </a>
         </small>
       </div>
 
@@ -142,13 +130,10 @@ const DownloadFilters: React.FC<DownloadFiltersProps> = ({
           value={filters.catch_taxon || ''}
           onChange={(e) => handleChange('catch_taxon', e.target.value)}
         />
-        <small className="form-hint">
-          {t('filters.catchTaxonHint')}{' '}
-          <a href={t('filters.catchTaxonHelpLink')} target="_blank" rel="noopener noreferrer" className="link-secondary">
-            <IconExternalLink className="icon icon-inline" size={14} />
-            {t('common.learnMore')}
-          </a>
-        </small>
+        <small 
+          className="form-hint"
+          dangerouslySetInnerHTML={{ __html: t('filters.catchTaxonHint') }}
+        />
       </div>
 
       {/* Divider for advanced filters */}

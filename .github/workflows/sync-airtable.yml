@@ -1,0 +1,389 @@
+name: Sync Airtable to MongoDB
+
+# =============================================================================
+# Automated Airtable → MongoDB Sync Workflow
+# =============================================================================
+# Replaces Vercel cron job with more robust GitHub Actions workflow
+#
+# Features:
+# - Scheduled daily sync (2 AM UTC)
+# - Manual trigger via GitHub UI
+# - Retry logic for transient failures
+# - Comprehensive error handling
+# - Audit logs stored as artifacts
+# - Slack notifications on failure
+# - Platform-agnostic (works with any hosting provider)
+#
+# Dependency Order:
+# 1. Districts (GAUL codes) - No dependencies
+# 2. Surveys (forms) - No dependencies
+# 3. Users - Depends on districts + surveys for permissions
+#
+# =============================================================================
+
+on:
+  # Scheduled trigger - Daily at 2:00 AM UTC
+  schedule:
+    - cron: '0 2 * * *'
+
+  # Manual trigger - Allows admins to run sync on-demand via GitHub UI
+  workflow_dispatch:
+    inputs:
+      sync_type:
+        description: 'Sync type to run'
+        required: false
+        type: choice
+        default: 'all'
+        options:
+          - all
+          - districts
+          - surveys
+          - users
+      notify_on_success:
+        description: 'Send Slack notification on success'
+        required: false
+        type: boolean
+        default: false
+
+# Limit to one sync at a time to prevent conflicts
+concurrency:
+  group: airtable-sync
+  cancel-in-progress: false
+
+jobs:
+  # ===========================================================================
+  # Job: Sync All Entities from Airtable
+  # ===========================================================================
+  sync:
+    name: Sync from Airtable
+    runs-on: ubuntu-latest
+    timeout-minutes: 30  # Prevent stuck jobs
+
+    # Environment variables for all steps
+    env:
+      MONGODB_VALIDATION_URI: ${{ secrets.MONGODB_VALIDATION_URI }}
+      MONGODB_VALIDATION_DB: ${{ secrets.MONGODB_VALIDATION_DB }}
+      AIRTABLE_BASE_ID: ${{ secrets.AIRTABLE_BASE_ID }}
+      AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
+      NODE_ENV: production
+      TZ: UTC
+
+    steps:
+      # -----------------------------------------------------------------------
+      # Step 1: Checkout Repository
+      # -----------------------------------------------------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1  # Shallow clone for speed
+
+      # -----------------------------------------------------------------------
+      # Step 2: Setup Node.js Environment
+      # -----------------------------------------------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'  # LTS version
+          cache: 'npm'  # Cache dependencies for faster runs
+
+      # -----------------------------------------------------------------------
+      # Step 3: Install Dependencies
+      # -----------------------------------------------------------------------
+      - name: Install dependencies
+        run: |
+          echo "📦 Installing dependencies..."
+          npm ci --prefer-offline --no-audit
+          echo "✅ Dependencies installed successfully"
+
+      # -----------------------------------------------------------------------
+      # Step 4: Validate Environment Variables
+      # -----------------------------------------------------------------------
+      - name: Validate configuration
+        run: |
+          echo "🔍 Validating environment variables..."
+
+          MISSING_VARS=()
+
+          if [ -z "$MONGODB_VALIDATION_URI" ]; then
+            MISSING_VARS+=("MONGODB_VALIDATION_URI")
+          fi
+
+          if [ -z "$MONGODB_VALIDATION_DB" ]; then
+            MISSING_VARS+=("MONGODB_VALIDATION_DB")
+          fi
+
+          if [ -z "$AIRTABLE_BASE_ID" ]; then
+            MISSING_VARS+=("AIRTABLE_BASE_ID")
+          fi
+
+          if [ -z "$AIRTABLE_TOKEN" ]; then
+            MISSING_VARS+=("AIRTABLE_TOKEN")
+          fi
+
+          if [ ${#MISSING_VARS[@]} -ne 0 ]; then
+            echo "❌ ERROR: Missing required environment variables:"
+            printf '   - %s\n' "${MISSING_VARS[@]}"
+            echo ""
+            echo "💡 Add these secrets in: GitHub → Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+
+          echo "✅ All required environment variables are set"
+          echo "📊 Using database: $MONGODB_VALIDATION_DB"
+
+      # -----------------------------------------------------------------------
+      # Step 5: Sync Districts (GAUL Codes)
+      # -----------------------------------------------------------------------
+      - name: Sync Districts
+        if: inputs.sync_type == 'all' || inputs.sync_type == 'districts' || inputs.sync_type == ''
+        id: sync_districts
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 30
+          retry_on: error
+          warning_on_retry: true
+          command: |
+            echo "🌍 Starting districts sync (GAUL codes)..."
+            echo "⏰ Started at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+            echo ""
+
+            node scripts/sync_districts_from_airtable.cjs
+
+            SYNC_EXIT_CODE=$?
+            echo ""
+            echo "⏰ Completed at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+
+            if [ $SYNC_EXIT_CODE -eq 0 ]; then
+              echo "✅ Districts sync completed successfully"
+            else
+              echo "❌ Districts sync failed with exit code: $SYNC_EXIT_CODE"
+              exit $SYNC_EXIT_CODE
+            fi
+          on_retry_command: |
+            echo "⚠️  Retry attempt for districts sync..."
+            echo "⏳ Waiting 30 seconds before retry..."
+
+      # -----------------------------------------------------------------------
+      # Step 6: Sync Surveys (Forms)
+      # -----------------------------------------------------------------------
+      - name: Sync Surveys
+        if: inputs.sync_type == 'all' || inputs.sync_type == 'surveys' || inputs.sync_type == ''
+        id: sync_surveys
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 30
+          retry_on: error
+          warning_on_retry: true
+          command: |
+            echo "📋 Starting surveys sync (forms)..."
+            echo "⏰ Started at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+            echo ""
+
+            node scripts/sync_surveys_from_airtable.js
+
+            SYNC_EXIT_CODE=$?
+            echo ""
+            echo "⏰ Completed at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+
+            if [ $SYNC_EXIT_CODE -eq 0 ]; then
+              echo "✅ Surveys sync completed successfully"
+            else
+              echo "❌ Surveys sync failed with exit code: $SYNC_EXIT_CODE"
+              exit $SYNC_EXIT_CODE
+            fi
+          on_retry_command: |
+            echo "⚠️  Retry attempt for surveys sync..."
+            echo "⏳ Waiting 30 seconds before retry..."
+
+      # -----------------------------------------------------------------------
+      # Step 7: Sync Users (depends on districts + surveys)
+      # -----------------------------------------------------------------------
+      - name: Sync Users
+        if: inputs.sync_type == 'all' || inputs.sync_type == 'users' || inputs.sync_type == ''
+        id: sync_users
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 30
+          retry_on: error
+          warning_on_retry: true
+          command: |
+            echo "👥 Starting users sync (depends on districts + surveys)..."
+            echo "⏰ Started at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+            echo ""
+
+            node scripts/sync_users_from_airtable.js
+
+            SYNC_EXIT_CODE=$?
+            echo ""
+            echo "⏰ Completed at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+
+            if [ $SYNC_EXIT_CODE -eq 0 ]; then
+              echo "✅ Users sync completed successfully"
+            else
+              echo "❌ Users sync failed with exit code: $SYNC_EXIT_CODE"
+              exit $SYNC_EXIT_CODE
+            fi
+          on_retry_command: |
+            echo "⚠️  Retry attempt for users sync..."
+            echo "⏳ Waiting 30 seconds before retry..."
+
+      # -----------------------------------------------------------------------
+      # Step 8: Generate Sync Summary
+      # -----------------------------------------------------------------------
+      - name: Generate sync summary
+        if: success()
+        run: |
+          echo "════════════════════════════════════════════════════════════════════"
+          echo "✅ SYNC COMPLETED SUCCESSFULLY"
+          echo "════════════════════════════════════════════════════════════════════"
+          echo ""
+          echo "📅 Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          echo "🔄 Sync Type: ${{ inputs.sync_type || 'all (scheduled)' }}"
+          echo "🏃 Triggered by: ${{ github.event_name }}"
+          echo ""
+          echo "✅ Districts: Synced"
+          echo "✅ Surveys: Synced"
+          echo "✅ Users: Synced"
+          echo ""
+          echo "════════════════════════════════════════════════════════════════════"
+
+      # -----------------------------------------------------------------------
+      # Step 9: Store Logs as Artifacts (for debugging)
+      # -----------------------------------------------------------------------
+      - name: Upload sync logs
+        if: always()  # Run even if previous steps failed
+        uses: actions/upload-artifact@v4
+        with:
+          name: sync-logs-${{ github.run_id }}
+          path: |
+            *.log
+            logs/*.log
+          retention-days: 30
+          if-no-files-found: ignore
+
+      # -----------------------------------------------------------------------
+      # Step 10: Notify Slack on Failure
+      # -----------------------------------------------------------------------
+      - name: Notify Slack on failure
+        if: failure() && secrets.SLACK_WEBHOOK_URL != ''
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": "🚨 Airtable Sync Failed",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚨 Airtable → MongoDB Sync Failed"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Workflow:*\n${{ github.workflow }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Triggered by:*\n${{ github.event_name }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Database:*\n${{ secrets.MONGODB_VALIDATION_DB }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Time:*\n$(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Failed Steps:*\n${{ steps.sync_districts.outcome == 'failure' && '❌ Districts\n' || '' }}${{ steps.sync_surveys.outcome == 'failure' && '❌ Surveys\n' || '' }}${{ steps.sync_users.outcome == 'failure' && '❌ Users\n' || '' }}"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Logs"
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "Retry Sync"
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/workflows/sync-airtable.yml"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      # -----------------------------------------------------------------------
+      # Step 11: Notify Slack on Success (optional)
+      # -----------------------------------------------------------------------
+      - name: Notify Slack on success
+        if: success() && (inputs.notify_on_success || github.event_name == 'workflow_dispatch') && secrets.SLACK_WEBHOOK_URL != ''
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": "✅ Airtable Sync Successful",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "✅ Airtable → MongoDB Sync Completed"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Sync Type:*\n${{ inputs.sync_type || 'all (scheduled)' }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Database:*\n${{ secrets.MONGODB_VALIDATION_DB }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Time:*\n$(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "✅ Districts synced\n✅ Surveys synced\n✅ Users synced"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
