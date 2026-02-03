@@ -44,5 +44,8 @@ Thumbs.db
 !/README.md
 !docs/
 
-# Scripts - ignore all scripts (contain sensitive setup/migration tools)
+# Scripts - ignore all except those needed for GitHub Actions workflow
 scripts/
+!scripts/sync_districts_from_airtable.cjs
+!scripts/sync_surveys_from_airtable.js
+!scripts/sync_users_from_airtable.js
