@@ -10,8 +10,7 @@ name: Sync Airtable to MongoDB
 # - Manual trigger via GitHub UI
 # - Retry logic for transient failures
 # - Comprehensive error handling
-# - Audit logs stored as artifacts
-# - Slack notifications on failure
+# - Audit logs stored as artifacts (30 days)
 # - Platform-agnostic (works with any hosting provider)
 #
 # Dependency Order:
@@ -39,11 +38,6 @@ on:
           - districts
           - surveys
           - users
-      notify_on_success:
-        description: 'Send Slack notification on success'
-        required: false
-        type: boolean
-        default: false
 
 # Limit to one sync at a time to prevent conflicts
 concurrency:
@@ -53,7 +47,7 @@ concurrency:
 jobs:
   # ===========================================================================
   # Job: Sync All Entities from Airtable
-  # ===========================================================================
+  # SLACK_WEBHOOK_URL===========================================================================
   sync:
     name: Sync from Airtable
     runs-on: ubuntu-latest
@@ -266,124 +260,3 @@ jobs:
             logs/*.log
           retention-days: 30
           if-no-files-found: ignore
-
-      # -----------------------------------------------------------------------
-      # Step 10: Notify Slack on Failure
-      # -----------------------------------------------------------------------
-      - name: Notify Slack on failure
-        if: failure() && secrets.SLACK_WEBHOOK_URL != ''
-        uses: slackapi/slack-github-action@v1.27.0
-        with:
-          payload: |
-            {
-              "text": "🚨 Airtable Sync Failed",
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "🚨 Airtable → MongoDB Sync Failed"
-                  }
-                },
-                {
-                  "type": "section",
-                  "fields": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Workflow:*\n${{ github.workflow }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Triggered by:*\n${{ github.event_name }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Database:*\n${{ secrets.MONGODB_VALIDATION_DB }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Time:*\n$(date -u +"%Y-%m-%d %H:%M:%S UTC")"
-                    }
-                  ]
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Failed Steps:*\n${{ steps.sync_districts.outcome == 'failure' && '❌ Districts\n' || '' }}${{ steps.sync_surveys.outcome == 'failure' && '❌ Surveys\n' || '' }}${{ steps.sync_users.outcome == 'failure' && '❌ Users\n' || '' }}"
-                  }
-                },
-                {
-                  "type": "actions",
-                  "elements": [
-                    {
-                      "type": "button",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "View Logs"
-                      },
-                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                    },
-                    {
-                      "type": "button",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "Retry Sync"
-                      },
-                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/workflows/sync-airtable.yml"
-                    }
-                  ]
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-
-      # -----------------------------------------------------------------------
-      # Step 11: Notify Slack on Success (optional)
-      # -----------------------------------------------------------------------
-      - name: Notify Slack on success
-        if: success() && (inputs.notify_on_success || github.event_name == 'workflow_dispatch') && secrets.SLACK_WEBHOOK_URL != ''
-        uses: slackapi/slack-github-action@v1.27.0
-        with:
-          payload: |
-            {
-              "text": "✅ Airtable Sync Successful",
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "✅ Airtable → MongoDB Sync Completed"
-                  }
-                },
-                {
-                  "type": "section",
-                  "fields": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Sync Type:*\n${{ inputs.sync_type || 'all (scheduled)' }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Database:*\n${{ secrets.MONGODB_VALIDATION_DB }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Time:*\n$(date -u +"%Y-%m-%d %H:%M:%S UTC")"
-                    }
-                  ]
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "✅ Districts synced\n✅ Surveys synced\n✅ Users synced"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
