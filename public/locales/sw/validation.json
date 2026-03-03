@@ -103,7 +103,9 @@
       "8": "Bei kwa kilo inazidi kizingiti",
       "9": "Uvuvi kwa jitihada (CPUE) unazidi kiwango cha juu (30kg kwa saa kwa mvuvi)",
       "10": "Mapato kwa jitihada (RPUE) yanazidi kizingiti",
-      "11": "Jumla ya wavuvi imeripotiwa kuwa 0 ilhali nyara ni zaidi ya 0"
+      "11": "Jumla ya wavuvi imeripotiwa kuwa 0 ilhali nyara ni zaidi ya 0",
+      "12": "Muda wa safari si wa kawaida (ni hasi au ni zaidi ya siku 5)",
+      "13": "Tarehe ya kutuma fomu ni ya mapema kuliko tarehe ya kutua iliyorekodiwa"
     },
     "ajEruvrFJCzmi4cmWs9PAc": {
       "1": "Uwasilishaji wa nyara umeripotiwa, lakini aina (taxon) haijabainishwa",
