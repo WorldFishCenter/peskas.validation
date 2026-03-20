@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { getApiBaseUrl } from '../utils/apiConfig';
+import { useSurveyContext } from '../contexts/SurveyContext';
 
 // Get the appropriate API base URL based on environment
 const API_BASE_URL = getApiBaseUrl();
@@ -35,11 +36,11 @@ const normalizeSubmissionData = (item: any): any => {
 
 // Hook to fetch submissions
 // PERFORMANCE OPTIMIZATION: Enhanced hook with survey selection and reduced limits
-export const useFetchSubmissions = (surveyId?: string | null) => {
+export const useFetchSubmissions = () => {
+  const { selectedSurveyId, setSelectedSurveyId } = useSurveyContext();
   const [data, setData] = useState<Submission[]>([]);
   const [accessibleSurveys, setAccessibleSurveys] = useState<any[]>([]);
   const [alertCodes, setAlertCodes] = useState<Record<string, any>>({});
-  const [selectedSurvey, setSelectedSurvey] = useState<string | null>(surveyId || null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,22 +49,14 @@ export const useFetchSubmissions = (surveyId?: string | null) => {
       setIsLoading(true);
       setError(null);
 
-      const surveyToFetch = forcedSurveyId !== undefined ? forcedSurveyId : selectedSurvey;
+      const surveyToFetch = forcedSurveyId !== undefined ? forcedSurveyId : selectedSurveyId;
 
-      // PERFORMANCE FIX: Reduced limit from 100000 to 1000
-      // This dramatically reduces data transfer and client-side processing
-      const params: any = {
-        limit: 1000 // Reduced from 100000 for better performance
-      };
-
-      // Include survey_id if selected
+      const params: any = { limit: 1000 };
       if (surveyToFetch) {
         params.survey_id = surveyToFetch;
       }
 
-      const response = await axios.get(`${API_BASE_URL}/kobo/submissions`, {
-        params
-      });
+      const response = await axios.get(`${API_BASE_URL}/kobo/submissions`, { params });
 
       // Handle case where backend requires survey selection
       if (response.data.message === 'Please select a survey to view submissions') {
@@ -75,20 +68,18 @@ export const useFetchSubmissions = (surveyId?: string | null) => {
           // Auto-select first survey if not already selected (max one recursion)
           if (surveys.length > 0 && !surveyToFetch && !_isRetry) {
             const firstSurvey = surveys[0].asset_id;
-            setSelectedSurvey(firstSurvey);
-            return fetchData(firstSurvey, true);
+            setSelectedSurveyId(firstSurvey);
+            return await fetchData(firstSurvey, true);
           }
         }
         return;
       }
 
-      // Process and normalize all data
       if (!Array.isArray(response.data.results)) {
         setData([]);
         return;
       }
       const processedData = response.data.results.map(normalizeSubmissionData);
-
       setData(processedData);
 
       // Store accessible surveys metadata — backend always returns the full list
@@ -96,8 +87,6 @@ export const useFetchSubmissions = (surveyId?: string | null) => {
         const surveys = response.data.metadata.accessible_surveys;
         setAccessibleSurveys(surveys);
 
-        // PERFORMANCE FIX: Extract alert codes from surveys metadata (batched response)
-        // This eliminates separate API calls for each survey's alert codes
         const codesMap: Record<string, any> = {};
         surveys.forEach((survey: any) => {
           if (survey.alert_codes) {
@@ -107,13 +96,13 @@ export const useFetchSubmissions = (surveyId?: string | null) => {
         setAlertCodes(codesMap);
       }
     } catch (err) {
-      setError('Failed to load submissions');
+      setError(extractErrorMessage(err, 'Failed to load submissions'));
       setData([]);
       setAccessibleSurveys([]);
     } finally {
       setIsLoading(false);
     }
-  }, [selectedSurvey]);
+  }, [selectedSurveyId]);
 
   useEffect(() => {
     fetchData();
@@ -122,12 +111,9 @@ export const useFetchSubmissions = (surveyId?: string | null) => {
   return {
     data,
     accessibleSurveys,
-    alertCodes, // PERFORMANCE FIX: Return batched alert codes from metadata
-    selectedSurvey,
-    setSelectedSurvey: (surveyId: string | null) => {
-      setSelectedSurvey(surveyId);
-      fetchData(surveyId);
-    },
+    alertCodes,
+    selectedSurvey: selectedSurveyId,
+    setSelectedSurvey: setSelectedSurveyId,
     isLoading,
     error,
     refetch: fetchData
@@ -176,68 +162,73 @@ export const useUpdateValidationStatus = () => {
 
 // Hook to fetch enumerator statistics from the new MongoDB collection
 export const useFetchEnumeratorStats = () => {
+  const { selectedSurveyId, setSelectedSurveyId } = useSurveyContext();
   const [data, setData] = useState<any[]>([]);
+  const [accessibleSurveys, setAccessibleSurveys] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState<number>(0);
-  const maxRetries = 3;
 
-  const fetchEnumeratorStats = useCallback(async () => {
-    setIsLoading(true);
+  const fetchData = useCallback(async (forcedSurveyId?: string | null, _isRetry = false) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/enumerators-stats`, {
-        params: {
-          limit: 100000 // High limit to get all data
-        },
-        timeout: 60000 // 60 second timeout for large datasets
-      });
-
-      if (!response.data) {
-        throw new Error('Empty response received from server');
-      }
-
-      // Handle both old format (array) and new format (object with results)
-      const statsData = Array.isArray(response.data) ? response.data : response.data.results;
-
-      setData(statsData || []);
+      setIsLoading(true);
       setError(null);
-      setRetryCount(0); // Reset retry count on success
-    } catch (error: any) {
-      console.error('Error fetching enumerator stats:', error);
 
-      // Extract the most useful error message
-      let errorMessage = 'Failed to load enumerator statistics.';
-      if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.message) {
-        errorMessage = `Error: ${error.message}`;
+      const surveyToFetch = forcedSurveyId !== undefined ? forcedSurveyId : selectedSurveyId;
+
+      const params: any = {};
+      if (surveyToFetch) {
+        params.survey_id = surveyToFetch;
       }
 
-      setError(errorMessage);
+      const response = await axios.get(`${API_BASE_URL}/enumerators-stats`, { params });
 
-      // Auto-retry logic for certain types of errors
-      if (retryCount < maxRetries && (error.code === 'ECONNABORTED' || error.response?.status === 500)) {
-        setRetryCount(prev => prev + 1);
-        setTimeout(() => {
-          fetchEnumeratorStats();
-        }, 2000 * (retryCount + 1)); // Progressive backoff
+      // Handle case where backend requires survey selection
+      if (response.data.message === 'Please select a survey to view statistics') {
+        setData([]);
+        if (response.data.metadata?.accessible_surveys) {
+          const surveys = response.data.metadata.accessible_surveys;
+          setAccessibleSurveys(surveys);
+
+          if (surveys.length > 0 && !surveyToFetch && !_isRetry) {
+            const firstSurvey = surveys[0].asset_id;
+            setSelectedSurveyId(firstSurvey);
+            return await fetchData(firstSurvey, true);
+          }
+        }
+        return;
       }
+
+      if (!Array.isArray(response.data.results)) {
+        setData([]);
+        return;
+      }
+      setData(response.data.results);
+
+      if (response.data.metadata?.accessible_surveys) {
+        setAccessibleSurveys(response.data.metadata.accessible_surveys);
+      }
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Failed to load enumerator statistics'));
+      setData([]);
+      setAccessibleSurveys([]);
     } finally {
       setIsLoading(false);
     }
-  }, [retryCount]);
+  }, [selectedSurveyId]);
 
   useEffect(() => {
-    fetchEnumeratorStats();
-  }, [fetchEnumeratorStats]);
+    fetchData();
+  }, [fetchData]);
 
-  // Provide a way to manually retry
-  const refetch = useCallback(() => {
-    setRetryCount(0); // Reset retry count on manual refetch
-    return fetchEnumeratorStats();
-  }, [fetchEnumeratorStats]);
-
-  return { data, isLoading, error, refetch };
+  return {
+    data,
+    accessibleSurveys,
+    selectedSurvey: selectedSurveyId,
+    setSelectedSurvey: setSelectedSurveyId,
+    isLoading,
+    error,
+    refetch: fetchData
+  };
 };
 
 // Function to trigger a manual refresh of enumerator stats (admin only)

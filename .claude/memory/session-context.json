@@ -34,13 +34,16 @@
     "peskas_api": "Landings data download (api.peskas.org) with X-API-Key auth, input validation, rate limiting (lib/peskas-api.js)"
   },
   "current_session": {
-    "last_feature": "Bug fixes, dev/prod alignment, code quality pass (2026-03-20)",
+    "last_feature": "Per-survey loading for EnumeratorPerformance + cross-tab survey persistence (2026-03-21)",
     "active_files": [
-      "api/kobo/submissions.js",
-      "src/api/api.ts",
+      "api/enumerators-stats.js",
       "server/index.js",
-      "vercel.json",
-      "src/components/EnumeratorPerformance/charts/SubmissionVolumeChart.tsx"
+      "src/App.tsx",
+      "src/api/api.ts",
+      "src/contexts/SurveyContext.tsx",
+      "src/components/EnumeratorPerformance/EnumeratorPerformance.tsx",
+      "src/components/EnumeratorPerformance/charts/SubmissionVolumeChart.tsx",
+      "src/components/EnumeratorPerformance/components/PageHeader.tsx"
     ],
     "completed_improvements": [
       "✅ Performance Optimization: 90-95% load time reduction (30-60s → 2-3s for admins)",
@@ -106,6 +109,7 @@
     "PeSKAS API metadata integration documented (2026-01-27) - reference architecture-decisions.md for: lazy loading with sessionStorage caching pattern, conditional modal behavior (single field vs all fields), TanStack Table column enhancement with info icons, useFetchFieldMetadata hook pattern, comprehensive field documentation display (description, unit, examples, ranges, URLs)",
     "GitHub Actions migration documented (2026-02-03) - reference architecture-decisions.md for: Vercel cron → GitHub Actions pattern, comprehensive workflow setup (retry logic, notifications, artifact storage, concurrency control), secrets configuration, testing checklist, troubleshooting guide",
     "Bug fixes + dev/prod alignment + survey selector fix documented (2026-03-20) - reference architecture-decisions.md for: Vercel 504 React crash pattern, admin multi-survey loading fix, extractErrorMessage pattern, vercel.json glob ordering rule, validated_at null semantics, submission_date Date object vs string sort fix (use new Date().getTime() not localeCompare — all 3 sort sites), allAccessibleSurveys pattern (always return full list in metadata before filtering), survey selector API-level refetch (not TanStack column filter), dev cache key must include survey_id",
+    "Per-survey loading + cross-tab persistence documented (2026-03-21) - reference architecture-decisions.md for: SurveyContext pattern, double-fetch prevention (setSelectedSurvey = direct context setter), loading flicker fix (return await in recursion), EnumeratorPerformance state chain collapse (useMemo not useEffect+setState), SubmissionVolumeChart sort inside useMemo, enumerators-stats per-survey pattern mirrors submissions endpoint",
     "Scripts folder cleanup documented (2026-02-03) - reference architecture-decisions.md for audit process: categorization (active/one-time/debug/obsolete/duplicate), deletion strategy (keep 13 essential scripts), documentation synchronization (CLAUDE.md, README.md)"
   ],
   "common_patterns": {
@@ -141,8 +145,13 @@
     "peskas_metadata": "Use api/data-download/metadata-fields.js for authenticated PeSKAS API metadata access with graceful degradation",
     "error_message_extraction": "Always use extractErrorMessage(err, fallback) from src/api/api.ts in all hook catch blocks — never err.response?.data?.error || directly (Vercel errors return objects not strings)",
     "admin_survey_loading": "Admin users must select a survey explicitly before data loads — never load all surveys at once (response size limit). Both api/kobo/submissions.js and server/index.js enforce this. metadata.accessible_surveys ALWAYS returns the full list (allAccessibleSurveys) regardless of which survey is loaded — frontend uses this to populate the survey selector.",
-"survey_selector_pattern": "Survey dropdown in TableFilters triggers API-level refetch via onSurveyChange(asset_id) → setSelectedSurvey(id) → fetchData(id). NOT a TanStack column filter. Column filters are reset on survey change to prevent stale filters from a previous survey.",
-"dev_cache_key": "server/index.js cache key must include survey_id: submissions_{username}_{surveyIdParam}_{page}_{limit}. Without survey_id, switching surveys returns cached data for the wrong survey.",
+    "survey_selector_pattern": "Survey dropdown in TableFilters triggers API-level refetch via onSurveyChange(asset_id) → setSelectedSurvey(id) → fetchData(id). NOT a TanStack column filter. Column filters are reset on survey change to prevent stale filters from a previous survey.",
+    "dev_cache_key": "server/index.js cache key must include survey_id: submissions_{username}_{surveyIdParam}_{page}_{limit} and stats_{username}_{surveyIdParam}. Without survey_id, switching surveys returns cached data for the wrong survey.",
+    "survey_context": "SurveyContext (src/contexts/SurveyContext.tsx) is the single source of truth for selected survey across routes. Wraps AppContent in App.tsx above the router. Both useFetchSubmissions and useFetchEnumeratorStats read/write selectedSurveyId from this context. setSelectedSurvey = setSelectedSurveyId — the useCallback dep on selectedSurveyId triggers useEffect which fires fetchData() exactly once.",
+    "double_fetch_prevention": "setSelectedSurvey = setSelectedSurveyId (direct context setter, no explicit fetchData call). useCallback([selectedSurveyId]) + useEffect([fetchData]) already triggers one refetch when context changes. Do NOT also call fetchData(id) — causes two requests.",
+    "loading_flicker_fix": "In auto-select recursion use 'return await fetchData(firstSurvey, true)' not 'return fetchData(...)'. Without await, outer finally (setIsLoading false) runs before inner call completes — causes brief 'no data' flicker for multi-survey users on first load.",
+    "enumerator_performance_state": "EnumeratorPerformance.tsx: processedData = useMemo (not state), enumerators = useMemo([processedData, fromDate, toDate]) not useEffect+setState, uniqueDates = useMemo. Eliminated 3-step state chain. Only selectedEnumerator, date range, admin token, UI flags remain as useState.",
+    "submission_volume_chart_memo": "Sort enumerators INSIDE useMemo body, deps = [enumerators, t, onEnumeratorSelect]. No custom React.memo comparator — default shallow compare is sufficient. onEnumeratorSelect = setSelectedEnumerator (stable React state setter ref).",
     "peskas_api_architecture": "PeSKAS API (api.peskas.org) runs on Cloud Run with --min-instances=1 (no cold starts) + LRU cache for repeated queries. Our data-download functions have maxDuration:30 in vercel.json.",
     "github_actions_workflow": "Use .github/workflows/sync-airtable.yml pattern: scheduled triggers, manual dispatch with inputs, retry logic (nick-fields/retry@v3), environment validation, artifact storage, Slack notifications, concurrency control",
     "scripts_organization": "Keep only active, documented scripts (13 files: 4 user mgmt, 4 sync, 3 R survey config, 1 performance, 1 README); Remove debug/test scripts, one-time migrations, duplicates; Update CLAUDE.md and README.md to match reality"

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './components/Auth/AuthContext';
 import { I18nProvider } from './i18n/I18nContext';
+import { SurveyProvider } from './contexts/SurveyContext';
 import Login from './components/Auth/Login';
 import ResetPassword from './components/Auth/ResetPassword';
 import ValidationTable from './components/ValidationTable/ValidationTable';
@@ -84,7 +85,9 @@ const App: React.FC = () => {
     <BrowserRouter>
       <I18nProvider>
         <AuthProvider>
-          <AppContent />
+          <SurveyProvider>
+            <AppContent />
+          </SurveyProvider>
         </AuthProvider>
       </I18nProvider>
     </BrowserRouter>

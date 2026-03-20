@@ -1,15 +1,16 @@
 /**
  * GET /api/enumerators-stats
  *
- * Fetch enumerator statistics from MongoDB
- * Multi-survey aware with enumerator filtering
- * Requires authentication
+ * Fetch enumerator statistics from MongoDB filtered by user permissions.
+ * Supports per-survey loading — requires explicit survey selection when user
+ * has access to multiple surveys (same pattern as /api/kobo/submissions).
+ * Requires authentication.
  */
 
 const { withMiddleware, authenticateUser } = require('../lib/middleware');
 const { getDb } = require('../lib/db');
 const { getEnumeratorStatsCollection } = require('../lib/helpers');
-const { sendServerError, setCorsHeaders } = require('../lib/response');
+const { sendSuccess, sendServerError, sendMethodNotAllowed, setCorsHeaders } = require('../lib/response');
 
 async function handler(req, res) {
   setCorsHeaders(res, req);
@@ -19,7 +20,7 @@ async function handler(req, res) {
   }
 
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return sendMethodNotAllowed(res, ['GET']);
   }
 
   try {
@@ -28,89 +29,102 @@ async function handler(req, res) {
       return sendServerError(res, 'Database not configured');
     }
 
-    // Get the authenticated user's full data
-    const user = await database.collection('users').findOne({ username: req.user.username });
-
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
+    const user = req.user;
 
     // Determine which surveys the user has access to
-    let accessibleAssetIds;
+    let accessibleSurveys;
 
-    if (user.role === 'admin') {
-      // Admin users get full access to ALL active surveys, regardless of permissions.surveys
-      const surveys = await database.collection('surveys')
+    if (user.role === 'admin' && (!user.permissions?.surveys || user.permissions.surveys.length === 0)) {
+      accessibleSurveys = await database.collection('surveys')
         .find({ active: true })
         .toArray();
-      accessibleAssetIds = surveys.map(s => s.asset_id);
     } else {
-      // Regular user - only their assigned surveys
-      accessibleAssetIds = user.permissions?.surveys || [];
+      accessibleSurveys = await database.collection('surveys')
+        .find({ asset_id: { $in: user.permissions?.surveys || [] }, active: true })
+        .toArray();
     }
 
-    if (accessibleAssetIds.length === 0) {
-      return res.json([]);
+    if (accessibleSurveys.length === 0) {
+      return sendSuccess(res, {
+        count: 0,
+        results: [],
+        metadata: { accessible_surveys: [] }
+      });
     }
 
-    // Get survey metadata for enrichment
-    const surveys = await database.collection('surveys').find({
-      asset_id: { $in: accessibleAssetIds }
-    }).toArray();
+    // Save full list before any filtering — always returned in metadata
+    const allAccessibleSurveys = [...accessibleSurveys];
 
-    const surveyMap = {};
-    surveys.forEach(survey => {
-      surveyMap[survey.asset_id] = {
-        name: survey.name,
-        country_id: survey.country_id
-      };
-    });
+    const surveyIdFilter = req.query.survey_id;
 
-    // Determine if user has enumerator restrictions
+    if (surveyIdFilter) {
+      accessibleSurveys = allAccessibleSurveys.filter(s => s.asset_id === surveyIdFilter);
+
+      if (accessibleSurveys.length === 0) {
+        return sendSuccess(res, {
+          count: 0,
+          results: [],
+          message: 'Survey not found or access denied',
+          metadata: { accessible_surveys: allAccessibleSurveys.map(s => ({ asset_id: s.asset_id, name: s.name, country_id: s.country_id })) }
+        });
+      }
+    } else if (accessibleSurveys.length > 1) {
+      return sendSuccess(res, {
+        count: 0,
+        results: [],
+        message: 'Please select a survey to view statistics',
+        metadata: {
+          accessible_surveys: allAccessibleSurveys.map(s => ({
+            asset_id: s.asset_id,
+            name: s.name,
+            country_id: s.country_id
+          }))
+        }
+      });
+    }
+
+    // Enumerator restrictions
     const allowedEnumerators = user.permissions?.enumerators || [];
     const hasEnumeratorRestrictions = allowedEnumerators.length > 0;
 
-    // Fetch stats from each accessible survey's stats collection
-    const statsPromises = accessibleAssetIds.map(async (assetId) => {
-      const collectionName = getEnumeratorStatsCollection(assetId);
-
+    const statsPromises = accessibleSurveys.map(async (survey) => {
+      const collectionName = getEnumeratorStatsCollection(survey.asset_id);
       try {
-        const stats = await database.collection(collectionName)
-          .find({})
-          .toArray();
+        const filter = {
+          type: { $ne: 'metadata' },
+          ...(hasEnumeratorRestrictions && { submitted_by: { $in: allowedEnumerators } })
+        };
+        const stats = await database.collection(collectionName).find(filter).toArray();
 
-        // Add asset_id, survey name, and country to each stat record for frontend filtering
-        const surveyInfo = surveyMap[assetId] || { name: 'Unknown', country_id: null };
-        const enrichedStats = stats.map(stat => ({
+        return stats.map(stat => ({
           ...stat,
-          asset_id: assetId,
-          survey_name: surveyInfo.name,
-          survey_country: surveyInfo.country_id
+          asset_id: survey.asset_id,
+          survey_name: survey.name,
+          survey_country: survey.country_id
         }));
-
-        // Apply enumerator filtering if user has restrictions
-        return enrichedStats.filter(stat => {
-          // Skip metadata records (type: "metadata")
-          if (stat.type && stat.type.includes('metadata')) {
-            return false;
-          }
-          // Apply enumerator filtering
-          if (hasEnumeratorRestrictions) {
-            return allowedEnumerators.includes(stat.submitted_by);
-          }
-          return true;
-        });
       } catch (error) {
+        console.error(`Error fetching stats for survey ${survey.asset_id}:`, error);
         return [];
       }
     });
 
     const allStats = await Promise.all(statsPromises);
-    const flattenedStats = allStats.flat();
+    const results = allStats.flat();
 
-    return res.json(flattenedStats);
+    return sendSuccess(res, {
+      count: results.length,
+      results,
+      metadata: {
+        accessible_surveys: allAccessibleSurveys.map(s => ({
+          asset_id: s.asset_id,
+          name: s.name,
+          country_id: s.country_id
+        }))
+      }
+    });
+
   } catch (error) {
-    console.error('Error fetching enumerator statistics:', error);
+    console.error('Error in enumerators-stats handler:', error);
     return sendServerError(res, 'Failed to fetch enumerator statistics');
   }
 }

@@ -1803,78 +1803,76 @@ app.get('/api/enumerators-stats', authenticateUser, async (req, res) => {
       return res.status(500).json({ error: 'Database connection not established' });
     }
 
-    // Parse pagination parameters
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10000; // High default for backward compatibility
-    const skip = (page - 1) * limit;
-
-    // User data is now in req.user from middleware (no redundant DB query!)
     const user = req.user;
 
-    // Build cache key
-    const cacheKey = `stats_${user.username}_${page}_${limit}`;
+    // Build cache key — include survey_id to avoid cross-survey cache hits
+    const surveyIdParam = req.query.survey_id || 'all';
+    const cacheKey = `stats_${user.username}_${surveyIdParam}`;
     const cachedData = cache.get(cacheKey);
     if (cachedData) {
       res.set('X-Cache', 'HIT');
       return res.json(cachedData);
     }
 
-    // Determine which asset_ids the user has access to
-    let accessibleAssetIds;
+    // Determine which surveys the user has access to
+    let accessibleSurveys;
 
     if (user.role === 'admin' && (!user.permissions?.surveys || user.permissions.surveys.length === 0)) {
-      // Admin users get full access to ALL active surveys
-      const surveys = await database.collection('surveys').find({ active: true }).toArray();
-      accessibleAssetIds = surveys.map(s => s.asset_id);
+      accessibleSurveys = await database.collection('surveys').find({ active: true }).toArray();
     } else {
-      // Regular user - only their assigned surveys
-      accessibleAssetIds = user.permissions?.surveys || [];
+      accessibleSurveys = user.permissions?.surveys?.length > 0
+        ? await database.collection('surveys').find({ asset_id: { $in: user.permissions.surveys }, active: true }).toArray()
+        : [];
     }
 
-    if (accessibleAssetIds.length === 0) {
-      return res.json([]);
+    if (accessibleSurveys.length === 0) {
+      return res.json({ count: 0, results: [], metadata: { accessible_surveys: [] } });
     }
 
-    // Get survey metadata for enrichment
-    const surveys = await database.collection('surveys').find({
-      asset_id: { $in: accessibleAssetIds }
-    }).toArray();
+    // Save full list before any filtering — always returned in metadata
+    const allAccessibleSurveys = [...accessibleSurveys];
 
-    const surveyMap = {};
-    surveys.forEach(survey => {
-      surveyMap[survey.asset_id] = {
-        name: survey.name,
-        country_id: survey.country_id
-      };
-    });
+    const surveyIdFilter = surveyIdParam === 'all' ? null : surveyIdParam;
 
-    // Determine if user has enumerator restrictions
+    if (surveyIdFilter) {
+      accessibleSurveys = allAccessibleSurveys.filter(s => s.asset_id === surveyIdFilter);
+
+      if (accessibleSurveys.length === 0) {
+        return res.json({
+          count: 0, results: [],
+          message: 'Survey not found or access denied',
+          metadata: { accessible_surveys: allAccessibleSurveys.map(s => ({ asset_id: s.asset_id, name: s.name, country_id: s.country_id })) }
+        });
+      }
+    } else if (accessibleSurveys.length > 1) {
+      return res.json({
+        count: 0, results: [],
+        message: 'Please select a survey to view statistics',
+        metadata: {
+          accessible_surveys: allAccessibleSurveys.map(s => ({
+            asset_id: s.asset_id, name: s.name, country_id: s.country_id
+          }))
+        }
+      });
+    }
+
+    // Enumerator restrictions
     const allowedEnumerators = user.permissions?.enumerators || [];
     const hasEnumeratorRestrictions = allowedEnumerators.length > 0;
+    const enumeratorFilter = hasEnumeratorRestrictions ? { submitted_by: { $in: allowedEnumerators } } : {};
 
-    // Build enumerator filter for MongoDB query
-    const enumeratorFilter = hasEnumeratorRestrictions
-      ? { submitted_by: { $in: allowedEnumerators } }
-      : {};
-
-    // Fetch stats from each survey's collection with optimizations
-    const statsPromises = accessibleAssetIds.map(async (assetId) => {
-      const collectionName = getEnumeratorStatsCollection(assetId);
+    const statsPromises = accessibleSurveys.map(async (survey) => {
+      const collectionName = getEnumeratorStatsCollection(survey.asset_id);
       try {
         const stats = await database.collection(collectionName)
-          .find({
-            type: { $ne: 'metadata' },
-            ...enumeratorFilter
-          })
+          .find({ type: { $ne: 'metadata' }, ...enumeratorFilter })
           .toArray();
 
-        // Add asset_id, survey name, and country to each stat record for frontend filtering
-        const surveyInfo = surveyMap[assetId] || { name: 'Unknown', country_id: null };
         return stats.map(stat => ({
           ...stat,
-          asset_id: assetId,
-          survey_name: surveyInfo.name,
-          survey_country: surveyInfo.country_id
+          asset_id: survey.asset_id,
+          survey_name: survey.name,
+          survey_country: survey.country_id
         }));
       } catch (error) {
         console.error(`Error fetching stats from ${collectionName}:`, error);
@@ -1883,35 +1881,21 @@ app.get('/api/enumerators-stats', authenticateUser, async (req, res) => {
     });
 
     const allStats = await Promise.all(statsPromises);
-    let flattenedStats = allStats.flat();
-
-    // Sort by submission_date descending if available
-    flattenedStats.sort((a, b) => {
-      if (!a.submission_date) return 1;
-      if (!b.submission_date) return -1;
-      return new Date(b.submission_date).getTime() - new Date(a.submission_date).getTime();
-    });
-
-    // Apply pagination
-    const totalCount = flattenedStats.length;
-    const paginatedStats = flattenedStats.slice(skip, skip + limit);
-    const hasNextPage = skip + limit < totalCount;
+    const results = allStats.flat();
 
     const response = {
-      count: totalCount,
-      page: page,
-      limit: limit,
-      totalPages: Math.ceil(totalCount / limit),
-      next: hasNextPage ? `/api/enumerators-stats?page=${page + 1}&limit=${limit}` : null,
-      previous: page > 1 ? `/api/enumerators-stats?page=${page - 1}&limit=${limit}` : null,
-      results: paginatedStats
+      count: results.length,
+      results,
+      metadata: {
+        accessible_surveys: allAccessibleSurveys.map(s => ({
+          asset_id: s.asset_id, name: s.name, country_id: s.country_id
+        }))
+      }
     };
 
-    // Cache the response
     cache.set(cacheKey, response);
     res.set('X-Cache', 'MISS');
-    res.set('Cache-Control', 'private, max-age=300'); // 5 minutes
-
+    res.set('Cache-Control', 'private, max-age=300');
     res.json(response);
   } catch (error) {
     console.error('Error fetching enumerator statistics:', error);

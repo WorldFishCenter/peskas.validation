@@ -13,9 +13,9 @@ interface PageHeaderProps {
   setToDate: (date: string) => void;
   minDate: string;
   maxDate: string;
-  selectedSurvey: string;
-  setSelectedSurvey: (survey: string) => void;
-  availableSurveys: string[];
+  selectedSurvey: string | null;
+  setSelectedSurvey: (assetId: string | null) => void;
+  accessibleSurveys: Array<{ asset_id: string; name: string; country_id?: string }>;
   surveyCountry: string;
   onShowAlertGuide?: () => void;
 }
@@ -32,7 +32,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   maxDate,
   selectedSurvey,
   setSelectedSurvey,
-  availableSurveys,
+  accessibleSurveys,
   surveyCountry,
   onShowAlertGuide
 }) => {
@@ -64,18 +64,21 @@ const PageHeader: React.FC<PageHeaderProps> = ({
           <div className="col-auto ms-auto d-print-none">
             <div className="row g-2 align-items-end">
               {/* Survey Filter - Always show if multiple surveys, one must be selected */}
-              {availableSurveys.length > 1 && (
+              {accessibleSurveys.length > 1 && (
                 <div className="col-auto">
                   <div className="input-group">
                     <span className="input-group-text">{t('filters.survey', { ns: 'validation' })}</span>
                     <select
                       className="form-select mw-12"
-                      value={selectedSurvey}
-                      onChange={e => setSelectedSurvey(e.target.value)}
+                      value={selectedSurvey || ''}
+                      onChange={e => setSelectedSurvey(e.target.value || null)}
                     >
-                      {availableSurveys.map(survey => (
-                        <option key={survey} value={survey}>
-                          {survey}
+                      {!selectedSurvey && (
+                        <option value="" disabled>{t('filters.selectSurvey', { ns: 'validation' })}</option>
+                      )}
+                      {accessibleSurveys.map(survey => (
+                        <option key={survey.asset_id} value={survey.asset_id}>
+                          {survey.name}
                         </option>
                       ))}
                     </select>

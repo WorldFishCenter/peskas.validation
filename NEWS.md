@@ -1,3 +1,25 @@
+# Validation Portal 2.2.0
+
+## Performance Improvements
+
+- **Enumerator Performance dashboard now loads per survey**
+  - Previously loaded data from all surveys simultaneously, causing slow loads and potential crashes for admin users with many surveys
+  - Now uses the same per-survey loading pattern as the Validation Table — fast regardless of the number of surveys accessible
+
+## New Features
+
+- **Survey selection is remembered when switching tabs**
+  - Selecting a survey on the Validation Table tab now carries over when you navigate to the Enumerator Performance tab, and vice versa
+  - No more re-selecting your survey every time you switch views
+
+## Code Quality
+
+- **Simplified state management in Enumerator Performance**
+  - Replaced a 3-step data pipeline (useMemo → useEffect → state → useEffect → state) with direct derived values using `useMemo`
+  - Eliminates extra render cycles on date filter changes
+
+---
+
 # Validation Portal 2.1.0
 
 ## Bug Fixes

@@ -18,7 +18,7 @@ declare module 'highcharts' {
   interface ChartOptions {
     zoomType?: string;
   }
-  
+
   interface TooltipOptions {
     crosshairs?: boolean;
   }
@@ -26,9 +26,7 @@ declare module 'highcharts' {
 
 const EnumeratorPerformance: React.FC = () => {
   const { t } = useTranslation('enumerators');
-  const { data: rawData = [], isLoading, error, refetch } = useFetchEnumeratorStats();
-  const [enumerators, setEnumerators] = useState<EnumeratorData[]>([]);
-  const [processedData, setProcessedData] = useState<EnumeratorData[]>([]);
+  const { data: rawData = [], accessibleSurveys, selectedSurvey, setSelectedSurvey, isLoading, error, refetch } = useFetchEnumeratorStats();
   const [selectedEnumerator, setSelectedEnumerator] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [adminToken, setAdminToken] = useState<string>('');
@@ -43,92 +41,40 @@ const EnumeratorPerformance: React.FC = () => {
   const [minDate, setMinDate] = useState<string>('');
   const [maxDate, setMaxDate] = useState<string>('');
 
-  // Survey filter state
-  const [selectedSurvey, setSelectedSurvey] = useState<string>('');
-  const [availableSurveys, setAvailableSurveys] = useState<string[]>([]);
-  const [surveyCountry, setSurveyCountry] = useState<string>('');
-
   // Alert Guide modal state
   const [showAlertGuide, setShowAlertGuide] = useState(false);
 
-  // Use the same hook as ValidationTable - rawData is already in the correct format
+  // Derive country for the selected survey from metadata
+  const surveyCountry = useMemo(() => {
+    if (!selectedSurvey) return '';
+    return accessibleSurveys.find((s: any) => s.asset_id === selectedSurvey)?.country_id || '';
+  }, [selectedSurvey, accessibleSurveys]);
+
   const { surveyAlertCodes } = useContextualAlertCodes(rawData as any);
 
-  // PERFORMANCE FIX: Use useMemo instead of useEffect for survey extraction
-  // This prevents unnecessary re-computations on every render
-  const availableSurveysComputed = useMemo(() => {
+  // Process raw data from the hook (already filtered to selected survey by backend)
+  const processedData = useMemo<EnumeratorData[]>(() => {
     if (!rawData || rawData.length === 0) return [];
-
-    // Extract unique surveys
-    const surveys = new Set<string>();
-    rawData.forEach((item: any) => {
-      if (item.survey_name) surveys.add(item.survey_name);
-    });
-    return Array.from(surveys).sort();
+    return processEnumeratorData(rawData);
   }, [rawData]);
 
-  // Update state and auto-select when available surveys change
+  // Manage selected enumerator when survey/data changes
   useEffect(() => {
-    setAvailableSurveys(availableSurveysComputed);
-
-    // Auto-select first survey if multiple surveys and none selected
-    if (availableSurveysComputed.length > 1 && !selectedSurvey) {
-      setSelectedSurvey(availableSurveysComputed[0]);
-    } else if (availableSurveysComputed.length === 1) {
-      // If only one survey, select it automatically
-      setSelectedSurvey(availableSurveysComputed[0]);
-    }
-  }, [availableSurveysComputed, selectedSurvey]);
-
-  // PERFORMANCE FIX: Use useMemo for data filtering and processing
-  // This prevents unnecessary re-computations on every render
-  const filteredRawData = useMemo(() => {
-    if (!rawData || rawData.length === 0) return [];
-
-    if (selectedSurvey) {
-      return rawData.filter((item: any) => item.survey_name === selectedSurvey);
-    }
-    return rawData;
-  }, [rawData, selectedSurvey]);
-
-  // Extract survey country from filtered data
-  useEffect(() => {
-    if (filteredRawData.length > 0 && selectedSurvey) {
-      const surveyItem = filteredRawData.find((item: any) => item.survey_country);
-      setSurveyCountry(surveyItem?.survey_country || '');
-    } else {
-      setSurveyCountry('');
-    }
-  }, [filteredRawData, selectedSurvey]);
-
-  // PERFORMANCE FIX: Memoize processed enumerator data
-  const processedDataComputed = useMemo(() => {
-    if (filteredRawData.length === 0) return [];
-    return processEnumeratorData(filteredRawData);
-  }, [filteredRawData]);
-
-  // Update state and handle enumerator selection
-  useEffect(() => {
-    setProcessedData(processedDataComputed);
-
-    // Set default selected enumerator from processed data
-    if (processedDataComputed.length > 0 && !selectedEnumerator) {
-      setSelectedEnumerator(processedDataComputed[0].name);
-    } else if (processedDataComputed.length > 0 && selectedEnumerator) {
-      // Check if selected enumerator exists in the new processed data
-      const exists = processedDataComputed.some(e => e.name === selectedEnumerator);
+    if (processedData.length > 0 && !selectedEnumerator) {
+      setSelectedEnumerator(processedData[0].name);
+    } else if (processedData.length > 0 && selectedEnumerator) {
+      const exists = processedData.some(e => e.name === selectedEnumerator);
       if (!exists) {
-        setSelectedEnumerator(processedDataComputed[0].name);
+        setSelectedEnumerator(processedData[0].name);
       }
     }
-  }, [processedDataComputed, selectedEnumerator]);
+  }, [processedData, selectedEnumerator]);
 
   // Compute min/max dates from processedData - reset when survey changes
   useEffect(() => {
     if (processedData.length > 0) {
       const allDates = processedData.flatMap(e =>
         e.submissions.map(s => {
-          // Extract just the date part
           if (!s.submission_date) return null;
           return s.submission_date.includes('T')
             ? s.submission_date.split('T')[0]
@@ -139,30 +85,25 @@ const EnumeratorPerformance: React.FC = () => {
         const sorted = allDates.sort();
         setMinDate(sorted[0]);
         setMaxDate(sorted[sorted.length - 1]);
-        // Always reset date range to match the selected survey's data range
         setFromDate(sorted[0]);
         setToDate(sorted[sorted.length - 1]);
       }
     }
   }, [processedData]);
 
-  // Apply date range filtering to data (survey filtering already done in processedData)
-  useEffect(() => {
-    if (processedData.length === 0) return;
+  // Apply date range filtering — derived directly, no intermediate state
+  const enumerators = useMemo<EnumeratorData[]>(() => {
+    if (processedData.length === 0) return [];
     const filterByDateRange = (date: string) => {
       const datePart = date.includes('T') ? date.split('T')[0] : date.split(' ')[0];
       const fromOk = fromDate ? datePart >= fromDate : true;
       const toOk = toDate ? datePart <= toDate : true;
       return fromOk && toOk;
     };
-    const filteredEnumerators = processedData.map(enumerator => {
+    return processedData.map(enumerator => {
       const filteredSubmissions = enumerator.submissions.filter(submission => {
         if (!submission.submission_date) return false;
-
-        // Date filter only - survey filtering already applied to processedData
-        if (!filterByDateRange(submission.submission_date)) return false;
-
-        return true;
+        return filterByDateRange(submission.submission_date);
       });
       const submissionsWithAlerts = filteredSubmissions.filter(
         s => s.alert_flag && s.alert_flag !== "NA"
@@ -178,7 +119,6 @@ const EnumeratorPerformance: React.FC = () => {
         filteredErrorRate: errorRate
       };
     });
-    setEnumerators(filteredEnumerators);
   }, [processedData, fromDate, toDate]);
 
   // Check for admin token
@@ -222,8 +162,6 @@ const EnumeratorPerformance: React.FC = () => {
     }
   };
 
-  // Note: Popover initialization is now handled in the ChartTabs component
-
   // Loading state
   if (isLoading) {
     return (
@@ -255,7 +193,7 @@ const EnumeratorPerformance: React.FC = () => {
               <div className="ms-2">{error}</div>
             </div>
             <div className="mt-3">
-              <button className="btn btn-outline-primary" onClick={refetch}>
+              <button className="btn btn-outline-primary" onClick={() => refetch()}>
                 {t('buttons.tryAgain', { ns: 'common' })}
               </button>
             </div>
@@ -289,27 +227,29 @@ const EnumeratorPerformance: React.FC = () => {
   }
 
   const selectedEnumeratorData = enumerators.find(e => e.name === selectedEnumerator);
-  
+
   // Calculate summary statistics based on filtered data
   const totalSubmissions = enumerators.reduce((sum, e) => sum + (e.filteredTotal || e.totalSubmissions), 0);
   const totalAlerts = enumerators.reduce((sum, e) => sum + (e.filteredAlertsCount || e.submissionsWithAlerts), 0);
   const avgErrorRate = totalSubmissions > 0 ? (totalAlerts / totalSubmissions) * 100 : 0;
-  
+
   // Find the best enumerator using a weighted quality score
   const bestEnumerator = findBestEnumerator(enumerators);
-  
+
   // Calculate dates for submission trend chart (filtered by date range only)
-  const allDates = enumerators.flatMap(e => 
-    e.submissionTrend
-      .filter(t => {
-        const datePart = t.date.includes('T') ? t.date.split('T')[0] : t.date.split(' ')[0];
-        const fromOk = fromDate ? datePart >= fromDate : true;
-        const toOk = toDate ? datePart <= toDate : true;
-        return fromOk && toOk;
-      })
-      .map(t => t.date)
-  );
-  const uniqueDates = [...new Set(allDates)].sort();
+  const uniqueDates = useMemo(() => {
+    const allDates = enumerators.flatMap(e =>
+      e.submissionTrend
+        .filter(trend => {
+          const datePart = trend.date.includes('T') ? trend.date.split('T')[0] : trend.date.split(' ')[0];
+          const fromOk = fromDate ? datePart >= fromDate : true;
+          const toOk = toDate ? datePart <= toDate : true;
+          return fromOk && toOk;
+        })
+        .map(trend => trend.date)
+    );
+    return [...new Set(allDates)].sort();
+  }, [enumerators, fromDate, toDate]);
 
   return (
     <>
@@ -326,7 +266,7 @@ const EnumeratorPerformance: React.FC = () => {
         maxDate={maxDate}
         selectedSurvey={selectedSurvey}
         setSelectedSurvey={setSelectedSurvey}
-        availableSurveys={availableSurveys}
+        accessibleSurveys={accessibleSurveys}
         surveyCountry={surveyCountry}
         onShowAlertGuide={() => setShowAlertGuide(true)}
       />
@@ -382,4 +322,4 @@ const EnumeratorPerformance: React.FC = () => {
   );
 };
 
-export default EnumeratorPerformance; 
+export default EnumeratorPerformance;
