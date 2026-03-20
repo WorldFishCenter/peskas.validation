@@ -91,7 +91,7 @@ export const useFetchSubmissions = (surveyId?: string | null) => {
 
       setData(processedData);
 
-      // Store accessible surveys metadata
+      // Store accessible surveys metadata — backend always returns the full list
       if (response.data.metadata?.accessible_surveys) {
         const surveys = response.data.metadata.accessible_surveys;
         setAccessibleSurveys(surveys);

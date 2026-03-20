@@ -172,8 +172,9 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
     // User data is now in req.user from middleware (no redundant DB query!)
     const user = req.user;
 
-    // Build cache key
-    const cacheKey = `submissions_${user.username}_${page}_${limit}`;
+    // Build cache key — include survey_id so different surveys don't share a cache entry
+    const surveyIdParam = req.query.survey_id || 'all';
+    const cacheKey = `submissions_${user.username}_${surveyIdParam}_${page}_${limit}`;
     const cachedData = cache.get(cacheKey);
     if (cachedData) {
       res.set('X-Cache', 'HIT');
@@ -212,13 +213,17 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
       });
     }
 
+    // Save full list before any filtering — always returned in metadata so the
+    // frontend can populate the survey selector regardless of which survey is loaded
+    const allAccessibleSurveys = [...accessibleSurveys];
+
     // PERFORMANCE OPTIMIZATION: Filter by specific survey_id if provided
     // This prevents admin users from loading ALL surveys simultaneously
-    const surveyIdFilter = req.query.survey_id;
+    const surveyIdFilter = surveyIdParam === 'all' ? null : surveyIdParam;
 
     if (surveyIdFilter) {
       // User selected a specific survey - filter to just that one
-      accessibleSurveys = accessibleSurveys.filter(s => s.asset_id === surveyIdFilter);
+      accessibleSurveys = allAccessibleSurveys.filter(s => s.asset_id === surveyIdFilter);
 
       if (accessibleSurveys.length === 0) {
         return res.json({
@@ -351,7 +356,7 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
     allSubmissions.sort((a, b) => {
       if (!a.submission_date) return 1;
       if (!b.submission_date) return -1;
-      return b.submission_date.localeCompare(a.submission_date);
+      return new Date(b.submission_date).getTime() - new Date(a.submission_date).getTime();
     });
 
     // Apply pagination after combining all surveys
@@ -368,7 +373,7 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
       previous: page > 1 ? `/api/kobo/submissions?page=${page - 1}&limit=${limit}` : null,
       results: paginatedSubmissions,
       metadata: {
-        accessible_surveys: accessibleSurveys.map(s => ({
+        accessible_surveys: allAccessibleSurveys.map(s => ({
           asset_id: s.asset_id,
           name: s.name,
           country_id: s.country_id,
@@ -1884,7 +1889,7 @@ app.get('/api/enumerators-stats', authenticateUser, async (req, res) => {
     flattenedStats.sort((a, b) => {
       if (!a.submission_date) return 1;
       if (!b.submission_date) return -1;
-      return b.submission_date.localeCompare(a.submission_date);
+      return new Date(b.submission_date).getTime() - new Date(a.submission_date).getTime();
     });
 
     // Apply pagination

@@ -72,7 +72,7 @@ const getMinMaxDate = (subs: Submission[] | undefined): [string, string] => {
 
 const ValidationTable: React.FC = () => {
   const { t } = useTranslation('validation');
-  const { data: submissions, accessibleSurveys, isLoading, error, refetch } = useFetchSubmissions();
+  const { data: submissions, accessibleSurveys, selectedSurvey, setSelectedSurvey, isLoading, error, refetch } = useFetchSubmissions();
   const [selectedRow, setSelectedRow] = useState<Submission | null>(null);
   const [statusToUpdate, setStatusToUpdate] = useState<string>('validation_status_approved');
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -401,6 +401,11 @@ const ValidationTable: React.FC = () => {
                 minDate={minDate}
                 maxDate={maxDate}
                 accessibleSurveys={accessibleSurveys}
+                selectedSurvey={selectedSurvey}
+                onSurveyChange={(assetId) => {
+                  table.resetColumnFilters();
+                  setSelectedSurvey(assetId);
+                }}
                 onShowAlertGuide={() => setShowAlertGuide(true)}
               />
             </div>

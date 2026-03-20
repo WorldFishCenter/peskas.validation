@@ -1,4 +1,3 @@
-import React from 'react';
 import { Table } from '@tanstack/react-table';
 import { IconSearch, IconInfoCircle } from '@tabler/icons-react';
 import { VALIDATION_STATUS_OPTIONS } from '../../types/validation';
@@ -16,6 +15,8 @@ interface TableFiltersProps<T> {
   minDate: string;
   maxDate: string;
   accessibleSurveys: any[];
+  selectedSurvey: string | null;
+  onSurveyChange: (assetId: string | null) => void;
   onShowAlertGuide?: () => void;
 }
 
@@ -31,6 +32,8 @@ const TableFilters = <T,>({
   minDate,
   maxDate,
   accessibleSurveys,
+  selectedSurvey,
+  onSurveyChange,
   onShowAlertGuide
 }: TableFiltersProps<T>) => {
   const { t } = useTranslation('validation');
@@ -38,22 +41,8 @@ const TableFilters = <T,>({
   // Get columns with defensive access
   const statusColumn = table.getColumn('validation_status');
   const alertColumn = table.getColumn('alert_flag');
-  const surveyColumn = table.getColumn('survey_name');
 
-  // Get unique surveys from accessible surveys metadata (not from displayed rows)
-  // This ensures all assigned surveys appear in dropdown, even if they have 0 submissions
-  const uniqueSurveys = React.useMemo(() => {
-    if (accessibleSurveys && accessibleSurveys.length > 0) {
-      return accessibleSurveys.map(s => s.name).sort();
-    }
-    // Fallback to parsing displayed rows if metadata not available
-    const surveys = new Set<string>();
-    table.getRowModel().rows.forEach(row => {
-      const surveyName = (row.original as any).survey_name;
-      if (surveyName) surveys.add(surveyName);
-    });
-    return Array.from(surveys).sort();
-  }, [accessibleSurveys, table]);
+  const showSurveySelector = accessibleSurveys.length > 1;
 
   return (
     <div className="d-flex flex-column gap-3">
@@ -110,21 +99,22 @@ const TableFilters = <T,>({
 
       {/* Row 2: Filters Grid */}
       <div className="row g-2">
-        {/* Survey Filter - only show if multiple surveys */}
-        {uniqueSurveys.length > 1 && (
+        {/* Survey Selector - only show if user has access to multiple surveys.
+            Triggers an API-level refetch (not a client-side filter) so the correct
+            survey's data is loaded from the backend. */}
+        {showSurveySelector && (
           <div className="col-md-3">
             <select
               className="form-select"
-              value={(surveyColumn?.getFilterValue() as string) || ''}
-              onChange={e =>
-                surveyColumn?.setFilterValue(e.target.value || undefined)
-              }
-              disabled={!surveyColumn}
+              value={selectedSurvey || ''}
+              onChange={e => onSurveyChange(e.target.value || null)}
             >
-              <option value="">{t('filters.allSurveys')}</option>
-              {uniqueSurveys.map(survey => (
-                <option key={survey} value={survey}>
-                  {survey}
+              {!selectedSurvey && (
+                <option value="" disabled>{t('filters.selectSurvey')}</option>
+              )}
+              {accessibleSurveys.map(survey => (
+                <option key={survey.asset_id} value={survey.asset_id}>
+                  {survey.name}
                 </option>
               ))}
             </select>
@@ -132,7 +122,7 @@ const TableFilters = <T,>({
         )}
 
         {/* Status Filter */}
-        <div className={uniqueSurveys.length > 1 ? 'col-md-3' : 'col-md-4'}>
+        <div className={showSurveySelector ? 'col-md-3' : 'col-md-4'}>
           <select
             className="form-select"
             value={(statusColumn?.getFilterValue() as string) || ''}
@@ -153,7 +143,7 @@ const TableFilters = <T,>({
         </div>
 
         {/* Alert Filter */}
-        <div className={uniqueSurveys.length > 1 ? 'col-md-2' : 'col-md-4'}>
+        <div className={showSurveySelector ? 'col-md-2' : 'col-md-4'}>
           <select
             className="form-select"
             value={(alertColumn?.getFilterValue() as string) || 'all'}
@@ -169,7 +159,7 @@ const TableFilters = <T,>({
         </div>
 
         {/* Date Range */}
-        <div className={uniqueSurveys.length > 1 ? 'col-md-4' : 'col-md-4'}>
+        <div className="col-md-4">
           <div className="input-group">
             <input
               type="date"

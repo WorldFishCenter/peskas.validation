@@ -21,6 +21,7 @@
     "resetFilters": "Reset Filters",
     "all": "All",
     "allSurveys": "All Surveys",
+    "selectSurvey": "Select a survey...",
     "allStatuses": "All Statuses",
     "allItems": "All Items",
     "withAlerts": "With Alerts",

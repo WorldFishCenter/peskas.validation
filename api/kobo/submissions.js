@@ -60,11 +60,15 @@ async function handler(req, res) {
       });
     }
 
+    // Save full list before any filtering — always returned in metadata so the
+    // frontend can populate the survey selector regardless of which survey is loaded
+    const allAccessibleSurveys = [...accessibleSurveys];
+
     const surveyIdFilter = req.query.survey_id;
 
     if (surveyIdFilter) {
       // User selected a specific survey - filter to just that one
-      accessibleSurveys = accessibleSurveys.filter(s => s.asset_id === surveyIdFilter);
+      accessibleSurveys = allAccessibleSurveys.filter(s => s.asset_id === surveyIdFilter);
 
       if (accessibleSurveys.length === 0) {
         return sendSuccess(res, {
@@ -89,7 +93,7 @@ async function handler(req, res) {
         limit,
         message: 'Please select a survey to view submissions',
         metadata: {
-          accessible_surveys: accessibleSurveys.map(s => ({
+          accessible_surveys: allAccessibleSurveys.map(s => ({
             asset_id: s.asset_id,
             name: s.name,
             country_id: s.country_id,
@@ -143,6 +147,7 @@ async function handler(req, res) {
           survey_country: survey.country_id
         };
       } catch (error) {
+        console.error(`Error fetching submissions for survey ${survey.asset_id}:`, error);
         return {
           asset_id: survey.asset_id,
           submissions: [],
@@ -197,7 +202,7 @@ async function handler(req, res) {
       previous: page > 1 ? `/api/kobo/submissions?page=${page - 1}&limit=${limit}` : null,
       results: paginatedSubmissions,
       metadata: {
-        accessible_surveys: accessibleSurveys.map(s => ({
+        accessible_surveys: allAccessibleSurveys.map(s => ({
           asset_id: s.asset_id,
           name: s.name,
           country_id: s.country_id,
