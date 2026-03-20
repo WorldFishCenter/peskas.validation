@@ -180,7 +180,7 @@ async function handler(req, res) {
     allSubmissions.sort((a, b) => {
       if (!a.submission_date) return 1;
       if (!b.submission_date) return -1;
-      return b.submission_date.localeCompare(a.submission_date);
+      return new Date(b.submission_date).getTime() - new Date(a.submission_date).getTime();
     });
 
     // Apply pagination
