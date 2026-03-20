@@ -9,7 +9,7 @@
 const { withMiddleware, authenticateUser } = require('../../lib/middleware');
 const { getDb } = require('../../lib/db');
 const { getSurveyFlagsCollection } = require('../../lib/helpers');
-const { sendSuccess, sendUnauthorized, sendServerError, sendMethodNotAllowed, setCorsHeaders } = require('../../lib/response');
+const { sendSuccess, sendServerError, sendMethodNotAllowed, setCorsHeaders } = require('../../lib/response');
 
 async function handler(req, res) {
   setCorsHeaders(res, req);
@@ -38,15 +38,13 @@ async function handler(req, res) {
     // Determine which surveys the user has access to
     let accessibleSurveys;
 
-    const surveyProjection = { projection: { asset_id: 1, name: 1, country_id: 1, alert_codes: 1, _id: 0 } };
-
     if (user.role === 'admin' && (!user.permissions?.surveys || user.permissions.surveys.length === 0)) {
       accessibleSurveys = await database.collection('surveys')
-        .find({ active: true }, surveyProjection)
+        .find({ active: true })
         .toArray();
     } else {
       accessibleSurveys = await database.collection('surveys')
-        .find({ asset_id: { $in: user.permissions?.surveys || [] }, active: true }, surveyProjection)
+        .find({ asset_id: { $in: user.permissions?.surveys || [] }, active: true })
         .toArray();
     }
 
@@ -209,6 +207,7 @@ async function handler(req, res) {
     });
 
   } catch (error) {
+    console.error('Error in submissions handler:', error);
     return sendServerError(res, 'Failed to fetch submissions');
   }
 }
