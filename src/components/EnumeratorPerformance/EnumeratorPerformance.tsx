@@ -121,6 +121,21 @@ const EnumeratorPerformance: React.FC = () => {
     });
   }, [processedData, fromDate, toDate]);
 
+  // Calculate dates for submission trend chart — must be above early returns (Rules of Hooks)
+  const uniqueDates = useMemo(() => {
+    const allDates = enumerators.flatMap(e =>
+      e.submissionTrend
+        .filter(trend => {
+          const datePart = trend.date.includes('T') ? trend.date.split('T')[0] : trend.date.split(' ')[0];
+          const fromOk = fromDate ? datePart >= fromDate : true;
+          const toOk = toDate ? datePart <= toDate : true;
+          return fromOk && toOk;
+        })
+        .map(trend => trend.date)
+    );
+    return [...new Set(allDates)].sort();
+  }, [enumerators, fromDate, toDate]);
+
   // Check for admin token
   useEffect(() => {
     const storedToken = localStorage.getItem('admin_token');
@@ -235,21 +250,6 @@ const EnumeratorPerformance: React.FC = () => {
 
   // Find the best enumerator using a weighted quality score
   const bestEnumerator = findBestEnumerator(enumerators);
-
-  // Calculate dates for submission trend chart (filtered by date range only)
-  const uniqueDates = useMemo(() => {
-    const allDates = enumerators.flatMap(e =>
-      e.submissionTrend
-        .filter(trend => {
-          const datePart = trend.date.includes('T') ? trend.date.split('T')[0] : trend.date.split(' ')[0];
-          const fromOk = fromDate ? datePart >= fromDate : true;
-          const toOk = toDate ? datePart <= toDate : true;
-          return fromOk && toOk;
-        })
-        .map(trend => trend.date)
-    );
-    return [...new Set(allDates)].sort();
-  }, [enumerators, fromDate, toDate]);
 
   return (
     <>
