@@ -1,4 +1,38 @@
-# validation-zanzibar 2.0.0
+# Validation Portal 2.1.0
+
+## Bug Fixes
+
+- **Fixed: React crash when data preview times out**
+  - Problem: When the PeSKAS API was slow to respond, Vercel returned a gateway error containing an object `{code, message}` instead of a plain text message. This object was rendered directly in the UI, crashing the page.
+  - Solution: The portal now correctly extracts a readable message from any error format, including Vercel gateway errors.
+
+- **Fixed: Admin users crashing the validation table**
+  - Problem: Admin users have access to all active surveys. The portal was trying to load all surveys simultaneously, which could exceed the response size limit and cause a crash with "Cannot read properties of undefined".
+  - Solution: Admin users are now required to select a survey before data loads, consistent with how the development environment already worked.
+
+## Performance Improvements
+
+- **Faster validation table for all users**
+  - The submissions API now fetches only the fields needed by the table (previously fetching all document fields including internal configuration data)
+  - Results are sorted at the database level instead of in memory
+
+- **Reduced timeout risk for data preview and export**
+  - Extended the server timeout for data download functions from 10 to 30 seconds, providing more headroom for large or slow PeSKAS API responses
+
+## Reliability Improvements
+
+- **PeSKAS API no longer times out on first load**
+  - The PeSKAS API (which powers the data download feature) now stays warm at all times — no more slow first requests after periods of inactivity
+  - Repeated preview requests for the same filters are now served from cache
+
+## Infrastructure
+
+- **Consistent behavior across all environments**
+  - The production API and the local development server now behave identically for the submissions endpoint (pagination, survey selection, permissions, sorting)
+
+---
+
+# Validation Portal 2.0.0
 
 ## What's New
 
@@ -96,7 +130,7 @@ This release focuses on making the data synchronization from Airtable more relia
 
 ---
 
-# validation-zanzibar 1.6.0
+# Validation Portal 1.6.0
 
 ## New Features
 
@@ -289,7 +323,7 @@ All infrastructure improvements completed:
 
 ---
 
-# validation-zanzibar 1.5.0
+# Validation Portal 1.5.0
 
 ## New Features
 
@@ -331,7 +365,7 @@ All infrastructure improvements completed:
 
 ---
 
-# validation-zanzibar 1.4.0
+# Validation Portal 1.4.0
 
 ## Features
 
@@ -387,7 +421,7 @@ All infrastructure improvements completed:
 
 ---
 
-# validation-zanzibar 1.3.0
+# Validation Portal 1.3.0
 
 ## Architecture & Scalability
 
@@ -470,7 +504,7 @@ All infrastructure improvements completed:
 
 ---
 
-# validation-zanzibar 1.2.1
+# Validation Portal 1.2.1
 
 ## Features
 
@@ -518,7 +552,7 @@ All infrastructure improvements completed:
 
 ---
 
-# validation-zanzibar 1.2.0
+# Validation Portal 1.2.0
 
 ## Features
 
@@ -578,7 +612,7 @@ All infrastructure improvements completed:
 
 ---
 
-# validation-zanzibar 1.1.0
+# Validation Portal 1.1.0
 
 ## New Features
 
@@ -664,7 +698,7 @@ All infrastructure improvements completed:
 
 ---
 
-# validation-zanzibar 1.0.0
+# Validation Portal 1.0.0
 
 ## New features
 

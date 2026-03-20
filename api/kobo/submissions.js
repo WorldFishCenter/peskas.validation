@@ -1,28 +1,25 @@
 /**
  * GET /api/kobo/submissions
  *
- * Fetch submissions from MongoDB filtered by user permissions
- * Supports multi-survey architecture and enumerator filtering
- * Requires authentication
+ * Fetch submissions from MongoDB filtered by user permissions.
+ * Supports multi-survey architecture with explicit survey selection.
+ * Requires authentication.
  */
 
 const { withMiddleware, authenticateUser } = require('../../lib/middleware');
 const { getDb } = require('../../lib/db');
 const { getSurveyFlagsCollection } = require('../../lib/helpers');
-const { sendUnauthorized, sendServerError, setCorsHeaders } = require('../../lib/response');
+const { sendSuccess, sendUnauthorized, sendServerError, sendMethodNotAllowed, setCorsHeaders } = require('../../lib/response');
 
 async function handler(req, res) {
-  // Set CORS headers
   setCorsHeaders(res, req);
 
-  // Handle OPTIONS request for CORS preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  // Only allow GET method
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return sendMethodNotAllowed(res, ['GET']);
   }
 
   try {
@@ -31,49 +28,114 @@ async function handler(req, res) {
       return sendServerError(res, 'Database not configured');
     }
 
-    // Get the authenticated user's full data
-    const user = await database.collection('users').findOne({ username: req.user.username });
+    // Parse pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 1000;
+    const skip = (page - 1) * limit;
 
-    if (!user) {
-      return sendUnauthorized(res, 'User not found');
-    }
+    const user = req.user;
 
     // Determine which surveys the user has access to
     let accessibleSurveys;
 
-    if (user.role === 'admin') {
-      // Admin users get full access to ALL active surveys, regardless of permissions.surveys
+    const surveyProjection = { projection: { asset_id: 1, name: 1, country_id: 1, alert_codes: 1, _id: 0 } };
+
+    if (user.role === 'admin' && (!user.permissions?.surveys || user.permissions.surveys.length === 0)) {
       accessibleSurveys = await database.collection('surveys')
-        .find({ active: true })
+        .find({ active: true }, surveyProjection)
         .toArray();
     } else {
-      // Regular user - only their assigned surveys
       accessibleSurveys = await database.collection('surveys')
-        .find({
-          asset_id: { $in: user.permissions?.surveys || [] },
-          active: true
-        })
+        .find({ asset_id: { $in: user.permissions?.surveys || [] }, active: true }, surveyProjection)
         .toArray();
     }
 
     if (accessibleSurveys.length === 0) {
-      return res.json({
+      return sendSuccess(res, {
         count: 0,
         next: null,
         previous: null,
-        results: []
+        results: [],
+        page,
+        limit,
+        metadata: { accessible_surveys: [] }
       });
     }
 
+    const surveyIdFilter = req.query.survey_id;
+
+    if (surveyIdFilter) {
+      // User selected a specific survey - filter to just that one
+      accessibleSurveys = accessibleSurveys.filter(s => s.asset_id === surveyIdFilter);
+
+      if (accessibleSurveys.length === 0) {
+        return sendSuccess(res, {
+          count: 0,
+          next: null,
+          previous: null,
+          results: [],
+          page,
+          limit,
+          message: 'Survey not found or access denied',
+          metadata: { accessible_surveys: [] }
+        });
+      }
+    } else if (accessibleSurveys.length > 1) {
+      // Multiple surveys available but no selection — require explicit choice
+      return sendSuccess(res, {
+        count: 0,
+        next: null,
+        previous: null,
+        results: [],
+        page,
+        limit,
+        message: 'Please select a survey to view submissions',
+        metadata: {
+          accessible_surveys: accessibleSurveys.map(s => ({
+            asset_id: s.asset_id,
+            name: s.name,
+            country_id: s.country_id,
+            alert_codes: s.alert_codes || {}
+          }))
+        }
+      });
+    }
+
+    // Enumerator restrictions
+    const allowedEnumerators = user.permissions?.enumerators || [];
+    const hasEnumeratorRestrictions = allowedEnumerators.length > 0;
+    const enumeratorFilter = hasEnumeratorRestrictions
+      ? { submitted_by: { $in: allowedEnumerators } }
+      : {};
+
+    // Cap limit to avoid oversized responses
+    const effectiveLimit = Math.min(limit, 10000);
+
     // Fetch submissions from MongoDB for each accessible survey
-    // R pipeline now stores all data including validation_status, validated_at, validated_by
     const submissionsPromises = accessibleSurveys.map(async (survey) => {
       const collectionName = getSurveyFlagsCollection(survey.asset_id);
 
       try {
-        // Fetch all submissions from MongoDB (R pipeline writes everything here)
         const mongoSubmissions = await database.collection(collectionName)
-          .find({ type: { $ne: 'metadata' } })
+          .find(
+            { type: { $ne: 'metadata' }, ...enumeratorFilter },
+            {
+              projection: {
+                submission_id: 1,
+                submission_date: 1,
+                vessel_number: 1,
+                catch_number: 1,
+                submitted_by: 1,
+                validation_status: 1,
+                validated_at: 1,
+                validated_by: 1,
+                alert_flag: 1,
+                _id: 0
+              }
+            }
+          )
+          .sort({ submission_date: -1 })
+          .limit(effectiveLimit)
           .toArray();
 
         return {
@@ -94,63 +156,61 @@ async function handler(req, res) {
 
     const surveySubmissions = await Promise.all(submissionsPromises);
 
-    // Determine if user has enumerator restrictions
-    const allowedEnumerators = user.permissions?.enumerators || [];
-    const hasEnumeratorRestrictions = allowedEnumerators.length > 0;
-
-    // Process and combine all submissions from all accessible surveys
     let allSubmissions = [];
-    let totalCount = 0;
 
     surveySubmissions.forEach(surveyData => {
-      const processedSubmissions = surveyData.submissions
-        .map(mongoDoc => {
-          return {
-            submission_id: mongoDoc.submission_id,
-            submission_date: mongoDoc.submission_date,
-            vessel_number: mongoDoc.vessel_number || '',
-            catch_number: mongoDoc.catch_number || '',
-            submitted_by: mongoDoc.submitted_by || '',
-            validation_status: mongoDoc.validation_status || 'validation_status_not_approved',
-            validated_at: mongoDoc.validated_at || mongoDoc.submission_date,
-            validated_by: mongoDoc.validated_by || '',
-            alert_flag: mongoDoc.alert_flag || '',
-            alert_flags: mongoDoc.alert_flag ? mongoDoc.alert_flag.split(', ') : [],
-            asset_id: surveyData.asset_id,
-            survey_name: surveyData.survey_name || 'Unknown Survey',
-            survey_country: surveyData.survey_country || ''
-          };
-        })
-        .filter(submission => {
-          // Apply enumerator filtering if user has restrictions
-          if (hasEnumeratorRestrictions) {
-            return allowedEnumerators.includes(submission.submitted_by);
-          }
-          return true; // No restrictions, include all
-        });
+      const processedSubmissions = surveyData.submissions.map(mongoDoc => ({
+        submission_id: mongoDoc.submission_id,
+        submission_date: mongoDoc.submission_date,
+        vessel_number: mongoDoc.vessel_number || '',
+        catch_number: mongoDoc.catch_number || '',
+        submitted_by: mongoDoc.submitted_by || '',
+        validation_status: mongoDoc.validation_status || 'validation_status_on_hold',
+        validated_at: mongoDoc.validated_at || null,
+        validated_by: mongoDoc.validated_by || '',
+        alert_flag: mongoDoc.alert_flag || '',
+        alert_flags: mongoDoc.alert_flag ? mongoDoc.alert_flag.split(', ') : [],
+        asset_id: surveyData.asset_id,
+        survey_name: surveyData.survey_name || 'Unknown Survey',
+        survey_country: surveyData.survey_country || ''
+      }));
 
-      allSubmissions = [...allSubmissions, ...processedSubmissions];
-      totalCount += processedSubmissions.length;
+      allSubmissions.push(...processedSubmissions);
     });
 
-    return res.json({
+    // Sort combined results by submission_date descending
+    allSubmissions.sort((a, b) => {
+      if (!a.submission_date) return 1;
+      if (!b.submission_date) return -1;
+      return b.submission_date.localeCompare(a.submission_date);
+    });
+
+    // Apply pagination
+    const totalCount = allSubmissions.length;
+    const paginatedSubmissions = allSubmissions.slice(skip, skip + limit);
+    const hasNextPage = skip + limit < totalCount;
+
+    return sendSuccess(res, {
       count: totalCount,
-      next: null,
-      previous: null,
-      results: allSubmissions,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit),
+      next: hasNextPage ? `/api/kobo/submissions?page=${page + 1}&limit=${limit}` : null,
+      previous: page > 1 ? `/api/kobo/submissions?page=${page - 1}&limit=${limit}` : null,
+      results: paginatedSubmissions,
       metadata: {
         accessible_surveys: accessibleSurveys.map(s => ({
           asset_id: s.asset_id,
           name: s.name,
-          country_id: s.country_id
+          country_id: s.country_id,
+          alert_codes: s.alert_codes || {}
         }))
       }
     });
+
   } catch (error) {
-    console.error('Error fetching combined data:', error);
     return sendServerError(res, 'Failed to fetch submissions');
   }
 }
 
-// Export with authentication middleware
 module.exports = withMiddleware(handler, authenticateUser);

@@ -335,7 +335,7 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
         catch_number: mongoDoc.catch_number || '',
         submitted_by: mongoDoc.submitted_by || '',
         validation_status: mongoDoc.validation_status || 'validation_status_on_hold',
-        validated_at: mongoDoc.validated_at || mongoDoc.submission_date,
+        validated_at: mongoDoc.validated_at || null,
         validated_by: mongoDoc.validated_by || '',
         alert_flag: mongoDoc.alert_flag || '',
         alert_flags: mongoDoc.alert_flag ? mongoDoc.alert_flag.split(', ') : [],

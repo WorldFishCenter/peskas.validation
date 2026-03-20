@@ -10,6 +10,10 @@
     }
   ],
   "functions": {
+    "api/data-download/*.js": {
+      "maxDuration": 30,
+      "memory": 1024
+    },
     "api/**/*.js": {
       "maxDuration": 10,
       "memory": 1024

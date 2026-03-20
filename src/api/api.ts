@@ -8,6 +8,13 @@ const API_BASE_URL = getApiBaseUrl();
 import { Submission } from '../types/validation';
 import { DownloadFilters, PreviewResponse, FieldMetadata } from '../types/download';
 
+// Extract a user-readable error message from an axios error response.
+// Vercel gateway errors return { error: { code, message } } rather than a string.
+const extractErrorMessage = (err: any, fallback: string): string => {
+  const raw = err.response?.data?.error;
+  return typeof raw === 'string' ? raw : raw?.message || fallback;
+};
+
 // Normalize field names for consistent access
 const normalizeSubmissionData = (item: any): any => {
   // Create a new object with all keys from the original
@@ -36,7 +43,7 @@ export const useFetchSubmissions = (surveyId?: string | null) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async (forcedSurveyId?: string | null) => {
+  const fetchData = useCallback(async (forcedSurveyId?: string | null, _isRetry = false) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -65,18 +72,21 @@ export const useFetchSubmissions = (surveyId?: string | null) => {
           const surveys = response.data.metadata.accessible_surveys;
           setAccessibleSurveys(surveys);
 
-          // Auto-select first survey if not already selected
-          if (surveys.length > 0 && !surveyToFetch) {
+          // Auto-select first survey if not already selected (max one recursion)
+          if (surveys.length > 0 && !surveyToFetch && !_isRetry) {
             const firstSurvey = surveys[0].asset_id;
             setSelectedSurvey(firstSurvey);
-            // Recursively fetch with first survey selected
-            return fetchData(firstSurvey);
+            return fetchData(firstSurvey, true);
           }
         }
         return;
       }
 
       // Process and normalize all data
+      if (!Array.isArray(response.data.results)) {
+        setData([]);
+        return;
+      }
       const processedData = response.data.results.map(normalizeSubmissionData);
 
       setData(processedData);
@@ -97,7 +107,6 @@ export const useFetchSubmissions = (surveyId?: string | null) => {
         setAlertCodes(codesMap);
       }
     } catch (err) {
-      console.error('Error fetching submissions:', err);
       setError('Failed to load submissions');
       setData([]);
       setAccessibleSurveys([]);
@@ -344,7 +353,7 @@ export const useFetchDownloadPreview = () => {
       setAppliedFilters(response.data.filters_applied);
     } catch (err: any) {
       console.error('Error fetching preview:', err);
-      setError(err.response?.data?.error || 'Failed to fetch preview');
+      setError(extractErrorMessage(err, 'Failed to fetch preview'));
       setData([]);
       setTotalCount(0);
     } finally {
@@ -461,7 +470,7 @@ export const useFetchDownloadMetadata = (countryId?: string, surveyId?: string) 
       });
     } catch (err: any) {
       console.error('Error fetching download metadata:', err);
-      setError(err.response?.data?.error || 'Failed to load filter metadata');
+      setError(extractErrorMessage(err, 'Failed to load filter metadata'));
     } finally {
       setIsLoading(false);
     }
@@ -538,7 +547,7 @@ export const useFetchFieldMetadata = (scope?: string) => {
       }
     } catch (err: any) {
       console.error('Error fetching field metadata:', err);
-      setError(err.response?.data?.error || 'Failed to load field descriptions');
+      setError(extractErrorMessage(err, 'Failed to load field descriptions'));
       setMetadata(null);
     } finally {
       setIsLoading(false);
@@ -566,7 +575,7 @@ export const useFetchCountries = () => {
       setCountries(response.data?.countries || []);
     } catch (err: any) {
       console.error('Error fetching countries:', err);
-      setError(err.response?.data?.error || 'Failed to load countries');
+      setError(extractErrorMessage(err, 'Failed to load countries'));
     } finally {
       setIsLoading(false);
     }
@@ -597,7 +606,7 @@ export const useFetchDistricts = () => {
       setDistricts(response.data?.data || []);
     } catch (err: any) {
       console.error('Error fetching districts:', err);
-      setError(err.response?.data?.error || 'Failed to load districts');
+      setError(extractErrorMessage(err, 'Failed to load districts'));
     } finally {
       setIsLoading(false);
     }
@@ -628,7 +637,7 @@ export const useFetchSurveys = () => {
       setSurveys(response.data?.surveys || []);
     } catch (err: any) {
       console.error('Error fetching surveys:', err);
-      setError(err.response?.data?.error || 'Failed to load surveys');
+      setError(extractErrorMessage(err, 'Failed to load surveys'));
     } finally {
       setIsLoading(false);
     }

@@ -23,14 +23,8 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = React.memo((
 }) => {
   const { t } = useTranslation('enumerators');
 
-  // Filter out enumerators with no submissions in the selected timeframe
-  const filteredEnumerators = enumerators.filter(e => {
-    const total = e.filteredTotal !== undefined ? e.filteredTotal : e.totalSubmissions;
-    return total > 0;
-  });
-
-  // Sort once for consistency
-  const sortedEnumerators = [...filteredEnumerators].sort(
+  // Sort once for consistency (include enumerators with 0 submissions)
+  const sortedEnumerators = [...enumerators].sort(
     (a, b) => (b.filteredTotal || b.totalSubmissions) - (a.filteredTotal || a.totalSubmissions)
   );
 
