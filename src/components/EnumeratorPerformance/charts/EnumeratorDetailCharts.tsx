@@ -37,21 +37,6 @@ export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = Rea
 
   const totalAlerts = alertData.reduce((sum, item) => sum + item.y, 0);
 
-  // Empty state
-  if (alertData.length === 0) {
-    return (
-      <div className="empty py-4">
-        <div className="empty-icon">
-          <IconMoodSmile size={36} stroke={1.5} className="text-green" />
-        </div>
-        <p className="empty-title h4">{t('charts.noAlertsTitle')}</p>
-        <p className="empty-subtitle text-secondary">
-          {t('charts.noAlertsEnumerator')}
-        </p>
-      </div>
-    );
-  }
-
   const chartOptions: Highcharts.Options = useMemo(() => ({
     chart: {
       type: 'pie',
@@ -100,6 +85,21 @@ export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = Rea
     legend: { enabled: false },
     credits: { enabled: false }
   }), [alertData, totalAlerts, t]);
+
+  // Empty state
+  if (alertData.length === 0) {
+    return (
+      <div className="empty py-4">
+        <div className="empty-icon">
+          <IconMoodSmile size={36} stroke={1.5} className="text-green" />
+        </div>
+        <p className="empty-title h4">{t('charts.noAlertsTitle')}</p>
+        <p className="empty-subtitle text-secondary">
+          {t('charts.noAlertsEnumerator')}
+        </p>
+      </div>
+    );
+  }
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;
 }, (prevProps, nextProps) => {
