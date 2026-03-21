@@ -34,8 +34,21 @@ const normalizeSubmissionData = (item: any): any => {
   return normalized;
 };
 
+// Sync a single-survey user's accessible survey into shared context.
+// Multi-survey users get auto-selected via the "Please select a survey" path.
+// Only fires when selectedSurveyId is not yet set to that survey (avoids no-op state updates).
+const syncSingleSurvey = (
+  surveyToFetch: string | null | undefined,
+  surveys: any[],
+  selectedSurveyId: string | null,
+  setSelectedSurveyId: (id: string | null) => void
+) => {
+  if (!surveyToFetch && surveys.length === 1 && selectedSurveyId !== surveys[0].asset_id) {
+    setSelectedSurveyId(surveys[0].asset_id);
+  }
+};
+
 // Hook to fetch submissions
-// PERFORMANCE OPTIMIZATION: Enhanced hook with survey selection and reduced limits
 export const useFetchSubmissions = () => {
   const { selectedSurveyId, setSelectedSurveyId } = useSurveyContext();
   const [data, setData] = useState<Submission[]>([]);
@@ -51,7 +64,7 @@ export const useFetchSubmissions = () => {
 
       const surveyToFetch = forcedSurveyId !== undefined ? forcedSurveyId : selectedSurveyId;
 
-      const params: any = { limit: 1000 };
+      const params: any = {};
       if (surveyToFetch) {
         params.survey_id = surveyToFetch;
       }
@@ -79,8 +92,8 @@ export const useFetchSubmissions = () => {
         setData([]);
         return;
       }
-      const processedData = response.data.results.map(normalizeSubmissionData);
-      setData(processedData);
+
+      setData(response.data.results.map(normalizeSubmissionData));
 
       // Store accessible surveys metadata — backend always returns the full list
       if (response.data.metadata?.accessible_surveys) {
@@ -94,6 +107,8 @@ export const useFetchSubmissions = () => {
           }
         });
         setAlertCodes(codesMap);
+
+        syncSingleSurvey(surveyToFetch, surveys, selectedSurveyId, setSelectedSurveyId);
       }
     } catch (err) {
       setError(extractErrorMessage(err, 'Failed to load submissions'));
@@ -205,7 +220,9 @@ export const useFetchEnumeratorStats = () => {
       setData(response.data.results);
 
       if (response.data.metadata?.accessible_surveys) {
-        setAccessibleSurveys(response.data.metadata.accessible_surveys);
+        const surveys = response.data.metadata.accessible_surveys;
+        setAccessibleSurveys(surveys);
+        syncSingleSurvey(surveyToFetch, surveys, selectedSurveyId, setSelectedSurveyId);
       }
     } catch (err) {
       setError(extractErrorMessage(err, 'Failed to load enumerator statistics'));

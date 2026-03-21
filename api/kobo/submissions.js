@@ -28,11 +28,6 @@ async function handler(req, res) {
       return sendServerError(res, 'Database not configured');
     }
 
-    // Parse pagination parameters
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 1000;
-    const skip = (page - 1) * limit;
-
     const user = req.user;
 
     // Determine which surveys the user has access to
@@ -110,10 +105,7 @@ async function handler(req, res) {
       ? { submitted_by: { $in: allowedEnumerators } }
       : {};
 
-    // Cap limit to avoid oversized responses
-    const effectiveLimit = Math.min(limit, 10000);
-
-    // Fetch submissions from MongoDB for each accessible survey
+    // Fetch all submissions from MongoDB — pagination is applied in-memory after combining surveys
     const submissionsPromises = accessibleSurveys.map(async (survey) => {
       const collectionName = getSurveyFlagsCollection(survey.asset_id);
 
@@ -137,7 +129,6 @@ async function handler(req, res) {
             }
           )
           .sort({ submission_date: -1 })
-          .limit(effectiveLimit)
           .toArray();
 
         return {
@@ -188,19 +179,9 @@ async function handler(req, res) {
       return new Date(b.submission_date).getTime() - new Date(a.submission_date).getTime();
     });
 
-    // Apply pagination
-    const totalCount = allSubmissions.length;
-    const paginatedSubmissions = allSubmissions.slice(skip, skip + limit);
-    const hasNextPage = skip + limit < totalCount;
-
     return sendSuccess(res, {
-      count: totalCount,
-      page,
-      limit,
-      totalPages: Math.ceil(totalCount / limit),
-      next: hasNextPage ? `/api/kobo/submissions?page=${page + 1}&limit=${limit}` : null,
-      previous: page > 1 ? `/api/kobo/submissions?page=${page - 1}&limit=${limit}` : null,
-      results: paginatedSubmissions,
+      count: allSubmissions.length,
+      results: allSubmissions,
       metadata: {
         accessible_surveys: allAccessibleSurveys.map(s => ({
           asset_id: s.asset_id,

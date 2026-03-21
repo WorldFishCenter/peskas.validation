@@ -44,10 +44,13 @@ const EnumeratorPerformance: React.FC = () => {
   // Alert Guide modal state
   const [showAlertGuide, setShowAlertGuide] = useState(false);
 
-  // Derive country for the selected survey from metadata
+  // Derive country for the selected survey from metadata.
+  // For single-survey users, selectedSurvey may be null on first render — fall back to the only accessible survey.
   const surveyCountry = useMemo(() => {
-    if (!selectedSurvey) return '';
-    return accessibleSurveys.find((s: any) => s.asset_id === selectedSurvey)?.country_id || '';
+    const survey = selectedSurvey
+      ? accessibleSurveys.find((s: any) => s.asset_id === selectedSurvey)
+      : accessibleSurveys[0];
+    return survey?.country_id || '';
   }, [selectedSurvey, accessibleSurveys]);
 
   const { surveyAlertCodes } = useContextualAlertCodes(rawData as any);

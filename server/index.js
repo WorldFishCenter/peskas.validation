@@ -164,17 +164,12 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
       return res.status(500).json({ error: 'Database not configured' });
     }
 
-    // Parse pagination parameters
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 1000; // Default 1000 for backward compatibility
-    const skip = (page - 1) * limit;
-
     // User data is now in req.user from middleware (no redundant DB query!)
     const user = req.user;
 
     // Build cache key — include survey_id so different surveys don't share a cache entry
     const surveyIdParam = req.query.survey_id || 'all';
-    const cacheKey = `submissions_${user.username}_${surveyIdParam}_${page}_${limit}`;
+    const cacheKey = `submissions_${user.username}_${surveyIdParam}`;
     const cachedData = cache.get(cacheKey);
     if (cachedData) {
       res.set('X-Cache', 'HIT');
@@ -275,16 +270,7 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
       const collectionName = getSurveyFlagsCollection(survey.asset_id);
 
       try {
-        // PERFORMANCE OPTIMIZATION: Apply limit at MongoDB level
-        // This prevents loading all documents into memory before pagination
-        // Note: For backward compatibility, we support large limits but log warnings
-        const effectiveLimit = limit > 10000 ? 10000 : limit;
-
-        if (limit > 10000) {
-          console.warn(`⚠️  Large limit requested (${limit}), capping at ${effectiveLimit} per survey for ${user.username}`);
-        }
-
-        // Fetch submissions with filters and projection (only needed fields)
+        // Fetch all submissions — pagination is applied in-memory after combining surveys
         const mongoSubmissions = await database.collection(collectionName)
           .find(
             {
@@ -307,7 +293,6 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
             }
           )
           .sort({ submission_date: -1 })
-          .limit(effectiveLimit) // ← CRITICAL FIX: Limit at database level
           .toArray();
 
         return {
@@ -359,19 +344,9 @@ app.get('/api/kobo/submissions', authenticateUser, async (req, res) => {
       return new Date(b.submission_date).getTime() - new Date(a.submission_date).getTime();
     });
 
-    // Apply pagination after combining all surveys
-    const totalCount = allSubmissions.length;
-    const paginatedSubmissions = allSubmissions.slice(skip, skip + limit);
-    const hasNextPage = skip + limit < totalCount;
-
     const response = {
-      count: totalCount,
-      page: page,
-      limit: limit,
-      totalPages: Math.ceil(totalCount / limit),
-      next: hasNextPage ? `/api/kobo/submissions?page=${page + 1}&limit=${limit}` : null,
-      previous: page > 1 ? `/api/kobo/submissions?page=${page - 1}&limit=${limit}` : null,
-      results: paginatedSubmissions,
+      count: allSubmissions.length,
+      results: allSubmissions,
       metadata: {
         accessible_surveys: allAccessibleSurveys.map(s => ({
           asset_id: s.asset_id,
