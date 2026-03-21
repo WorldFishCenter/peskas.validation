@@ -46,11 +46,7 @@ async function handler(req, res) {
     if (accessibleSurveys.length === 0) {
       return sendSuccess(res, {
         count: 0,
-        next: null,
-        previous: null,
         results: [],
-        page,
-        limit,
         metadata: { accessible_surveys: [] }
       });
     }
@@ -68,11 +64,7 @@ async function handler(req, res) {
       if (accessibleSurveys.length === 0) {
         return sendSuccess(res, {
           count: 0,
-          next: null,
-          previous: null,
           results: [],
-          page,
-          limit,
           message: 'Survey not found or access denied',
           metadata: { accessible_surveys: [] }
         });
@@ -81,11 +73,7 @@ async function handler(req, res) {
       // Multiple surveys available but no selection — require explicit choice
       return sendSuccess(res, {
         count: 0,
-        next: null,
-        previous: null,
         results: [],
-        page,
-        limit,
         message: 'Please select a survey to view submissions',
         metadata: {
           accessible_surveys: allAccessibleSurveys.map(s => ({
