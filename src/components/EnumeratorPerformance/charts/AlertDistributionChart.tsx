@@ -41,21 +41,6 @@ const AlertDistributionChart: React.FC<AlertDistributionChartProps> = React.memo
     return { alertData: data, totalAlerts: total };
   }, [enumerators]);
 
-  // Empty state with friendly message
-  if (alertData.length === 0) {
-    return (
-      <div className="empty py-5">
-        <div className="empty-icon">
-          <IconMoodSmile size={48} stroke={1.5} className="text-green" />
-        </div>
-        <p className="empty-title">{t('charts.noAlerts')}</p>
-        <p className="empty-subtitle text-secondary">
-          {t('charts.noAlertsDescription')}
-        </p>
-      </div>
-    );
-  }
-
   const chartOptions: Highcharts.Options = useMemo(() => ({
     chart: {
       type: 'pie',
@@ -124,6 +109,21 @@ const AlertDistributionChart: React.FC<AlertDistributionChartProps> = React.memo
     }],
     credits: { enabled: false }
   }), [alertData, totalAlerts, t]);
+
+  // Empty state with friendly message
+  if (alertData.length === 0) {
+    return (
+      <div className="empty py-5">
+        <div className="empty-icon">
+          <IconMoodSmile size={48} stroke={1.5} className="text-green" />
+        </div>
+        <p className="empty-title">{t('charts.noAlerts')}</p>
+        <p className="empty-subtitle text-secondary">
+          {t('charts.noAlertsDescription')}
+        </p>
+      </div>
+    );
+  }
 
   return <HighchartsReact highcharts={Highcharts} options={chartOptions} />;
 }, (prevProps, nextProps) => {
