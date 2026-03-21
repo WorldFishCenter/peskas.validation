@@ -461,10 +461,20 @@ app.patch('/api/submissions/:id/validation_status', authenticateUser, async (req
 // Auth endpoint - now using MongoDB users collection
 app.post('/api/auth/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username: rawIdentifier, password } = req.body;
 
-    if (!username || !password) {
-      return res.status(400).json({ success: false, error: 'Username and password required' });
+    if (!rawIdentifier || !password) {
+      return res.status(400).json({ success: false, error: 'Email or username and password required' });
+    }
+
+    // Cap password length to prevent bcrypt DoS (same guard as api/auth/login.js)
+    if (typeof password !== 'string' || password.length > 200) {
+      return res.status(401).json({ success: false, error: 'Invalid username or password' });
+    }
+
+    const identifier = String(rawIdentifier).toLowerCase().trim();
+    if (identifier.length < 1 || identifier.length > 100) {
+      return res.status(401).json({ success: false, error: 'Invalid username or password' });
     }
 
     const database = getDb();
@@ -473,9 +483,9 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(500).json({ success: false, error: 'Authentication system not configured' });
     }
 
-    // Find user by username
+    // Find user by username or email (aligned with api/auth/login.js)
     const user = await database.collection('users').findOne({
-      username: username.toLowerCase().trim()
+      $or: [{ username: identifier }, { email: identifier }]
     });
 
     if (!user) {

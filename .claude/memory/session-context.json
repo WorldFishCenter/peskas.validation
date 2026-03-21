@@ -34,15 +34,13 @@
     "peskas_api": "Landings data download (api.peskas.org) with X-API-Key auth, input validation, rate limiting (lib/peskas-api.js)"
   },
   "current_session": {
-    "last_feature": "Rules of Hooks fix in AlertDistributionChart (2026-03-21)",
+    "last_feature": "Code review fixes: bcrypt DoS, memoization, login UX cleanup (2026-03-21)",
     "active_files": [
-      "api/kobo/submissions.js",
-      "api/enumerators-stats.js",
       "server/index.js",
-      "src/api/api.ts",
-      "src/contexts/SurveyContext.tsx",
-      "src/components/EnumeratorPerformance/EnumeratorPerformance.tsx",
-      "src/components/EnumeratorPerformance/charts/AlertDistributionChart.tsx"
+      "src/components/EnumeratorPerformance/charts/AlertDistributionChart.tsx",
+      "src/components/EnumeratorPerformance/charts/EnumeratorDetailCharts.tsx",
+      "src/components/Auth/Login.tsx",
+      "public/locales/en/auth.json"
     ],
     "completed_improvements": [
       "✅ Performance Optimization: 90-95% load time reduction (30-60s → 2-3s for admins)",
@@ -110,6 +108,7 @@
     "Bug fixes + dev/prod alignment + survey selector fix documented (2026-03-20) - reference architecture-decisions.md for: Vercel 504 React crash pattern, admin multi-survey loading fix, extractErrorMessage pattern, vercel.json glob ordering rule, validated_at null semantics, submission_date Date object vs string sort fix (use new Date().getTime() not localeCompare — all 3 sort sites), allAccessibleSurveys pattern (always return full list in metadata before filtering), survey selector API-level refetch (not TanStack column filter), dev cache key must include survey_id",
     "Per-survey loading + cross-tab persistence + single-survey fix + limit removal documented (2026-03-21) - reference architecture-decisions.md for: SurveyContext pattern, double-fetch prevention, loading flicker fix (return await), EnumeratorPerformance state chain collapse, SubmissionVolumeChart sort inside useMemo, single-survey syncSingleSurvey() helper pattern, submissions endpoint limit removal (no .limit() on MongoDB, no in-memory pagination, simplified cache key)",
     "Rules of Hooks fix documented (2026-03-21) - AlertDistributionChart crash on enumerator switch: early return before useMemo caused 'Rendered fewer hooks than expected'. Fix: move ALL useMemo/useCallback/useState calls above any conditional early return. Rule applies to every chart component.",
+    "Code review fixes documented (2026-03-21) - reference architecture-decisions.md for: bcrypt DoS guard pattern (cap password at 200 chars before bcrypt.compare — both server/index.js and api/auth/login.js must stay aligned), EnumeratorDetailCharts memoization pattern (derived data must be in useMemo not plain variables, or chartOptions recomputes every render), filter callback variable shadowing (don't use 't' as filter param when useTranslation result is also named 't')",
     "Scripts folder cleanup documented (2026-02-03) - reference architecture-decisions.md for audit process: categorization (active/one-time/debug/obsolete/duplicate), deletion strategy (keep 13 essential scripts), documentation synchronization (CLAUDE.md, README.md)"
   ],
   "common_patterns": {

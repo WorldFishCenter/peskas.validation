@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { IconAlertTriangle, IconUser, IconLock, IconMail, IconLanguage, IconCheck } from '@tabler/icons-react';
+import { IconAlertTriangle, IconLock, IconMail, IconLanguage, IconCheck, IconLogin } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './AuthContext';
 import { useI18n } from '../../i18n/I18nContext';
 import { requestPasswordReset } from '../../api/auth';
+import { SUPPORT_EMAIL, getSupportMailtoHref } from '../../constants/support';
 
 const Login: React.FC = () => {
   const { t } = useTranslation('auth');
@@ -15,12 +16,18 @@ const Login: React.FC = () => {
   const { login, loading } = useAuth();
   const { changeLanguage, availableLanguages } = useI18n();
 
-  // Forgot password modal state
-  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [resetIdentifier, setResetIdentifier] = useState('');
   const [resetSent, setResetSent] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
+
+  const openResetModal = () => {
+    setResetIdentifier('');
+    setResetSent(false);
+    setResetError(null);
+    setShowResetModal(true);
+  };
   
   // Find current language configuration
   const currentLang = availableLanguages.find(l => l.code === i18n.language) || availableLanguages[0];
@@ -71,8 +78,8 @@ const Login: React.FC = () => {
     }
   };
 
-  const closeForgotPasswordModal = () => {
-    setShowForgotPasswordModal(false);
+  const closeResetModal = () => {
+    setShowResetModal(false);
     setResetIdentifier('');
     setResetSent(false);
     setResetError(null);
@@ -89,11 +96,11 @@ const Login: React.FC = () => {
         <div className="card card-md" tabIndex={-1} style={{ outline: 'none' }}>
           <div className="card-body">
             {/* Header with title and language switcher */}
-            <div className="d-flex justify-content-between align-items-start mb-4">
-              <h2 className="card-title mb-0">{t('login.title')}</h2>
+            <div className="d-flex justify-content-between align-items-start mb-3">
+              <h2 className="h2 mb-0">{t('login.title')}</h2>
               <div className="dropdown">
                 <button
-                  className="btn btn-secondary d-flex align-items-center"
+                  className="btn btn-outline-primary d-flex align-items-center"
                   type="button"
                   data-bs-toggle="dropdown"
                   data-bs-auto-close="true"
@@ -161,38 +168,26 @@ const Login: React.FC = () => {
             )}
 
             <div className="mb-3">
-              <label className="form-label">{t('login.usernameOrEmail')}</label>
+              <label className="form-label">{t('login.emailLabel')}</label>
               <div className="input-group input-group-flat">
                 <span className="input-group-text">
-                  <IconUser className="icon" size={24} stroke={2} />
+                  <IconMail className="icon" size={24} stroke={2} />
                 </span>
                 <input
-                  type="text"
+                  type="email"
                   className="form-control"
-                  placeholder={t('login.usernameOrEmailPlaceholder')}
+                  placeholder={t('login.emailPlaceholder')}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   onKeyDown={handleKeyDown}
                   disabled={loading}
-                  autoComplete="username"
+                  autoComplete="email"
                 />
               </div>
             </div>
 
             <div className="mb-3">
-              <label className="form-label">
-                <div className="d-flex justify-content-between align-items-center">
-                  <span>{t('login.password')}</span>
-                  <button
-                    type="button"
-                    onClick={() => setShowForgotPasswordModal(true)}
-                    className="btn btn-link link-secondary p-0"
-                    style={{ fontSize: '0.875rem', textDecoration: 'none' }}
-                  >
-                    {t('login.forgotPassword')}
-                  </button>
-                </div>
-              </label>
+              <label className="form-label">{t('login.password')}</label>
               <div className="input-group input-group-flat">
                 <span className="input-group-text">
                   <IconLock className="icon" size={24} stroke={2} />
@@ -210,10 +205,10 @@ const Login: React.FC = () => {
               </div>
             </div>
 
-            <div className="form-footer">
+            <div className="form-footer d-grid gap-2">
               <button
                 type="button"
-                className="btn btn-primary w-100"
+                className="btn btn-outline-primary w-100"
                 disabled={loading}
                 onClick={handleLogin}
               >
@@ -223,30 +218,33 @@ const Login: React.FC = () => {
                     {t('login.signingIn')}
                   </>
                 ) : (
-                  t('login.signIn')
+                  <>
+                    <IconLogin className="icon me-2" size={20} stroke={2} />
+                    {t('login.signIn')}
+                  </>
                 )}
               </button>
             </div>
-          </div>
-        </div>
 
-        {/* Help Section */}
-        <div className="card card-md mt-3">
-          <div className="card-body">
-            <div className="d-flex align-items-start">
-              <div className="me-3">
-                <div className="bg-primary-lt rounded p-2">
-                  <IconMail className="icon text-primary" size={28} stroke={2} />
-                </div>
-              </div>
-              <div className="flex-fill">
-                <h3 className="h3 mb-2">{t('login.needHelp')}</h3>
-                <p className="text-muted mb-3">
-                  {t('login.helpText')}
-                </p>
-                <a href={`mailto:${t('login.contactEmail')}`} className="btn btn-outline-primary">
-                  <IconMail className="icon me-2" size={20} stroke={2} />
-                  {t('login.contactEmail')}
+            <hr className="hr my-4" />
+
+            <div className="d-grid gap-2">
+              <button
+                type="button"
+                className="btn btn-outline-primary w-100"
+                onClick={openResetModal}
+                disabled={loading}
+              >
+                <IconMail className="icon me-2" size={20} stroke={2} />
+                {t('login.setOrResetPassword')}
+              </button>
+            </div>
+
+            <div className="text-center text-muted small mt-4">
+              <div className="fw-medium">{t('login.contactSupport')}</div>
+              <div className="mt-1">
+                <a href={getSupportMailtoHref()} className="link-secondary text-break user-select-all">
+                  {SUPPORT_EMAIL}
                 </a>
               </div>
             </div>
@@ -255,12 +253,11 @@ const Login: React.FC = () => {
 
         <div className="text-center text-muted mt-3">
           <a href="https://www.worldfishcenter.org/" className="text-muted" target="_blank" rel="noopener noreferrer">
-            WorldFish Center © 2025
+            WorldFish © 2025
           </a>
         </div>
 
-        {/* Forgot Password Modal */}
-        {showForgotPasswordModal && (
+        {showResetModal && (
           <div className="modal modal-blur fade show" style={{ display: 'block' }} tabIndex={-1}>
             <div className="modal-dialog modal-sm modal-dialog-centered">
               <div className="modal-content">
@@ -269,7 +266,7 @@ const Login: React.FC = () => {
                   <button
                     type="button"
                     className="btn-close"
-                    onClick={closeForgotPasswordModal}
+                    onClick={closeResetModal}
                     aria-label="Close"
                   />
                 </div>
@@ -279,8 +276,8 @@ const Login: React.FC = () => {
                       <div className="text-success mb-3">
                         <IconMail size={48} />
                       </div>
-                      <h3 className="mb-3">{t('forgotPassword.successTitle')}</h3>
-                      <p className="text-secondary">{t('forgotPassword.successMessage')}</p>
+                      <h3 className="h3 mb-2">{t('forgotPassword.successTitle')}</h3>
+                      <p className="text-secondary mb-0">{t('forgotPassword.successMessage')}</p>
                     </div>
                   ) : (
                     <>
@@ -322,40 +319,50 @@ const Login: React.FC = () => {
                   )}
                 </div>
                 <div className="modal-footer">
-                  {resetSent ? (
-                    <button
-                      type="button"
-                      className="btn btn-primary w-100"
-                      onClick={closeForgotPasswordModal}
-                    >
-                      {t('forgotPassword.backToLogin')}
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        className="btn btn-link link-secondary"
-                        onClick={closeForgotPasswordModal}
-                        disabled={resetLoading}
-                      >
-                        {tCommon('buttons.cancel')}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-primary ms-auto"
-                        onClick={handleForgotPassword}
-                        disabled={resetLoading}
-                      >
-                        {resetLoading ? t('forgotPassword.sending') : t('forgotPassword.sendInstructions')}
-                      </button>
-                    </>
-                  )}
+                  <div className="w-100">
+                    {resetSent ? (
+                      <div className="row">
+                        <div className="col-12">
+                          <button
+                            type="button"
+                            className="btn btn-primary w-100"
+                            onClick={closeResetModal}
+                          >
+                            {t('forgotPassword.backToLogin')}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="row g-2">
+                        <div className="col">
+                          <button
+                            type="button"
+                            className="btn w-100"
+                            onClick={closeResetModal}
+                            disabled={resetLoading}
+                          >
+                            {tCommon('buttons.cancel')}
+                          </button>
+                        </div>
+                        <div className="col">
+                          <button
+                            type="button"
+                            className="btn btn-primary w-100"
+                            onClick={handleForgotPassword}
+                            disabled={resetLoading}
+                          >
+                            {resetLoading ? t('forgotPassword.sending') : t('forgotPassword.sendInstructions')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         )}
-        {showForgotPasswordModal && <div className="modal-backdrop fade show" onClick={closeForgotPasswordModal} />}
+        {showResetModal && <div className="modal-backdrop fade show" onClick={closeResetModal} />}
       </div>
     </div>
   );

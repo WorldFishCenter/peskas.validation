@@ -23,19 +23,22 @@ export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = Rea
   selectedEnumeratorData
 }) => {
   const { t } = useTranslation('enumerators');
-  const submissions = selectedEnumeratorData.filteredSubmissions || selectedEnumeratorData.submissions;
-  const alertDistribution = submissions.reduce((counts: Record<string, number>, submission) => {
-    if (submission.alert_flag && submission.alert_flag !== "NA") {
-      counts[submission.alert_flag] = (counts[submission.alert_flag] || 0) + 1;
-    }
-    return counts;
-  }, {});
 
-  const alertData = Object.entries(alertDistribution)
-    .map(([label, count]) => ({ name: label, y: count }))
-    .sort((a, b) => b.y - a.y);
+  const { alertData, totalAlerts } = useMemo(() => {
+    const submissions = selectedEnumeratorData.filteredSubmissions || selectedEnumeratorData.submissions;
+    const alertDistribution = submissions.reduce((counts: Record<string, number>, submission) => {
+      if (submission.alert_flag && submission.alert_flag !== "NA") {
+        counts[submission.alert_flag] = (counts[submission.alert_flag] || 0) + 1;
+      }
+      return counts;
+    }, {});
 
-  const totalAlerts = alertData.reduce((sum, item) => sum + item.y, 0);
+    const data = Object.entries(alertDistribution)
+      .map(([label, count]) => ({ name: label, y: count }))
+      .sort((a, b) => b.y - a.y);
+
+    return { alertData: data, totalAlerts: data.reduce((sum, item) => sum + item.y, 0) };
+  }, [selectedEnumeratorData]);
 
   const chartOptions: Highcharts.Options = useMemo(() => ({
     chart: {
@@ -115,33 +118,38 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = React.m
   selectedEnumeratorData
 }) => {
   const { t } = useTranslation('enumerators');
-  const trendData = selectedEnumeratorData?.submissionTrend || [];
 
-  // Filter dates by selected date range
-  const filteredDates = trendData
-    .filter(t => {
-      const datePart = t.date.includes('T') ? t.date.split('T')[0] : t.date.split(' ')[0];
-      return selectedEnumeratorData.filteredSubmissions?.some(s => {
-        if (!s.submission_date) return false;
-        const sDate = s.submission_date.includes('T') ? s.submission_date.split('T')[0] : s.submission_date.split(' ')[0];
-        return sDate === datePart;
+  const { categories, data, tickInterval, totalSubmissions } = useMemo(() => {
+    const trendData = selectedEnumeratorData?.submissionTrend || [];
+
+    const filteredDates = trendData
+      .filter(item => {
+        const datePart = item.date.includes('T') ? item.date.split('T')[0] : item.date.split(' ')[0];
+        return selectedEnumeratorData.filteredSubmissions?.some(s => {
+          if (!s.submission_date) return false;
+          const sDate = s.submission_date.includes('T') ? s.submission_date.split('T')[0] : s.submission_date.split(' ')[0];
+          return sDate === datePart;
+        });
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    const cats = filteredDates.map(item => {
+      const d = new Date(item.date);
+      return d.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
       });
-    })
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-  // Format dates
-  const categories = filteredDates.map(item => {
-    const d = new Date(item.date);
-    return d.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
     });
-  });
 
-  const data = filteredDates.map(item => item.count);
-  const tickInterval = Math.max(1, Math.floor(categories.length / 8));
-  const totalSubmissions = data.reduce((sum, val) => sum + val, 0);
+    const counts = filteredDates.map(item => item.count);
+    return {
+      categories: cats,
+      data: counts,
+      tickInterval: Math.max(1, Math.floor(cats.length / 8)),
+      totalSubmissions: counts.reduce((sum, val) => sum + val, 0)
+    };
+  }, [selectedEnumeratorData]);
 
   const chartOptions: Highcharts.Options = useMemo(() => ({
     chart: {
