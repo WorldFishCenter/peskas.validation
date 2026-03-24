@@ -405,6 +405,7 @@ const ValidationTable: React.FC = () => {
                 onSurveyChange={(assetId) => {
                   table.resetColumnFilters();
                   setSelectedSurvey(assetId);
+                  refetch(assetId);
                 }}
                 onShowAlertGuide={() => setShowAlertGuide(true)}
               />

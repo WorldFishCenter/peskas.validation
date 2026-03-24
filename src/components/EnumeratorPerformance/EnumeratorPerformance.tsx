@@ -268,7 +268,7 @@ const EnumeratorPerformance: React.FC = () => {
         minDate={minDate}
         maxDate={maxDate}
         selectedSurvey={selectedSurvey}
-        setSelectedSurvey={setSelectedSurvey}
+        setSelectedSurvey={(assetId) => { setSelectedSurvey(assetId); refetch(assetId); }}
         accessibleSurveys={accessibleSurveys}
         surveyCountry={surveyCountry}
         onShowAlertGuide={() => setShowAlertGuide(true)}

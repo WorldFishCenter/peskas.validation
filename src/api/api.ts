@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { getApiBaseUrl } from '../utils/apiConfig';
 import { useSurveyContext } from '../contexts/SurveyContext';
@@ -34,20 +34,6 @@ const normalizeSubmissionData = (item: any): any => {
   return normalized;
 };
 
-// Sync a single-survey user's accessible survey into shared context.
-// Multi-survey users get auto-selected via the "Please select a survey" path.
-// Only fires when selectedSurveyId is not yet set to that survey (avoids no-op state updates).
-const syncSingleSurvey = (
-  surveyToFetch: string | null | undefined,
-  surveys: any[],
-  selectedSurveyId: string | null,
-  setSelectedSurveyId: (id: string | null) => void
-) => {
-  if (!surveyToFetch && surveys.length === 1 && selectedSurveyId !== surveys[0].asset_id) {
-    setSelectedSurveyId(surveys[0].asset_id);
-  }
-};
-
 // Hook to fetch submissions
 export const useFetchSubmissions = () => {
   const { selectedSurveyId, setSelectedSurveyId } = useSurveyContext();
@@ -57,19 +43,36 @@ export const useFetchSubmissions = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async (forcedSurveyId?: string | null, _isRetry = false) => {
+  // Read selectedSurveyId via a ref so fetchData never needs to be recreated
+  // when the context value changes. Calling setSelectedSurveyId inside fetchData
+  // is therefore safe — it won't trigger a second useEffect-driven fetch.
+  const selectedSurveyRef = useRef<string | null>(selectedSurveyId);
+  useEffect(() => { selectedSurveyRef.current = selectedSurveyId; }, [selectedSurveyId]);
+
+  // Track the AbortController for the current in-flight request so that
+  // a new call (or StrictMode remount) can cancel the previous one.
+  const abortRef = useRef<AbortController | null>(null);
+
+  const fetchData = useCallback(async (forcedSurveyId?: string | null) => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       setIsLoading(true);
       setError(null);
 
-      const surveyToFetch = forcedSurveyId !== undefined ? forcedSurveyId : selectedSurveyId;
+      const surveyToFetch = forcedSurveyId !== undefined ? forcedSurveyId : selectedSurveyRef.current;
 
       const params: any = {};
       if (surveyToFetch) {
         params.survey_id = surveyToFetch;
       }
 
-      const response = await axios.get(`${API_BASE_URL}/kobo/submissions`, { params });
+      const response = await axios.get(`${API_BASE_URL}/kobo/submissions`, {
+        params,
+        signal: controller.signal,
+      });
 
       // Handle case where backend requires survey selection
       if (response.data.message === 'Please select a survey to view submissions') {
@@ -78,11 +81,14 @@ export const useFetchSubmissions = () => {
           const surveys = response.data.metadata.accessible_surveys;
           setAccessibleSurveys(surveys);
 
-          // Auto-select first survey if not already selected (max one recursion)
-          if (surveys.length > 0 && !surveyToFetch && !_isRetry) {
+          if (surveys.length > 0 && !surveyToFetch) {
             const firstSurvey = surveys[0].asset_id;
+            // Update ref immediately so the recursive call uses the right id.
+            // setSelectedSurveyId is safe here — fetchData is stable and won't
+            // be recreated, so this won't trigger an extra useEffect run.
+            selectedSurveyRef.current = firstSurvey;
             setSelectedSurveyId(firstSurvey);
-            return await fetchData(firstSurvey, true);
+            return await fetchData(firstSurvey);
           }
         }
         return;
@@ -95,7 +101,6 @@ export const useFetchSubmissions = () => {
 
       setData(response.data.results.map(normalizeSubmissionData));
 
-      // Store accessible surveys metadata — backend always returns the full list
       if (response.data.metadata?.accessible_surveys) {
         const surveys = response.data.metadata.accessible_surveys;
         setAccessibleSurveys(surveys);
@@ -108,19 +113,29 @@ export const useFetchSubmissions = () => {
         });
         setAlertCodes(codesMap);
 
-        syncSingleSurvey(surveyToFetch, surveys, selectedSurveyId, setSelectedSurveyId);
+        // For single-survey users: sync the context so other pages know which
+        // survey is active. Safe — fetchData is stable, so this won't retrigger
+        // the useEffect below.
+        if (!surveyToFetch && surveys.length === 1) {
+          selectedSurveyRef.current = surveys[0].asset_id;
+          setSelectedSurveyId(surveys[0].asset_id);
+        }
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (controller.signal.aborted) return;
       setError(extractErrorMessage(err, 'Failed to load submissions'));
       setData([]);
       setAccessibleSurveys([]);
     } finally {
-      setIsLoading(false);
+      if (!controller.signal.aborted) setIsLoading(false);
     }
-  }, [selectedSurveyId]);
+  // setSelectedSurveyId from useState is always stable — no other deps needed.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setSelectedSurveyId]);
 
   useEffect(() => {
     fetchData();
+    return () => { abortRef.current?.abort(); };
   }, [fetchData]);
 
   return {
@@ -183,31 +198,43 @@ export const useFetchEnumeratorStats = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async (forcedSurveyId?: string | null, _isRetry = false) => {
+  const selectedSurveyRef = useRef<string | null>(selectedSurveyId);
+  useEffect(() => { selectedSurveyRef.current = selectedSurveyId; }, [selectedSurveyId]);
+
+  const abortRef = useRef<AbortController | null>(null);
+
+  const fetchData = useCallback(async (forcedSurveyId?: string | null) => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       setIsLoading(true);
       setError(null);
 
-      const surveyToFetch = forcedSurveyId !== undefined ? forcedSurveyId : selectedSurveyId;
+      const surveyToFetch = forcedSurveyId !== undefined ? forcedSurveyId : selectedSurveyRef.current;
 
       const params: any = {};
       if (surveyToFetch) {
         params.survey_id = surveyToFetch;
       }
 
-      const response = await axios.get(`${API_BASE_URL}/enumerators-stats`, { params });
+      const response = await axios.get(`${API_BASE_URL}/enumerators-stats`, {
+        params,
+        signal: controller.signal,
+      });
 
-      // Handle case where backend requires survey selection
       if (response.data.message === 'Please select a survey to view statistics') {
         setData([]);
         if (response.data.metadata?.accessible_surveys) {
           const surveys = response.data.metadata.accessible_surveys;
           setAccessibleSurveys(surveys);
 
-          if (surveys.length > 0 && !surveyToFetch && !_isRetry) {
+          if (surveys.length > 0 && !surveyToFetch) {
             const firstSurvey = surveys[0].asset_id;
+            selectedSurveyRef.current = firstSurvey;
             setSelectedSurveyId(firstSurvey);
-            return await fetchData(firstSurvey, true);
+            return await fetchData(firstSurvey);
           }
         }
         return;
@@ -222,19 +249,25 @@ export const useFetchEnumeratorStats = () => {
       if (response.data.metadata?.accessible_surveys) {
         const surveys = response.data.metadata.accessible_surveys;
         setAccessibleSurveys(surveys);
-        syncSingleSurvey(surveyToFetch, surveys, selectedSurveyId, setSelectedSurveyId);
+        if (!surveyToFetch && surveys.length === 1) {
+          selectedSurveyRef.current = surveys[0].asset_id;
+          setSelectedSurveyId(surveys[0].asset_id);
+        }
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (controller.signal.aborted) return;
       setError(extractErrorMessage(err, 'Failed to load enumerator statistics'));
       setData([]);
       setAccessibleSurveys([]);
     } finally {
-      setIsLoading(false);
+      if (!controller.signal.aborted) setIsLoading(false);
     }
-  }, [selectedSurveyId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setSelectedSurveyId]);
 
   useEffect(() => {
     fetchData();
+    return () => { abortRef.current?.abort(); };
   }, [fetchData]);
 
   return {
