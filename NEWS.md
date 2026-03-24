@@ -1,3 +1,28 @@
+# Validation Portal 2.3.0
+
+## New Features
+
+- **Audit Log for administrators**
+  - A new Audit Log page is available under the Admin section
+  - Records every security-sensitive action: logins (success and failure), validation status changes, and data preview/export requests
+  - Shows who did what, when, from which IP address, and with what parameters
+  - Filterable by username, event category, and date range
+  - Sortable columns; paginates with configurable page size (50 / 100 / 200)
+  - Download events show full filter details as colored badges (country, status, scope, taxon, district, survey)
+  - Events are automatically purged after 90 days
+
+## Infrastructure
+
+- **Removed legacy development server** (`server/index.js`, ~1960 lines)
+  - The local development server now uses `server/dev.js`, which mounts the same serverless handlers used in production
+  - Eliminates the risk of local and production behavior diverging for any endpoint
+
+## Security
+
+- **Audit events are now guaranteed to be written**
+  - Previously, audit log writes happened after the HTTP response was sent; in a serverless environment this means they were silently dropped
+  - All audit writes now complete before the response is returned
+
 # Validation Portal 2.2.0
 
 ## Performance Improvements

@@ -45,6 +45,8 @@ const {
   sendServerError,
   setCorsHeaders
 } = require('../../lib/response');
+const { logAuditEvent } = require('../../lib/audit-logger');
+const { getDb } = require('../../lib/db');
 
 /**
  * Handler function for export endpoint
@@ -62,23 +64,20 @@ async function handler(req, res) {
   }
 
   try {
-    // 1. Apply permission-based filtering using shared utility
-    // Note: req.user is populated by authenticateUser middleware with full user data
-    // applyDownloadPermissions reads country, survey_id, gaul_2 from req.query
+    const database = await getDb();
+
     const {
       effectiveCountry,
       effectiveSurveyIds, // eslint-disable-line no-unused-vars -- Reserved for future survey_id filtering
       effectiveGaulCodes
     } = await applyDownloadPermissions(req.user, req.query);
 
-    // 2. Extract additional query parameters for API filters
     const {
       status = 'validated',
       catch_taxon,
       scope
     } = req.query;
 
-    // 3. Build API filters
     // PeSKAS API requires lowercase country codes
     const apiFilters = {
       country: effectiveCountry.toLowerCase(),
@@ -102,13 +101,9 @@ async function handler(req, res) {
       apiFilters.catch_taxon = catch_taxon.trim();
     }
 
-    // 4. Fetch CSV data
     const csvData = await getLandingsCSVStream(apiFilters);
-
-    // 5. Sanitize CSV to prevent formula injection
     const sanitizedCSV = sanitizeCSV(csvData);
 
-    // 6. Set CSV headers
     const timestamp = new Date().toISOString().split('T')[0];
     const filename = `peskas-landings-${effectiveCountry.toLowerCase()}-${timestamp}.csv`;
 
@@ -116,7 +111,23 @@ async function handler(req, res) {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Cache-Control', 'no-cache');
 
-    // 7. Send sanitized CSV data
+    await logAuditEvent(database, {
+      username: req.user.username,
+      user_id: req.user.id,
+      category: 'download',
+      action: 'data_export',
+      status: 'success',
+      details: {
+        country_id: apiFilters.country || null,
+        survey_asset_id: req.query.survey_id || null,
+        data_status: apiFilters.status || null,
+        scope: apiFilters.scope || null,
+        catch_taxon: apiFilters.catch_taxon || null,
+        district: apiFilters.gaul_2 || null,
+      },
+      req
+    });
+
     return res.send(sanitizedCSV);
 
   } catch (error) {

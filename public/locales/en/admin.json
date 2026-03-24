@@ -104,5 +104,41 @@
     "surveyPermissionsTitle": "Survey Permissions:",
     "surveyPermissionsAdminNote": "Administrators have access to all surveys.",
     "surveyPermissionsUserNote": "Regular users are assigned surveys in Airtable."
+  },
+  "auditLog": {
+    "title": "Audit Log",
+    "totalEvents": "events",
+    "noLogs": "No audit events found.",
+    "categories": {
+      "auth": "Auth",
+      "validation": "Validation",
+      "download": "Download"
+    },
+    "actions": {
+      "login_success": "Login",
+      "login_failure": "Login failed",
+      "password_reset_requested": "Password reset requested",
+      "password_reset_completed": "Password reset completed",
+      "validation_status_changed": "Status changed",
+      "data_preview": "Data preview",
+      "data_export": "Data export"
+    },
+    "columns": {
+      "timestamp": "Timestamp",
+      "user": "User",
+      "category": "Category",
+      "action": "Action",
+      "details": "Details",
+      "status": "Status",
+      "ip": "IP"
+    },
+    "filters": {
+      "username": "Filter by user",
+      "category": "All categories",
+      "from": "From",
+      "to": "To",
+      "apply": "Apply",
+      "reset": "Reset"
+    }
   }
 }

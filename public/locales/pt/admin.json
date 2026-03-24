@@ -104,5 +104,41 @@
     "surveyPermissionsTitle": "Permissões de Inquéritos:",
     "surveyPermissionsAdminNote": "Os administradores têm acesso a todos os inquéritos.",
     "surveyPermissionsUserNote": "Utilizadores comuns recebem inquéritos atribuídos no Airtable."
+  },
+  "auditLog": {
+    "title": "Registo de Auditoria",
+    "totalEvents": "eventos",
+    "noLogs": "Nenhum evento de auditoria encontrado.",
+    "categories": {
+      "auth": "Autenticação",
+      "validation": "Validação",
+      "download": "Transferência"
+    },
+    "actions": {
+      "login_success": "Login",
+      "login_failure": "Login falhado",
+      "password_reset_requested": "Redefinição de senha solicitada",
+      "password_reset_completed": "Redefinição de senha concluída",
+      "validation_status_changed": "Estado alterado",
+      "data_preview": "Pré-visualização de dados",
+      "data_export": "Exportação de dados"
+    },
+    "columns": {
+      "timestamp": "Data/Hora",
+      "user": "Utilizador",
+      "category": "Categoria",
+      "action": "Ação",
+      "details": "Detalhes",
+      "status": "Estado",
+      "ip": "IP"
+    },
+    "filters": {
+      "username": "Filtrar por utilizador",
+      "category": "Todas as categorias",
+      "from": "De",
+      "to": "Até",
+      "apply": "Aplicar",
+      "reset": "Repor"
+    }
   }
 }

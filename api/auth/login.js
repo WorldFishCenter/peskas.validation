@@ -10,6 +10,7 @@ const { getDb } = require('../../lib/db');
 const { generateToken } = require('../../lib/jwt');
 const { sendBadRequest, sendServerError, setCorsHeaders } = require('../../lib/response');
 const { sanitizeString } = require('../../lib/api-utils');
+const { logAuditEvent } = require('../../lib/audit-logger');
 
 module.exports = async function handler(req, res) {
   // Set CORS headers
@@ -62,17 +63,20 @@ module.exports = async function handler(req, res) {
     });
 
     if (!user) {
+      await logAuditEvent(database, { username: identifier, user_id: null, category: 'auth', action: 'login_failure', status: 'failure', details: { attempted_username: identifier, reason: 'user_not_found' }, req });
       return res.status(401).json({ success: false, error: 'Invalid username or password' });
     }
 
     // Check if user is active
     if (!user.active) {
+      await logAuditEvent(database, { username: user.username, user_id: user._id.toString(), category: 'auth', action: 'login_failure', status: 'failure', details: { reason: 'account_disabled' }, req });
       return res.status(401).json({ success: false, error: 'Account is disabled' });
     }
 
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
+      await logAuditEvent(database, { username: user.username, user_id: user._id.toString(), category: 'auth', action: 'login_failure', status: 'failure', details: { reason: 'wrong_password' }, req });
       return res.status(401).json({ success: false, error: 'Invalid username or password' });
     }
 
@@ -98,6 +102,8 @@ module.exports = async function handler(req, res) {
       created_at: user.created_at,
       last_login: new Date()
     };
+
+    await logAuditEvent(database, { username: user.username, user_id: user._id.toString(), category: 'auth', action: 'login_success', status: 'success', details: {}, req });
 
     return res.status(200).json({
       success: true,

@@ -13,6 +13,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 const { connectToDatabase } = require('../lib/db');
+const { ensureAuditIndexes } = require('../lib/audit-logger');
 
 // Load environment variables
 dotenv.config();
@@ -95,6 +96,7 @@ mountServerlessFunction('/api/enumerators-stats', path.join(__dirname, '../api/e
 // Admin endpoints
 mountServerlessFunction('/api/admin/sync-users', path.join(__dirname, '../api/admin/sync-users.js'));
 mountServerlessFunction('/api/admin/refresh-enumerator-stats', path.join(__dirname, '../api/admin/refresh-enumerator-stats.js'));
+mountServerlessFunction('/api/admin/audit-logs', path.join(__dirname, '../api/admin/audit-logs.js'));
 
 // Data download endpoints (PeSKAS API integration)
 mountServerlessFunction('/api/data-download/metadata', path.join(__dirname, '../api/data-download/metadata.js'));
@@ -159,7 +161,8 @@ app.get('/', (req, res) => {
       ],
       admin: [
         'POST /api/admin/sync-users (requires refactoring)',
-        'POST /api/admin/refresh-enumerator-stats'
+        'POST /api/admin/refresh-enumerator-stats',
+        'GET /api/admin/audit-logs'
       ],
       dataDownload: [
         'GET /api/data-download/metadata',
@@ -225,6 +228,7 @@ async function startServer() {
     console.log('🔌 Validating MongoDB connection...');
     const { db } = await connectToDatabase();
     console.log(`✓ MongoDB connected: ${db.databaseName}\n`);
+    await ensureAuditIndexes(db);
 
     // Try to start server on the specified port, or find an available port
     await tryStartServer(PORT);

@@ -11,6 +11,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import EnumeratorPerformance from './components/EnumeratorPerformance/EnumeratorPerformance';
 import DataDownload from './components/DataDownload/DataDownload';
 import AdminUsers from './components/Admin/AdminUsers';
+import AuditLog from './components/Admin/AuditLog';
 import HowItWorks from './components/HowItWorks/HowItWorks';
 
 const AppRoutes: React.FC = () => {
@@ -39,6 +40,11 @@ const AppRoutes: React.FC = () => {
       <Route path="/admin/users" element={
         <ErrorBoundary>
           <AdminUsers />
+        </ErrorBoundary>
+      } />
+      <Route path="/admin/audit-logs" element={
+        <ErrorBoundary>
+          <AuditLog />
         </ErrorBoundary>
       } />
     </Routes>

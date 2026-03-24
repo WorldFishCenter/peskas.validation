@@ -2,13 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Current Version**: 1.4.0 (see [NEWS.md](NEWS.md) for full changelog)
+**Current Version**: 2.3.0 (see [NEWS.md](NEWS.md) for full changelog)
 
 ## 📚 Documentation
 
 - **[CLAUDE.md](CLAUDE.md)** - This file - comprehensive project guide
 - **[README.md](README.md)** - Quick start and overview
-- **[NEWS.md](NEWS.md)** - Version history and changelog (v1.0.0 - v1.4.0)
+- **[NEWS.md](NEWS.md)** - Version history and changelog (v1.0.0 - v2.3.0)
 - **[.env.example](.env.example)** - Environment configuration template with detailed comments
 
 ## Development Commands
@@ -23,7 +23,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run preview` - Preview production build
 
 ### Backend Development
-- `npm run dev:backend` - Start Express server on port 3001 (or PORT env var)
+- `npm run dev:backend` - Start Express dev server (`server/dev.js`) on PORT env var (default 3001)
 - `npm run server` - Start production server
 
 ### Full Development Setup
@@ -87,30 +87,63 @@ This is a full-stack React + Express + MongoDB application for data validation a
 #### Database Collections
 - **`users`**: User accounts with roles and survey permissions
 - **`surveys`**: Survey metadata, KoboToolbox config, alert codes
+- **`countries`**: Country metadata for multi-country support
+- **`districts`**: GAUL code districts synced from Airtable
 - **`surveys_flags-{asset_id}`**: Submission data per survey (written by R pipeline)
   - Fields: submission_id, submitted_by, submission_date, alert_flag
-  - Fields: validation_status, validated_at, validated_by (NEW - from R pipeline)
+  - Fields: validation_status, validated_at, validated_by
 - **`enumerators_stats-{asset_id}`**: Pre-computed statistics per survey/enumerator
   - Contains totalSubmissions, submissionsWithAlerts, errorRate, submissionTrend
   - Refreshed via admin endpoint `/api/admin/refresh-enumerator-stats`
-- **`countries`**: Country metadata for multi-country support
+- **`users_audit`**: Security audit log (auth/validation/download events)
+  - 90-day TTL auto-expiry; compound indexes on timestamp, username, category
+- **Infrastructure**: `sync_audit_log` (Airtable sync history), `system_locks` (distributed locks)
 
-#### API Endpoints (server/index.js)
-- `GET /api/kobo/submissions` - Reads submissions from MongoDB `surveys_flags-{asset_id}` collections (filtered by user permissions)
-- `PATCH /api/submissions/:id/validation_status` - Update validation status in MongoDB (requires auth, tracks validated_by)
-- `PATCH /api/kobo/validation_status/:id` - Update validation status in KoboToolbox (uses survey-specific config)
-- `GET /api/kobo/edit_url/:id` - Generate Enketo edit URL for submission (uses survey-specific config)
+#### API Endpoints
+All endpoints live in `api/` (Vercel serverless). `server/dev.js` mounts these same handlers for local dev. **`server/index.js` was deleted** — do not reference it.
+
+**Auth**:
 - `POST /api/auth/login` - JWT authentication using MongoDB users collection
 - `GET /api/auth/me` - Get current user info
-- `GET /api/enumerators-stats` - Fetch pre-computed enumerator statistics from MongoDB (multi-survey aware)
-- `POST /api/admin/refresh-enumerator-stats` - Admin endpoint to rebuild enumerators_stats collections
-- `GET /api/users` - Admin: List all users
-- `POST /api/users` - Admin: Create new user
-- `PATCH /api/users/:id` - Admin: Update user
-- `DELETE /api/users/:id` - Admin: Delete user
-- `GET /api/data-download/metadata` - Unified endpoint returning countries, surveys, districts filtered by user permissions
-- `GET /api/data-download/preview` - Fetch first 20 rows from PeSKAS API with permission-based filtering
-- `GET /api/data-download/export` - Export full dataset as CSV from PeSKAS API (max 1M rows, sanitized for formula injection)
+- `POST /api/auth/forgot-password` - Request password reset email
+- `GET /api/auth/validate-reset-token` - Validate reset token
+- `POST /api/auth/reset-password` - Complete password reset
+
+**Submissions**:
+- `GET /api/kobo/submissions` - Reads from MongoDB `surveys_flags-{asset_id}` (filtered by permissions)
+- `PATCH /api/submissions/:id/validation_status` - Update validation status in MongoDB (tracks validated_by, logs audit event)
+- `PATCH /api/kobo/validation-status/:id` - Update validation status in KoboToolbox
+- `GET /api/kobo/edit-url/:id` - Generate Enketo edit URL
+
+**Surveys**:
+- `GET /api/surveys` - List surveys (filtered by user permissions)
+- `GET /api/surveys/:asset_id/alert-codes` - Get alert codes for a survey
+
+**Users** (admin only):
+- `GET /api/users` / `POST /api/users` - List / create users
+- `GET /api/users/:id` / `PATCH /api/users/:id` / `DELETE /api/users/:id` - Get / update / delete user
+- `PATCH /api/users/:id/reset-password` - Admin password reset
+- `PATCH /api/users/:id/permissions` - Update survey permissions
+- `GET /api/users/:id/accessible-surveys` - List accessible surveys for user
+
+**Countries & Districts**:
+- `GET /api/countries` / `POST /api/countries` - List / create countries
+- `GET /api/countries/:code` / `PATCH /api/countries/:code` / `DELETE /api/countries/:code`
+- `GET /api/districts` - List districts (GAUL codes from MongoDB)
+
+**Stats**:
+- `GET /api/enumerators-stats` - Pre-computed enumerator statistics (multi-survey aware)
+
+**Admin** (admin only):
+- `POST /api/admin/sync-users` - Manual Airtable user sync
+- `POST /api/admin/refresh-enumerator-stats` - Rebuild enumerators_stats collections
+- `GET /api/admin/audit-logs` - Paginated security audit log (filterable, sortable)
+
+**Data Download** (PeSKAS API integration):
+- `GET /api/data-download/metadata` - Countries, surveys, districts filtered by user permissions
+- `GET /api/data-download/preview` - First 20 rows from PeSKAS API
+- `GET /api/data-download/export` - Full CSV export (max 1M rows, sanitized)
+- `GET /api/data-download/metadata-fields` - PeSKAS field descriptions
 
 #### Data Download Feature - Known Limitations
 - **Survey ID filtering**: Currently disabled - PeSKAS API uses different survey identifiers than MongoDB `surveys.asset_id`. Requires ID mapping table or PeSKAS API update to support.
@@ -132,24 +165,30 @@ This is a full-stack React + Express + MongoDB application for data validation a
   - SubmissionVolumeChart: Total submissions per enumerator
   - SubmissionTrendChart: Submissions over time
   - EnumeratorDetail: Detailed view with filtering by date range
-- **Admin Components**: User management interface (AdminUsers, UserForm, UserPermissions)
+- **Admin Components**: User management (AdminUsers, UserForm, UserPermissions) + AuditLog (security event viewer)
+- **DataDownload**: PeSKAS data download with preview-before-export UX (DataDownload, DownloadFilters, DataPreview, FieldMetadataModal, FieldInfoIcon)
 - **HowItWorks**: Onboarding page explaining portal features and workflows
 - **Auth Components**: Login form and AuthContext for state management
 - **Layout**: MainLayout and Navbar with routing
 - **ErrorBoundary**: Global error catcher that prevents full app crashes
 
 #### Shared Utilities (lib/)
-Backend utilities shared between Express server and Vercel serverless functions:
+Backend utilities shared between `server/dev.js` and `api/` serverless functions:
 
-- **response.js** - Standardized API response helpers (`successResponse`, `errorResponse`, `validationErrorResponse`)
-- **db.js** - MongoDB connection management and collection helpers
-- **helpers.js** - Common utilities (ObjectId validation, date formatting, pagination)
+- **response.js** - Standardized API response helpers (`sendSuccess`, `sendBadRequest`, `sendServerError`, `sendMethodNotAllowed`, `setCorsHeaders`)
+- **db.js** - MongoDB connection management (`getDb`, `connectToDatabase`)
+- **helpers.js** - Common utilities (`validateObjectId`, `sanitizeCSV`, `getSurveyFlagsCollection`, `getEnumeratorStatsCollection`, `escapeRegex`, `isValidDate`)
 - **jwt.js** - JWT token generation and verification
-- **middleware.js** - Express middleware (`authenticateUser`, `requireAdmin`, CORS setup)
-- **api-utils.js** - KoboToolbox API client functions (edit URLs, validation status updates)
-- **airtable-sync.js** - Airtable integration utilities for data synchronization
+- **middleware.js** - Express middleware (`authenticateUser`, `requireAdmin`, `withMiddleware`)
+- **audit-logger.js** - Security audit logging (`logAuditEvent`, `ensureAuditIndexes`) — always `await` before responding
+- **filter-permissions.js** - Permission-based filtering (`applyDownloadPermissions`, `getAccessibleSurveys`, `getAccessibleCountries`, `getAccessibleDistricts`)
+- **peskas-api.js** - PeSKAS API client with rate limiting, auth, input validation
+- **email.js** - AWS SES transactional email (password reset, multi-language)
+- **rate-limit.js** - App-level rate limiting for auth endpoints
+- **api-utils.js** - KoboToolbox API client (edit URLs, validation status updates)
+- **sync-transaction.js** / **sync-audit-logger.js** / **sync-lock.js** / **airtable-rate-limiter.js** - Airtable sync infrastructure
 
-**Pattern**: Always use these utilities instead of duplicating logic. Both server/ and api/ import from lib/.
+**Pattern**: Always use these utilities instead of duplicating logic. Both `server/dev.js` and `api/` import from `lib/`.
 
 #### Internationalization (i18n)
 - **Supported Languages**: English (en), Portuguese (pt), Swahili (sw)
@@ -165,11 +204,20 @@ Backend utilities shared between Express server and Vercel serverless functions:
   - Automatic detection from browser preferences
 - **Implementation**: i18next + react-i18next with lazy loading
 
-#### Custom Hooks (src/api/api.ts)
+#### Custom Hooks
+`src/api/api.ts`:
 - `useFetchSubmissions()` - Fetches and normalizes submission data
 - `useUpdateValidationStatus()` - Updates validation status with loading state
 - `useFetchEnumeratorStats()` - Fetches enumerator statistics with retry logic
-- `refreshEnumeratorStats(adminToken)` - Triggers admin refresh of stats
+- `useFetchDownloadMetadata()` - Countries, surveys, districts in one request
+- `useFetchDownloadPreview()` - PeSKAS API preview (20 rows)
+- `useFetchFieldMetadata()` - PeSKAS field descriptions (lazy, sessionStorage cached)
+- `refreshEnumeratorStats(adminToken)` - Triggers admin rebuild of stats
+
+`src/api/admin.ts`:
+- `useFetchUsers()` / `useFetchSurveys()` - Admin data hooks
+- `useFetchAuditLogs(filters)` - Paginated, sortable audit log hook
+- `createUser` / `updateUser` / `deleteUser` / `updateUserPermissions` - Mutation helpers
 
 ### Technology Stack
 - **Frontend**: React 18, TypeScript, Vite, React Router v7, TanStack Table v8, Highcharts, Axios
@@ -304,6 +352,12 @@ The [vercel.json](vercel.json) file configures Vercel deployment:
 - Alert flags are numeric codes (1-10) with meanings defined per survey
 - Validation statuses follow KoboToolbox format: `validation_status_approved`, `validation_status_not_approved`, `validation_status_on_hold`
 
+#### Audit Logging
+Security-sensitive actions are logged to `users_audit` via `lib/audit-logger.js`:
+- Categories: `auth` (login_success/failure), `validation` (validation_status_changed), `download` (data_preview/data_export)
+- **Always `await logAuditEvent(db, event)` BEFORE sending the response** — Vercel freezes context after `res.json()`, so fire-and-forget calls are silently lost
+- Admin UI: `/admin/audit-logs` — filterable, sortable, paginated
+
 #### Development Best Practices
 - Always stick to the overall theme style and logic when integrating new features
 - Always prioritize the use of prebuilt theme features and elements
@@ -384,14 +438,16 @@ Organized by domain in `.claude/skills/`:
 ### Project-Specific Patterns
 
 **MongoDB Collections**:
-- Static: `users`, `surveys`, `countries`
+- Static: `users`, `surveys`, `countries`, `districts`, `users_audit`
 - Dynamic: `surveys_flags-{asset_id}`, `enumerators_stats-{asset_id}`
-- Always validate `asset_id` before constructing collection names
+- Infrastructure: `sync_audit_log`, `system_locks`
+- Always validate `asset_id` before constructing dynamic collection names
 
 **API Structure**:
 - Production: Vercel serverless functions in `api/`
-- Development: Express server in `server/`
-- Shared: Utilities in `lib/` (response.js, db.js, middleware.js, helpers.js)
+- Development: `server/dev.js` — mounts `api/` handlers via `mountServerlessFunction()`. **`server/index.js` was deleted.**
+- Shared: Utilities in `lib/` (response.js, db.js, middleware.js, helpers.js, audit-logger.js, filter-permissions.js, peskas-api.js)
+- **Rule**: When adding a new `api/` endpoint, also add `mountServerlessFunction(...)` to `server/dev.js`
 
 **Authentication Flow**:
 - JWT tokens with 7-day expiry (lib/jwt.js)
@@ -400,9 +456,10 @@ Organized by domain in `.claude/skills/`:
 - Frontend stores token in localStorage
 
 **Frontend State Management**:
-- Custom hooks pattern (src/api/api.ts)
-- React Context for global state (AuthContext, I18nContext)
-- No Redux/MobX - use hooks and context
+- Custom hooks pattern (`src/api/api.ts` for data, `src/api/admin.ts` for admin)
+- React Context for global state (AuthContext, SurveyContext, I18nContext)
+- No Redux/MobX — use hooks and context
+- `SurveyContext` is the single source of truth for selected survey across routes
 
 **Multi-Survey Architecture**:
 - User permissions control survey access

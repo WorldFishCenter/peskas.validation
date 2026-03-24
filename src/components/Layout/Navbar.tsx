@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { IconCheck, IconChartBar, IconDownload, IconUsers, IconHelp } from '@tabler/icons-react';
+import { IconCheck, IconChartBar, IconDownload, IconUsers, IconHelp, IconShield } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../Auth/AuthContext';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -70,16 +70,26 @@ const Navbar: React.FC = () => {
                   <span className="nav-link-title">{t('howItWorks')}</span>
                 </Link>
               </li>
-              {/* Admin-only Users Management Link */}
+              {/* Admin-only links */}
               {user?.role === 'admin' && (
-                <li className={`nav-item ${location.pathname === '/admin/users' ? 'active' : ''}`}>
-                  <Link to="/admin/users" className="nav-link">
-                    <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
-                      <IconUsers className="icon" size={24} stroke={2} />
-                    </span>
-                    <span className="nav-link-title">{t('users')}</span>
-                  </Link>
-                </li>
+                <>
+                  <li className={`nav-item ${location.pathname === '/admin/users' ? 'active' : ''}`}>
+                    <Link to="/admin/users" className="nav-link">
+                      <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
+                        <IconUsers className="icon" size={24} stroke={2} />
+                      </span>
+                      <span className="nav-link-title">{t('users')}</span>
+                    </Link>
+                  </li>
+                  <li className={`nav-item ${location.pathname === '/admin/audit-logs' ? 'active' : ''}`}>
+                    <Link to="/admin/audit-logs" className="nav-link">
+                      <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
+                        <IconShield className="icon" size={24} stroke={2} />
+                      </span>
+                      <span className="nav-link-title">{t('auditLog')}</span>
+                    </Link>
+                  </li>
+                </>
               )}
             </ul>
           </div>

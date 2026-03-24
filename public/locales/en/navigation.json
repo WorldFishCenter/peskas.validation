@@ -5,6 +5,7 @@
   "dataDownload": "Data Download",
   "howItWorks": "How It Works",
   "users": "Users",
+  "auditLog": "Audit Log",
   "logout": "Logout",
   "role": {
     "admin": "Administrator",

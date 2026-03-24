@@ -188,6 +188,70 @@ export const updateUserPermissions = async (
   }
 };
 
+export interface AuditLog {
+  _id: string;
+  timestamp: string;
+  username: string | null;
+  user_id: string | null;
+  category: 'auth' | 'validation' | 'download';
+  action: string;
+  status: 'success' | 'failure';
+  details: Record<string, unknown>;
+  ip: string | null;
+  user_agent: string | null;
+}
+
+export interface AuditLogsFilters {
+  page?: number;
+  limit?: number;
+  username?: string;
+  category?: string;
+  from?: string;
+  to?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+// Hook to fetch audit logs (admin only)
+export const useFetchAuditLogs = (filters: AuditLogsFilters = {}) => {
+  const [data, setData] = useState<{ logs: AuditLog[]; total: number }>({ logs: [], total: 0 });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const params = new URLSearchParams();
+      if (filters.page) params.set('page', String(filters.page));
+      if (filters.limit) params.set('limit', String(filters.limit));
+      if (filters.username) params.set('username', filters.username);
+      if (filters.category) params.set('category', filters.category);
+      if (filters.from) params.set('from', filters.from);
+      if (filters.to) params.set('to', filters.to);
+      if (filters.sortBy) params.set('sortBy', filters.sortBy);
+      if (filters.sortOrder) params.set('sortOrder', filters.sortOrder);
+
+      const response = await axios.get(`${API_BASE_URL}/admin/audit-logs?${params.toString()}`);
+      setData({ logs: response.data.logs || [], total: response.data.total || 0 });
+    } catch (err: any) {
+      console.error('Error fetching audit logs:', err);
+      setError(err.response?.data?.error || 'Failed to load audit logs');
+      setData({ logs: [], total: 0 });
+    } finally {
+      setIsLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- object identity: individual filter primitives listed explicitly to avoid re-renders on every call
+  }, [filters.page, filters.limit, filters.username, filters.category, filters.from, filters.to, filters.sortBy, filters.sortOrder]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { data, isLoading, error, refetch: fetchData };
+};
+
 // Get accessible surveys for a user
 export const getUserAccessibleSurveys = async (userId: string): Promise<{ success: boolean; surveys?: Survey[]; message?: string }> => {
   try {

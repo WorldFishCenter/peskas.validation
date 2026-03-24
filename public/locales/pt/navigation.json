@@ -5,6 +5,7 @@
   "dataDownload": "Download de Dados",
   "howItWorks": "Como Funciona",
   "users": "Utilizadores",
+  "auditLog": "Registo de Auditoria",
   "logout": "Terminar sessão",
   "role": {
     "admin": "Administrador",

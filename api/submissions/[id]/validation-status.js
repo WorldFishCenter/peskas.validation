@@ -9,6 +9,7 @@ const { withMiddleware, authenticateUser } = require('../../../lib/middleware');
 const { getDb } = require('../../../lib/db');
 const { getSurveyFlagsCollection } = require('../../../lib/helpers');
 const { sendBadRequest, sendServerError, setCorsHeaders } = require('../../../lib/response');
+const { logAuditEvent } = require('../../../lib/audit-logger');
 
 async function handler(req, res) {
   // Set CORS headers
@@ -24,8 +25,8 @@ async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  let database;
   try {
-    // Get submission ID from query parameter (Vercel converts [id] to query.id)
     const id = req.query.id;
     const { validation_status, asset_id } = req.body;
 
@@ -33,30 +34,57 @@ async function handler(req, res) {
       return sendBadRequest(res, 'asset_id is required');
     }
 
-    const database = await getDb();
+    const VALID_STATUSES = ['validation_status_approved', 'validation_status_not_approved', 'validation_status_on_hold'];
+    if (!validation_status || !VALID_STATUSES.includes(validation_status)) {
+      return sendBadRequest(res, 'Invalid validation_status value');
+    }
+
+    database = await getDb();
     if (!database) {
       return sendServerError(res, 'Database not configured');
     }
 
     const collectionName = getSurveyFlagsCollection(asset_id);
 
-    await database.collection(collectionName).updateOne(
+    const before = await database.collection(collectionName).findOneAndUpdate(
       { submission_id: id },
       {
         $set: {
           validation_status,
           validated_at: new Date(),
-          validated_by: req.user.username  // Track who made the update
+          validated_by: req.user.username
         }
       },
-      { upsert: true }
+      { upsert: true, returnDocument: 'before' }
     );
+    const fromStatus = before?.validation_status || null;
+
+    await logAuditEvent(database, {
+      username: req.user.username,
+      user_id: req.user.id,
+      category: 'validation',
+      action: 'validation_status_changed',
+      status: 'success',
+      details: { submission_id: id, survey_asset_id: asset_id, from_status: fromStatus, to_status: validation_status },
+      req
+    });
 
     return res.json({
       success: true,
       message: `Validation status correctly updated for submission ${id}`
     });
   } catch (error) {
+    if (database) {
+      logAuditEvent(database, {
+        username: req.user?.username || null,
+        user_id: req.user?.id || null,
+        category: 'validation',
+        action: 'validation_status_changed',
+        status: 'failure',
+        details: { submission_id: req.query.id, survey_asset_id: req.body?.asset_id || null },
+        req
+      }).catch(() => {});
+    }
     console.error('Error updating validation status:', error);
     return sendServerError(res, 'Failed to update validation status');
   }

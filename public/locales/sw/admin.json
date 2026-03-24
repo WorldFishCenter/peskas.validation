@@ -104,5 +104,41 @@
     "surveyPermissionsTitle": "Ruhusa za Tafiti:",
     "surveyPermissionsAdminNote": "Wasimamizi wana ufikiaji wa tafiti zote.",
     "surveyPermissionsUserNote": "Watumiaji wa kawaida wanapangiwa tafiti kwenye Airtable."
+  },
+  "auditLog": {
+    "title": "Kumbukumbu ya Ukaguzi",
+    "totalEvents": "matukio",
+    "noLogs": "Hakuna matukio ya ukaguzi yaliyopatikana.",
+    "categories": {
+      "auth": "Uthibitisho",
+      "validation": "Uthibitishaji",
+      "download": "Upakuaji"
+    },
+    "actions": {
+      "login_success": "Kuingia",
+      "login_failure": "Kuingia kumeshindwa",
+      "password_reset_requested": "Ombi la kuweka upya nenosiri",
+      "password_reset_completed": "Kuweka upya nenosiri kumekamilika",
+      "validation_status_changed": "Hali imebadilishwa",
+      "data_preview": "Hakiki ya data",
+      "data_export": "Usafirishaji wa data"
+    },
+    "columns": {
+      "timestamp": "Muda",
+      "user": "Mtumiaji",
+      "category": "Kategoria",
+      "action": "Kitendo",
+      "details": "Maelezo",
+      "status": "Hali",
+      "ip": "IP"
+    },
+    "filters": {
+      "username": "Chuja kwa mtumiaji",
+      "category": "Kategoria zote",
+      "from": "Kutoka",
+      "to": "Hadi",
+      "apply": "Tumia",
+      "reset": "Weka upya"
+    }
   }
 }

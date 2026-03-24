@@ -41,6 +41,8 @@ const {
   sendServerError,
   setCorsHeaders
 } = require('../../lib/response');
+const { logAuditEvent } = require('../../lib/audit-logger');
+const { getDb } = require('../../lib/db');  // used once at handler start
 
 /**
  * Handler function for preview endpoint
@@ -58,23 +60,20 @@ async function handler(req, res) {
   }
 
   try {
-    // 1. Apply permission-based filtering using shared utility
-    // Note: req.user is populated by authenticateUser middleware with full user data
-    // applyDownloadPermissions reads country, survey_id, gaul_2 from req.query
+    const database = await getDb();
+
     const {
       effectiveCountry,
       effectiveSurveyIds, // eslint-disable-line no-unused-vars -- Reserved for future survey_id filtering
       effectiveGaulCodes
     } = await applyDownloadPermissions(req.user, req.query);
 
-    // 2. Extract additional query parameters for API filters
     const {
       status = 'validated',
       catch_taxon,
       scope
     } = req.query;
 
-    // 3. Build API filters
     // PeSKAS API requires lowercase country codes
     const apiFilters = {
       country: effectiveCountry.toLowerCase(),
@@ -98,10 +97,8 @@ async function handler(req, res) {
       apiFilters.catch_taxon = catch_taxon.trim();
     }
 
-    // 4. Fetch preview data (20 rows)
     const apiResponse = await fetchLandingsData(apiFilters, 20);
 
-    // 5. Extract data and count
     let data = [];
     let totalCount = 0;
 
@@ -119,7 +116,23 @@ async function handler(req, res) {
       totalCount = 0;
     }
 
-    // 6. Return success response
+    await logAuditEvent(database, {
+      username: req.user.username,
+      user_id: req.user.id,
+      category: 'download',
+      action: 'data_preview',
+      status: 'success',
+      details: {
+        country_id: apiFilters.country || null,
+        survey_asset_id: req.query.survey_id || null,
+        data_status: apiFilters.status || null,
+        scope: apiFilters.scope || null,
+        catch_taxon: apiFilters.catch_taxon || null,
+        district: apiFilters.gaul_2 || null,
+      },
+      req
+    });
+
     return sendSuccess(res, {
       data: data,
       total_count: totalCount,
