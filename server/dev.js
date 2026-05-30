@@ -102,6 +102,7 @@ mountServerlessFunction('/api/admin/audit-logs', path.join(__dirname, '../api/ad
 mountServerlessFunction('/api/data-download/metadata', path.join(__dirname, '../api/data-download/metadata.js'));
 mountServerlessFunction('/api/data-download/preview', path.join(__dirname, '../api/data-download/preview.js'));
 mountServerlessFunction('/api/data-download/export', path.join(__dirname, '../api/data-download/export.js'));
+mountServerlessFunction('/api/data-download/explorer-data', path.join(__dirname, '../api/data-download/explorer-data.js'));
 mountServerlessFunction('/api/data-download/metadata-fields', path.join(__dirname, '../api/data-download/metadata-fields.js'));
 
 console.log('\n✅ All endpoints mounted successfully!\n');
@@ -168,6 +169,7 @@ app.get('/', (req, res) => {
         'GET /api/data-download/metadata',
         'GET /api/data-download/preview',
         'GET /api/data-download/export',
+        'GET /api/data-download/explorer-data',
         'GET /api/data-download/metadata-fields'
       ]
     }

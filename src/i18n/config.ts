@@ -27,7 +27,8 @@ i18n
       'enumerators', // Dashboard, charts, metrics
       'admin',       // User management
       'guide',       // HowItWorks user guide
-      'errors'       // API error messages
+      'errors',      // API error messages
+      'dataExplorer' // Data Explorer catalog (interactive R lessons)
     ],
 
     // Interpolation settings

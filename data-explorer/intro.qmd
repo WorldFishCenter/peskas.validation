@@ -1,0 +1,73 @@
+---
+title: "Welcome to the SSF Data Explorer"
+subtitle: "Placeholder lesson"
+format: live-html
+engine: knitr
+---
+
+{{< include _extensions/r-wasm/live/_knitr.qmd >}}
+
+::: {.callout-note}
+**Placeholder lesson.** This page exists to prove the in-browser R runtime is wired to
+your own permission-filtered landings data. Real lessons will be added later.
+:::
+
+## Your landings data
+
+This lesson runs against **your country's landing records** — the same data, with the
+same access permissions, as the Data Download tab. It is loaded into the R environment
+below as a data frame called `landings`.
+
+```{ojs}
+//| echo: false
+// Fetch the signed-in user's capped, permission-filtered landings as JSON, reusing the
+// exact API base URL the React app computed (apiConfig.getApiBaseUrl), which it publishes
+// to localStorage on load. This makes the lesson behave like the Data Download tab in
+// both dev (-> http://localhost:3001/api) and prod (-> same-origin /api). The lesson
+// shares the app's origin, so the JWT in localStorage is available here too.
+landings_data = {
+  const token = localStorage.getItem("authToken");
+  if (!token) return [];
+  const apiBase = localStorage.getItem("apiBaseUrl") || "/api";
+  const res = await fetch(`${apiBase}/data-download/explorer-data`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
+  });
+  if (!res.ok) {
+    console.warn(`explorer-data fetch failed: ${res.status}`);
+    return [];
+  }
+  return await res.json();
+}
+```
+
+```{webr}
+#| autorun: true
+#| input:
+#|   - landings_data
+# quarto-live converts the JS array of row objects (landings_data) into an R
+# data.frame automatically; guard the empty / not-signed-in case.
+landings <- tryCatch(as.data.frame(landings_data), error = function(e) data.frame())
+
+cat("Rows loaded:", nrow(landings), "  Columns:", ncol(landings), "\n")
+head(landings)
+```
+
+## Try it yourself
+
+`landings` is available in every cell on this page. Run or edit the cell below:
+
+```{webr}
+#| autorun: false
+str(landings)
+```
+
+---
+
+<!-- Raw HTML so Quarto does NOT rewrite this root-relative link. The lesson is
+     served at /data-explorer/lessons/<slug>.html but Quarto bases relative links on
+     the doc's position in the source project (root), so a markdown link to
+     /data-explorer would be rewritten to ./data-explorer and break. -->
+
+```{=html}
+<p class="mt-4"><a href="/data-explorer" class="btn btn-outline-primary">← Back to Data Explorer</a></p>
+```

@@ -1,0 +1,12 @@
+# Quarto SOURCE project for the Data Explorer lessons.
+#
+# Lessons are authored here as .qmd files using the quarto-live extension
+# (in-browser R via webR). They are rendered to static HTML that is committed
+# under public/data-explorer/lessons/ and served by Vercel inside the portal.
+#
+# Render with:  npm run render:lessons   (== quarto render data-explorer)
+#
+# NOTE: rendered output must be committed because Vercel's build image does not
+# have Quarto/R installed.
+project:
+  output-dir: ../public/data-explorer/lessons

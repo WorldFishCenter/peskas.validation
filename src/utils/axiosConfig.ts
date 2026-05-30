@@ -1,4 +1,14 @@
 import axios from 'axios';
+import { getApiBaseUrl } from './apiConfig';
+
+// Publish the resolved API base URL so same-origin static pages — specifically the
+// Data Explorer lesson HTML, which is NOT part of the React bundle and can't import
+// apiConfig — can call the API exactly like the app does, in dev and prod alike.
+try {
+  localStorage.setItem('apiBaseUrl', getApiBaseUrl());
+} catch {
+  // localStorage may be unavailable in rare contexts; non-fatal.
+}
 
 // Add request interceptor to include JWT authentication token
 axios.interceptors.request.use(

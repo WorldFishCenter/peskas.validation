@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Current Version**: 2.3.0 (see [NEWS.md](NEWS.md) for full changelog)
+**Current Version**: 2.4.0 (see [NEWS.md](NEWS.md) for full changelog)
 
 ## 📚 Documentation
 
@@ -143,12 +143,20 @@ All endpoints live in `api/` (Vercel serverless). `server/dev.js` mounts these s
 - `GET /api/data-download/metadata` - Countries, surveys, districts filtered by user permissions
 - `GET /api/data-download/preview` - First 20 rows from PeSKAS API
 - `GET /api/data-download/export` - Full CSV export (max 1M rows, sanitized)
+- `GET /api/data-download/explorer-data` - Capped (5k rows), permission-filtered JSON consumed by the Data Explorer R lessons (reuses `applyDownloadPermissions`)
 - `GET /api/data-download/metadata-fields` - PeSKAS field descriptions
 
 #### Data Download Feature - Known Limitations
 - **Survey ID filtering**: Currently disabled - PeSKAS API uses different survey identifiers than MongoDB `surveys.asset_id`. Requires ID mapping table or PeSKAS API update to support.
 - **GAUL code filtering**: Only supports single district per request (PeSKAS API limitation). Multiple districts require separate API calls and client-side merging.
 - **API authentication**: Shared `PESKAS_API_KEY` for all users (no per-user rate limiting). Consider per-country or per-user API keys in future for better access control.
+
+#### Data Explorer Feature (Interactive R Training)
+- **What**: A tab (`/data-explorer`) presenting a Tabler-styled catalog of interactive R lessons, inspired by [fhdsl/data_snacks](https://github.com/fhdsl/data_snacks). Lessons run R in the browser via **quarto-live + webR** (R-WASM, R 4.6) — no server-side R.
+- **Authoring/build**: Lessons are Quarto `.qmd` files in `data-explorer/` (with the vendored `_extensions/r-wasm/live/` quarto-live extension). Render with `npm run render:lessons` → static HTML committed under `public/data-explorer/lessons/`. Vercel has no Quarto/R, so rendered output is committed; authoring requires Quarto CLI + R locally.
+- **Display**: Lessons are full-page static pages at `/data-explorer/lessons/<slug>.html` (outside React Router — the catalog links with plain `<a>`). COOP + COEP `credentialless` headers are scoped to `/data-explorer/lessons/*` in `vercel.json`, so lessons are cross-origin isolated (SharedArrayBuffer → full-speed webR) without affecting the rest of the app.
+- **Live data + permissions**: An `{ojs}` cell fetches `data-download/explorer-data` (JSON) reading both the JWT and the **API base URL** from localStorage. The app publishes the base via `getApiBaseUrl()` in `src/utils/axiosConfig.ts` (key `apiBaseUrl`), so the static lesson reaches the API exactly like the app does — dev → `http://localhost:3001/api`, prod → same-origin `/api` (no Vite proxy needed). quarto-live's `input` cell option passes the array into a `{webr}` cell and auto-converts it to an R data.frame (types preserved, no brittle CSV parsing). Reuses `applyDownloadPermissions`, so a lesson sees exactly the data the user could download, capped at `LESSON_ROW_CAP = 5000`. (The user must load the app once per session so `apiBaseUrl` is published; the normal catalog→lesson flow does this.)
+- **Frontend**: `src/components/DataExplorer/` (`DataExplorer.tsx` catalog + `lessons.ts` manifest). Lessons are placeholders for now — add manifest entries + `.qmd` files as content is defined.
 
 #### Frontend Components
 - **ValidationTable**: Main data validation interface with filtering, sorting, and status updates
@@ -167,6 +175,7 @@ All endpoints live in `api/` (Vercel serverless). `server/dev.js` mounts these s
   - EnumeratorDetail: Detailed view with filtering by date range
 - **Admin Components**: User management (AdminUsers, UserForm, UserPermissions) + AuditLog (security event viewer)
 - **DataDownload**: PeSKAS data download with preview-before-export UX (DataDownload, DownloadFilters, DataPreview, FieldMetadataModal, FieldInfoIcon)
+- **DataExplorer**: Catalog of interactive in-browser R lessons (quarto-live + webR); links to full-page static lessons wired to the user's permission-filtered data (DataExplorer, lessons.ts manifest)
 - **HowItWorks**: Onboarding page explaining portal features and workflows
 - **Auth Components**: Login form and AuthContext for state management
 - **Layout**: MainLayout and Navbar with routing
@@ -354,7 +363,7 @@ The [vercel.json](vercel.json) file configures Vercel deployment:
 
 #### Audit Logging
 Security-sensitive actions are logged to `users_audit` via `lib/audit-logger.js`:
-- Categories: `auth` (login_success/failure), `validation` (validation_status_changed), `download` (data_preview/data_export)
+- Categories: `auth` (login_success/failure), `validation` (validation_status_changed), `download` (data_preview/data_export/data_explorer_load)
 - **Always `await logAuditEvent(db, event)` BEFORE sending the response** — Vercel freezes context after `res.json()`, so fire-and-forget calls are silently lost
 - Admin UI: `/admin/audit-logs` — filterable, sortable, paginated
 
@@ -641,3 +650,59 @@ cat ~/.cursor/settings.json
 - Use skills for patterns (don't re-discover)
 - Check session context for framework decisions
 - Only read code when implementation details needed
+
+## Behavioral guidelines
+
+## 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+## 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+## 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+## 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```

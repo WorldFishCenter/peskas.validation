@@ -1,3 +1,26 @@
+# Validation Portal 2.4.0
+
+## New Features
+
+- **Data Explorer — interactive R training**
+  - A new Data Explorer tab presents a catalog of bite-sized lessons (inspired by [fhdsl/data_snacks](https://github.com/fhdsl/data_snacks)), reshaped into the Tabler UI
+  - Lessons run **R entirely in the browser** (no install) via the [quarto-live](https://github.com/r-wasm/quarto-live) extension and [webR](https://docs.r-wasm.org/webr/latest/) (R 4.6, WebAssembly)
+  - Each lesson loads the signed-in user's **own landings data** — the same data and the same access permissions as the Data Download tab — into the R session
+  - Lessons are placeholders for now; the pipeline ships with one working sample lesson that proves the live-data wiring end to end
+
+## Improvements
+
+- **Compacter navigation with grouped menus**
+  - Related tabs are now consolidated into Tabler dropdown menus to reduce navbar clutter
+  - **Validation** groups *Submissions* and *Enumerator Performance*
+  - **Data Tools** groups *Data Download* and *Data Explorer*
+  - The parent menu highlights while you are on any of its pages; available in all three languages (English, Portuguese, Swahili)
+
+## Infrastructure
+
+- **Lesson pipeline**: lessons are authored as Quarto `.qmd` files in `data-explorer/`, rendered to static HTML (`npm run render:lessons`) committed under `public/data-explorer/lessons/`, and served by Vercel. Cross-origin isolation headers (COOP + COEP `credentialless`) are scoped to `/data-explorer/lessons/*` only, so the rest of the app is unaffected while webR gets `SharedArrayBuffer`.
+- **New endpoint** `GET /api/data-download/explorer-data`: returns a capped (5,000-row), permission-filtered landings JSON array (quarto-live auto-converts it to an R data.frame in webR) for the in-browser R runtime, reusing the same permission gate as the data export.
+
 # Validation Portal 2.3.0
 
 ## New Features

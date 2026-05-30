@@ -1,8 +1,11 @@
 {
   "brand": "PESKAS | portal de validação",
   "validation": "Validação",
+  "submissions": "Submissões",
   "enumeratorPerformance": "Desempenho dos Enumeradores",
+  "dataTools": "Ferramentas de Dados",
   "dataDownload": "Download de Dados",
+  "dataExplorer": "Explorador de Dados",
   "howItWorks": "Como Funciona",
   "users": "Utilizadores",
   "auditLog": "Registo de Auditoria",

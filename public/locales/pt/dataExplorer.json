@@ -1,0 +1,34 @@
+{
+  "title": "Explorador de Dados",
+  "description": "Aprenda a analisar dados de pesca de pequena escala com lições interativas de R executadas no seu navegador.",
+  "intro": {
+    "title": "R interativo, diretamente no seu navegador",
+    "body": "Cada lição executa código R real sobre os seus próprios dados de desembarques — os mesmos dados e permissões de acesso do separador Download de Dados. Nada para instalar. Escolha uma lição para começar."
+  },
+  "startLesson": "Iniciar lição",
+  "comingSoon": "Em breve",
+  "categories": {
+    "gettingStarted": "Primeiros passos",
+    "rBasics": "Fundamentos de R",
+    "visualization": "Visualização",
+    "fisheries": "Pescas"
+  },
+  "lessons": {
+    "intro": {
+      "title": "Bem-vindo ao Explorador de Dados",
+      "description": "Uma visita rápida que carrega os seus dados de desembarques numa sessão de R no navegador e mostra as primeiras linhas."
+    },
+    "cleaning": {
+      "title": "Limpeza de dados de desembarques",
+      "description": "Marcador — técnicas para organizar e validar registos brutos de desembarques. Conteúdo em breve."
+    },
+    "visualization": {
+      "title": "Visualizar dados de captura",
+      "description": "Marcador — crie gráficos de captura e esforço com ggplot2. Conteúdo em breve."
+    },
+    "cpue": {
+      "title": "Captura por unidade de esforço",
+      "description": "Marcador — calcule e compare a CPUE entre artes e locais. Conteúdo em breve."
+    }
+  }
+}

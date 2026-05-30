@@ -1,0 +1,34 @@
+{
+  "title": "Kichunguzi cha Data",
+  "description": "Jifunze kuchambua data ya uvuvi mdogo kwa masomo shirikishi ya R yanayoendeshwa kwenye kivinjari chako.",
+  "intro": {
+    "title": "R shirikishi, moja kwa moja kwenye kivinjari chako",
+    "body": "Kila somo linaendesha msimbo halisi wa R kwa kutumia data yako ya mavuno — data ile ile na ruhusa za ufikiaji kama kichupo cha Pakua Data. Hakuna cha kusakinisha. Chagua somo ili kuanza."
+  },
+  "startLesson": "Anza somo",
+  "comingSoon": "Inakuja hivi karibuni",
+  "categories": {
+    "gettingStarted": "Kuanza",
+    "rBasics": "Misingi ya R",
+    "visualization": "Taswira",
+    "fisheries": "Uvuvi"
+  },
+  "lessons": {
+    "intro": {
+      "title": "Karibu kwenye Kichunguzi cha Data",
+      "description": "Ziara fupi inayopakia data yako ya mavuno kwenye kipindi cha R cha kivinjari na kuonyesha safu za kwanza."
+    },
+    "cleaning": {
+      "title": "Kusafisha data ya mavuno",
+      "description": "Nafasi — mbinu za kupanga na kuthibitisha rekodi ghafi za mavuno. Maudhui yanakuja hivi karibuni."
+    },
+    "visualization": {
+      "title": "Kuonyesha data ya samaki waliovuliwa",
+      "description": "Nafasi — tengeneza chati za uvuvi na juhudi kwa kutumia ggplot2. Maudhui yanakuja hivi karibuni."
+    },
+    "cpue": {
+      "title": "Mavuno kwa kila kipimo cha juhudi",
+      "description": "Nafasi — kokotoa na linganisha CPUE kati ya zana na maeneo. Maudhui yanakuja hivi karibuni."
+    }
+  }
+}

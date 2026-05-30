@@ -1,0 +1,34 @@
+{
+  "title": "Data Explorer",
+  "description": "Learn to analyse small-scale fisheries data with interactive R lessons that run in your browser.",
+  "intro": {
+    "title": "Interactive R, right in your browser",
+    "body": "Each lesson runs real R code against your own landings data — the same data and access permissions as the Data Download tab. Nothing to install. Pick a lesson to get started."
+  },
+  "startLesson": "Start lesson",
+  "comingSoon": "Coming soon",
+  "categories": {
+    "gettingStarted": "Getting started",
+    "rBasics": "R basics",
+    "visualization": "Visualization",
+    "fisheries": "Fisheries"
+  },
+  "lessons": {
+    "intro": {
+      "title": "Welcome to the Data Explorer",
+      "description": "A quick tour that loads your landings data into an in-browser R session and shows the first rows."
+    },
+    "cleaning": {
+      "title": "Cleaning landings data",
+      "description": "Placeholder — techniques for tidying and validating raw landings records. Content coming soon."
+    },
+    "visualization": {
+      "title": "Visualising catch data",
+      "description": "Placeholder — build charts of catch and effort with ggplot2. Content coming soon."
+    },
+    "cpue": {
+      "title": "Catch per unit effort",
+      "description": "Placeholder — compute and compare CPUE across gears and sites. Content coming soon."
+    }
+  }
+}

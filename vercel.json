@@ -9,6 +9,15 @@
       "destination": "/index.html"
     }
   ],
+  "headers": [
+    {
+      "source": "/data-explorer/lessons/:path*",
+      "headers": [
+        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+        { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" }
+      ]
+    }
+  ],
   "functions": {
     "api/data-download/*.js": {
       "maxDuration": 30,

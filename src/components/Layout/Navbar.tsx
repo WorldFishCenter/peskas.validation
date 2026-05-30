@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { IconCheck, IconChartBar, IconDownload, IconUsers, IconHelp, IconShield } from '@tabler/icons-react';
+import { IconCheck, IconChartBar, IconDownload, IconSchool, IconDatabase, IconClipboardCheck, IconUsers, IconHelp, IconShield } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../Auth/AuthContext';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -38,29 +38,67 @@ const Navbar: React.FC = () => {
         <div className="collapse navbar-collapse" id="navbar-menu">
           <div className="d-flex flex-column flex-md-row flex-fill align-items-stretch align-items-md-center">
             <ul className="navbar-nav">
-              <li className={`nav-item ${location.pathname === '/' ? 'active' : ''}`}>
-                <Link to="/" className="nav-link">
+              <li className={`nav-item dropdown ${['/', '/enumerators'].includes(location.pathname) ? 'active' : ''}`}>
+                <a
+                  href="#"
+                  className="nav-link dropdown-toggle"
+                  data-bs-toggle="dropdown"
+                  data-bs-auto-close="true"
+                  role="button"
+                  aria-expanded="false"
+                >
                   <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
-                    <IconCheck className="icon" size={24} stroke={2} />
+                    <IconClipboardCheck className="icon" size={24} stroke={2} />
                   </span>
                   <span className="nav-link-title">{t('validation')}</span>
-                </Link>
+                </a>
+                <div className="dropdown-menu">
+                  <Link
+                    to="/"
+                    className={`dropdown-item ${location.pathname === '/' ? 'active' : ''}`}
+                  >
+                    <IconCheck className="icon dropdown-item-icon" size={24} stroke={2} />
+                    {t('submissions')}
+                  </Link>
+                  <Link
+                    to="/enumerators"
+                    className={`dropdown-item ${location.pathname === '/enumerators' ? 'active' : ''}`}
+                  >
+                    <IconChartBar className="icon dropdown-item-icon" size={24} stroke={2} />
+                    {t('enumeratorPerformance')}
+                  </Link>
+                </div>
               </li>
-              <li className={`nav-item ${location.pathname === '/enumerators' ? 'active' : ''}`}>
-                <Link to="/enumerators" className="nav-link">
+              <li className={`nav-item dropdown ${['/data-download', '/data-explorer'].includes(location.pathname) ? 'active' : ''}`}>
+                <a
+                  href="#"
+                  className="nav-link dropdown-toggle"
+                  data-bs-toggle="dropdown"
+                  data-bs-auto-close="true"
+                  role="button"
+                  aria-expanded="false"
+                >
                   <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
-                    <IconChartBar className="icon" size={24} stroke={2} />
+                    <IconDatabase className="icon" size={24} stroke={2} />
                   </span>
-                  <span className="nav-link-title">{t('enumeratorPerformance')}</span>
-                </Link>
-              </li>
-              <li className={`nav-item ${location.pathname === '/data-download' ? 'active' : ''}`}>
-                <Link to="/data-download" className="nav-link">
-                  <span className="nav-link-icon d-md-none d-lg-inline-block me-1">
-                    <IconDownload className="icon" size={24} stroke={2} />
-                  </span>
-                  <span className="nav-link-title">{t('dataDownload')}</span>
-                </Link>
+                  <span className="nav-link-title">{t('dataTools')}</span>
+                </a>
+                <div className="dropdown-menu">
+                  <Link
+                    to="/data-download"
+                    className={`dropdown-item ${location.pathname === '/data-download' ? 'active' : ''}`}
+                  >
+                    <IconDownload className="icon dropdown-item-icon" size={24} stroke={2} />
+                    {t('dataDownload')}
+                  </Link>
+                  <Link
+                    to="/data-explorer"
+                    className={`dropdown-item ${location.pathname === '/data-explorer' ? 'active' : ''}`}
+                  >
+                    <IconSchool className="icon dropdown-item-icon" size={24} stroke={2} />
+                    {t('dataExplorer')}
+                  </Link>
+                </div>
               </li>
               <li className={`nav-item ${location.pathname === '/how-it-works' ? 'active' : ''}`}>
                 <Link to="/how-it-works" className="nav-link">
