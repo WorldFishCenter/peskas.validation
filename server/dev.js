@@ -115,7 +115,7 @@ app.get('/health', (req, res) => {
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({
-    message: 'Validation Portal API - Development Server',
+    message: 'Management Platform API - Development Server',
     version: '1.2.0-vercel',
     endpoints: {
       auth: [

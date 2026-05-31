@@ -28,8 +28,9 @@ export interface ExplorerLesson {
 
 export const lessons: ExplorerLesson[] = [
   { slug: 'intro', categories: ['gettingStarted'], available: true },
-  // Placeholders — content to be defined later.
-  { slug: 'cleaning', categories: ['rBasics'], available: false },
-  { slug: 'visualization', categories: ['visualization'], available: false },
-  { slug: 'cpue', categories: ['fisheries'], available: false }
+  { slug: 'dataset', categories: ['gettingStarted'], available: true },
+  // Placeholders — the practical "consult your data" sequence Lesson 1 points to. Content to be added.
+  { slug: 'filter', categories: ['exploring'], available: false },
+  { slug: 'select', categories: ['exploring'], available: false },
+  { slug: 'summarise', categories: ['exploring'], available: false }
 ];

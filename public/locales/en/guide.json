@@ -3,7 +3,7 @@
   "pageSubtitle": "Instructions for monitoring data quality and enumerator performance",
   "title": "How It Works",
   "overview": "Overview",
-  "overviewText": "This portal helps you supervise data collection from enumerators. You can review submissions for quality issues, update validation status, and monitor performance metrics to guide continuous improvement.",
+  "overviewText": "This platform helps you manage data collection from enumerators. You can review submissions for quality issues, update validation status, monitor performance metrics, download data, and explore it interactively to guide continuous improvement.",
   "monitorPerformance": "Monitor Performance",
   "monitorDescription": "Track enumerator activity and data quality metrics",
   "reviewAlerts": "Review Alerts",
@@ -51,5 +51,5 @@
   "notApprovedDescription": "Data contains errors",
   "validationStatusNote": "Note: Review data thoroughly before updating validation status.",
   "needAssistance": "Need Assistance?",
-  "assistanceText": "Contact your system administrator for technical support or questions about using this portal."
+  "assistanceText": "Contact your system administrator for technical support or questions about using this platform."
 }

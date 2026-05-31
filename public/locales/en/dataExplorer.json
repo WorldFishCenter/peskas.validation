@@ -7,28 +7,31 @@
   },
   "startLesson": "Start lesson",
   "comingSoon": "Coming soon",
+  "lessonsHeading": "Lessons",
   "categories": {
     "gettingStarted": "Getting started",
-    "rBasics": "R basics",
-    "visualization": "Visualization",
-    "fisheries": "Fisheries"
+    "exploring": "Exploring your data"
   },
   "lessons": {
     "intro": {
-      "title": "Welcome to the Data Explorer",
-      "description": "A quick tour that loads your landings data into an in-browser R session and shows the first rows."
+      "title": "Welcome — your first look at the data",
+      "description": "Start here. What R is, how this page works, and your first results — no experience needed."
     },
-    "cleaning": {
-      "title": "Cleaning landings data",
-      "description": "Placeholder — techniques for tidying and validating raw landings records. Content coming soon."
+    "dataset": {
+      "title": "Getting to know your data",
+      "description": "What's inside your data — what each row is, what the columns mean, and how trips and catches fit together. Browse your own records."
     },
-    "visualization": {
-      "title": "Visualising catch data",
-      "description": "Placeholder — build charts of catch and effort with ggplot2. Content coming soon."
+    "filter": {
+      "title": "Find the rows you need",
+      "description": "Show only the landings you care about — one site, one month, one kind of fish. Content coming soon."
     },
-    "cpue": {
-      "title": "Catch per unit effort",
-      "description": "Placeholder — compute and compare CPUE across gears and sites. Content coming soon."
+    "select": {
+      "title": "Pick the columns you need",
+      "description": "Keep just the columns that matter, like date, site and weight. Content coming soon."
+    },
+    "summarise": {
+      "title": "Add it up",
+      "description": "Total and average your catch by site, gear or month to answer everyday questions. Content coming soon."
     }
   }
 }

@@ -1,6 +1,6 @@
-# Validation Portal - Zanzibar
+# Management Platform
 
-A scalable web portal for validating KoboToolbox survey submissions with multi-survey support, enumerator performance tracking, and centralized management.
+A scalable web platform for managing KoboToolbox survey data — validating submissions, tracking enumerator performance, downloading data, and exploring it interactively — with multi-survey support and centralized management.
 
 ## Features
 
@@ -160,7 +160,7 @@ KoboToolbox → R Pipeline → MongoDB → Portal
 ### Project Structure
 
 ```
-validation-zanzibar/
+peskas-management-platform/
 ├── src/                    # Frontend React application
 │   ├── components/         # React components
 │   ├── api/               # API client hooks
@@ -178,6 +178,7 @@ Comprehensive documentation is available in the [docs/](docs/) folder:
 
 - [Deployment Checklist](docs/DEPLOYMENT_CHECKLIST.md) - Production deployment guide
 - [Security Fixes](docs/SECURITY_FIXES_COMPLETED.md) - Security hardening details
+- [Lesson Authoring Guide](docs/LESSON_AUTHORING_GUIDE.md) - How to write Data Explorer R lessons
 - [Documentation Index](docs/README.md) - Complete documentation overview
 
 ## Deployment
@@ -190,6 +191,3 @@ The application is configured for deployment on Vercel:
 
 For detailed deployment instructions, see [docs/DEPLOYMENT_CHECKLIST.md](docs/DEPLOYMENT_CHECKLIST.md).
 
-## License
-
-Proprietary - World Friends Organization

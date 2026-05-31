@@ -1,0 +1,292 @@
+---
+title: "Getting to know your data"
+format: live-html
+engine: knitr
+webr:
+  render-df: reactable
+---
+
+{{< include _extensions/r-wasm/live/_knitr.qmd >}}
+
+::: {.callout-note appearance="simple"}
+## What this lesson is for
+
+In the first lesson you learned to press **Run** and read the answer. Before you start asking
+questions of your data — *which site landed the most fish? how much tilapia last month?* — it helps to
+know **how your data is arranged**: what one line in the table stands for, how the lines fit together,
+and what each column is telling you.
+
+That is all this lesson does. Once the shape of the data is clear, the next lessons will make sense. Go
+slowly, press **Run** on each box, and remember: **you cannot break anything.**
+:::
+
+## Where your data comes from
+
+Your data does not appear from nowhere. Every time an enumerator meets a fisher coming back to a
+landing site, they fill in a short survey: the date, the landing site, the boat and gear used, how many
+people fished, and **what was caught**.
+
+All of those surveys, from every landing site, are collected into **one big table**. That table is your
+data. Reading it is simply reading those survey records, stacked one on top of another.
+
+A table has two simple parts:
+
+- a **row** is one line going across — one record;
+- a **column** is one heading going down — one piece of information that was recorded, like the date or the weight.
+
+The rest of this lesson is about what the rows and columns in *your* table mean.
+
+## A small example to look at
+
+It is easier to see the shape on a small table first. Here is a made-up example — just **two fishing
+trips**, with each trip shown in its **own colour**.
+
+```{=html}
+<style>
+/* colour rows by trip — scoped to row classes (Quarto re-renders the table and drops
+   table-level classes, but keeps row classes); !important beats Bootstrap's cell bg. */
+tr.trip1 td { background: #dbe9f6 !important; }   /* trip_1 — blue  */
+tr.trip2 td { background: #fdebd0 !important; }   /* trip_2 — amber */
+p.legend span { display:inline-block; width:.9em; height:.9em; vertical-align:middle; border:1px solid #888; margin-right:.3em; }
+</style>
+
+<table class="table">
+  <thead><tr><th>survey_id</th><th>trip_id</th><th>landing_date</th><th>site</th><th>gear</th><th>fish</th><th>catch_kg</th><th>n_catch</th><th>tot_catch_kg</th></tr></thead>
+  <tbody>
+    <tr class="trip1"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>Tilapia</td><td>12</td><td>3</td><td>20</td></tr>
+    <tr class="trip1"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>Snapper</td><td>5</td><td>3</td><td>20</td></tr>
+    <tr class="trip1"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>Octopus</td><td>3</td><td>3</td><td>20</td></tr>
+    <tr class="trip2"><td>survey_2</td><td>trip_2</td><td>2024-01-06</td><td>Vanga</td><td>gillnet</td><td>Tilapia</td><td>8</td><td>2</td><td>14</td></tr>
+    <tr class="trip2"><td>survey_2</td><td>trip_2</td><td>2024-01-06</td><td>Vanga</td><td>gillnet</td><td>Snapper</td><td>6</td><td>2</td><td>14</td></tr>
+  </tbody>
+</table>
+
+<p class="legend"><span style="background:#dbe9f6"></span> Trip 1 &nbsp;&nbsp; <span style="background:#fdebd0"></span> Trip 2</p>
+```
+
+Take a moment to read it. Notice that some things **repeat** down the table while others **change** on
+every line — we will come back to that, because it is the key to understanding your data.
+
+## What one row means
+
+Look at the very first line. It is one **catch**: *Tilapia, 12 kg*. The second line is another catch:
+*Snapper, 5 kg*.
+
+::: {.callout-important appearance="simple"}
+**Each row is one catch — one kind of fish from one trip.**
+:::
+
+This is the first thing to hold on to. A row is **not** a whole trip, and it is **not** one fisher. It
+is one *kind of fish* that was recorded. So if a single trip brought back three kinds of fish, that
+trip fills **three rows**.
+
+## How the rows fit into trips
+
+You may have noticed something that confuses almost everyone at first: the same site, the same date and
+the same `trip_id` appear on several lines. Nothing is wrong — this is exactly how the data is meant to
+look.
+
+The reason is simple: **one fishing trip usually brings back more than one kind of fish.** Each trip is
+given an identity code, **`trip_id`** (and `survey_id`, the survey it came from). Every kind of fish
+from that trip gets its own row, and they all carry the **same** `trip_id`. That shared code is how you
+know which rows belong to the same trip.
+
+In the example, `trip_1` brought back three kinds of fish, so it fills three rows. `trip_2` brought back
+two, so it fills two rows. Here is that first trip drawn as a picture:
+
+```{=html}
+<svg viewBox="0 0 640 210" role="img" aria-label="One trip with three catches" style="max-width:640px;width:100%;height:auto;font-family:sans-serif;margin:.6rem 0">
+  <rect x="10" y="75" width="175" height="60" rx="8" fill="#dbe9f6" stroke="#5b86b3"/>
+  <text x="97" y="100" text-anchor="middle" font-size="15" font-weight="bold">Trip  trip_1</text>
+  <text x="97" y="120" text-anchor="middle" font-size="12">Shimoni &#183; 5 Jan</text>
+  <path d="M185 105 C 235 105 235 35 285 35"   fill="none" stroke="#5b86b3" stroke-width="2"/>
+  <path d="M185 105 H 285"                       fill="none" stroke="#5b86b3" stroke-width="2"/>
+  <path d="M185 105 C 235 105 235 175 285 175"  fill="none" stroke="#5b86b3" stroke-width="2"/>
+  <rect x="285" y="15"  width="345" height="40" rx="6" fill="#fff" stroke="#aaa"/><text x="300" y="40" font-size="13">Tilapia &#8212; 12 kg &#160;&#160;<tspan fill="#888">row 1</tspan></text>
+  <rect x="285" y="85"  width="345" height="40" rx="6" fill="#fff" stroke="#aaa"/><text x="300" y="110" font-size="13">Snapper &#8212; 5 kg &#160;&#160;<tspan fill="#888">row 2</tspan></text>
+  <rect x="285" y="155" width="345" height="40" rx="6" fill="#fff" stroke="#aaa"/><text x="300" y="180" font-size="13">Octopus &#8212; 3 kg &#160;&#160;<tspan fill="#888">row 3</tspan></text>
+</svg>
+```
+
+*One trip, three kinds of fish → three rows, all sharing `trip_id = trip_1`.*
+
+The column **`n_catch`** writes that number down for you: it is **how many kinds of catch the trip
+recorded**. You don't have to take it on trust — you can count the rows for each trip yourself. Press
+**Run**:
+
+```{webr}
+#| autorun: false
+# the same six rows as the coloured table above
+example <- data.frame(
+  trip_id  = c("trip_1", "trip_1", "trip_1", "trip_2", "trip_2"),
+  fish     = c("Tilapia", "Snapper", "Octopus", "Tilapia", "Snapper"),
+  catch_kg = c(12, 5, 3, 8, 6)
+)
+
+table(example$trip_id)
+```
+
+The result shows `trip_1  3` and `trip_2  2`: three rows for the first trip, two for the second —
+exactly matching the `n_catch` column. Counting how often something appears, like this, is already a
+useful skill, and you will use it again later.
+
+## Two kinds of columns
+
+Now look across the columns. Once you see it, you cannot un-see it: the columns fall into **two groups**.
+(Here the colours mark the **two kinds of columns** — not the trips as before.)
+
+```{=html}
+<div style="display:flex;gap:14px;flex-wrap:wrap;margin:.6rem 0;font-size:.95rem">
+  <div style="flex:1;min-width:240px;background:#e6f4ea;border:1px solid #8cc6a0;border-radius:8px;padding:10px">
+    <strong>About the trip</strong> <span style="color:#555">(same on every row)</span><br>
+    <code>landing_date</code>, <code>site</code>, <code>gear</code>, <code>n_fishers</code>, <code>tot_catch_kg</code> &#8230;
+  </div>
+  <div style="flex:1;min-width:240px;background:#f3e8f7;border:1px solid #c79bd6;border-radius:8px;padding:10px">
+    <strong>About each catch</strong> <span style="color:#555">(changes on each row)</span><br>
+    <code>fish</code> (<code>catch_taxon</code>), <code>catch_kg</code>, <code>length_cm</code>, <code>catch_price</code>
+  </div>
+</div>
+```
+
+Some columns describe the **whole trip**. They are the **same on every row of that trip**, because the
+trip happened once: `landing_date`, `site`, `gear`, and `tot_catch_kg` — the **total** weight the trip
+brought in.
+
+Other columns describe **each catch on its own**, so they **change from row to row**: `fish`, and
+`catch_kg` — the weight of that **one** kind of fish.
+
+::: {.callout-tip appearance="simple"}
+This difference matters in real work. **`tot_catch_kg` is the whole trip's weight; `catch_kg` is one
+fish's weight.** If you added up `tot_catch_kg` over every row, you would count the same trip several
+times and get a number far too big. For a trip total you use `tot_catch_kg`; for a single catch you use
+`catch_kg`.
+:::
+
+You do not need to memorise the columns — the next lessons introduce them one at a time. For now, just
+hold the shape in your head: **rows are catches, rows group into trips, and every column is either about
+the trip or about the catch.**
+
+## Looking at your own data
+
+You now know the shape. Let's load **your real landing records** — the same data you can open in the
+**Data Download** tab — into the same kind of table. Press **Run**; the first time it may take a few
+seconds.
+
+```{ojs}
+//| echo: false
+// Fetch the signed-in user's capped, permission-filtered landings as JSON, reusing the API base URL
+// the React app publishes to localStorage (getApiBaseUrl). Same bridge as Lesson 1.
+landings_data = {
+  const token = localStorage.getItem("authToken");
+  if (!token) return [];
+  const apiBase = localStorage.getItem("apiBaseUrl") || "/api";
+  const res = await fetch(`${apiBase}/data-download/explorer-data`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
+  });
+  if (!res.ok) { console.warn(`explorer-data fetch failed: ${res.status}`); return []; }
+  return await res.json();
+}
+```
+
+```{webr}
+#| autorun: false
+#| input:
+#|   - landings_data
+landings <- tryCatch(as.data.frame(landings_data), error = function(e) data.frame())
+
+if (nrow(landings) == 0) {
+  cat("Your data will appear here once you are signed in to the platform.\n")
+} else {
+  landings
+}
+```
+
+::: {.callout-tip appearance="simple"}
+This is your real data, and it has the **same shape** as the small example. Try typing the name of your
+landing site, or a fish, into the **search box** — or click a column heading to **sort**. Looking
+around like this is the best way to get a feel for what you actually have.
+:::
+
+## How big is your data
+
+Two simple questions help you get your bearings: **how many records** do you have, and **how many
+columns** describe each one? Press **Run**:
+
+```{webr}
+#| autorun: false
+nrow(landings)   # number of records (rows)
+ncol(landings)   # number of columns
+```
+
+The first number is how many catch records you hold — often many thousands. The second is how many
+pieces of information are kept about each catch. This is far more than you could read by eye in a
+spreadsheet, which is exactly why we use R: it can look through all of it for you in a moment, which is
+what the next lessons will do.
+
+## What each column means
+
+Finally, let's see the columns by name. Press **Run** to list them:
+
+```{webr}
+#| autorun: false
+names(landings)
+```
+
+These are the headings in your table. Below is what the main ones mean, grouped the same way we saw
+above. **Keep this nearby — it is the dictionary for your data.**
+
+**Which trip a row belongs to**
+
+| Column | Meaning |
+|--------|---------|
+| `survey_id` | The survey this record came from |
+| `trip_id` | The fishing trip. Rows with the same `trip_id` are from the same trip |
+| `n_catch` | How many kinds of catch that trip recorded |
+
+**About the trip** (same on every row of the trip)
+
+| Column | Meaning |
+|--------|---------|
+| `landing_date` | The day the catch was brought to shore |
+| `gaul_2_name` | The district / area |
+| `gear` | The fishing method (e.g. hand line, gillnet) |
+| `vessel_type` | The boat used (e.g. dhow) |
+| `n_fishers` | How many people were fishing |
+| `trip_duration_hrs` | How many hours the trip lasted |
+| `catch_habitat` | Where they fished (e.g. reef) |
+| `tot_catch_kg` | Total weight of the whole trip, in kg |
+| `tot_catch_price` | Total value of the whole trip |
+
+**About each catch** (one row each)
+
+| Column | Meaning |
+|--------|---------|
+| `catch_taxon` | The fish type, as a short FAO code (e.g. `SKJ` = skipjack tuna) |
+| `scientific_name` | The fish's scientific (Latin) name |
+| `length_cm` | The fish length, in centimetres |
+| `catch_kg` | The weight of that catch, in kg |
+| `catch_price` | The value of that catch |
+
+::: {.callout-note appearance="simple"}
+In your real data the fish appears as a short **code** in `catch_taxon` (for example `SKJ`). The
+`scientific_name` column gives its full name. We used everyday names in the small example above just to
+keep it easy to read.
+:::
+
+## What you have learned
+
+You can now read the shape of your data:
+
+- a **row** is one catch — one kind of fish from one trip;
+- rows belong together when they share a **`trip_id`**, and **`n_catch`** says how many a trip had;
+- every column is either **about the trip** (the same on every row) or **about each catch** (different on each row);
+- your real data has this same shape — just much bigger.
+
+That is the foundation. In the next lesson you will start to **find the rows you need** — for example,
+showing only the landings from your site, or only one month.
+
+<!-- Raw HTML so Quarto does NOT rewrite this root-relative link (served at depth 2). -->
+
+```{=html}
+<p class="mt-4"><a href="/data-explorer" class="btn btn-outline-primary">← Back to Data Explorer</a></p>
+```

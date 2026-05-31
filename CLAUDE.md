@@ -41,7 +41,7 @@ When adding tests in the future, consider:
 
 ## Architecture Overview
 
-This is a full-stack React + Express + MongoDB application for data validation and enumerator performance tracking for survey data from KoboToolbox.
+This is a full-stack React + Express + MongoDB management platform for survey data from KoboToolbox — covering data validation, enumerator performance tracking, data download, and interactive data exploration.
 
 ### Project Structure
 - **Frontend (`src/`)**: React 18 + TypeScript + Vite + React Router v7 + TanStack Table v8
@@ -156,7 +156,8 @@ All endpoints live in `api/` (Vercel serverless). `server/dev.js` mounts these s
 - **Authoring/build**: Lessons are Quarto `.qmd` files in `data-explorer/` (with the vendored `_extensions/r-wasm/live/` quarto-live extension). Render with `npm run render:lessons` → static HTML committed under `public/data-explorer/lessons/`. Vercel has no Quarto/R, so rendered output is committed; authoring requires Quarto CLI + R locally.
 - **Display**: Lessons are full-page static pages at `/data-explorer/lessons/<slug>.html` (outside React Router — the catalog links with plain `<a>`). COOP + COEP `credentialless` headers are scoped to `/data-explorer/lessons/*` in `vercel.json`, so lessons are cross-origin isolated (SharedArrayBuffer → full-speed webR) without affecting the rest of the app.
 - **Live data + permissions**: An `{ojs}` cell fetches `data-download/explorer-data` (JSON) reading both the JWT and the **API base URL** from localStorage. The app publishes the base via `getApiBaseUrl()` in `src/utils/axiosConfig.ts` (key `apiBaseUrl`), so the static lesson reaches the API exactly like the app does — dev → `http://localhost:3001/api`, prod → same-origin `/api` (no Vite proxy needed). quarto-live's `input` cell option passes the array into a `{webr}` cell and auto-converts it to an R data.frame (types preserved, no brittle CSV parsing). Reuses `applyDownloadPermissions`, so a lesson sees exactly the data the user could download, capped at `LESSON_ROW_CAP = 5000`. (The user must load the app once per session so `apiBaseUrl` is published; the normal catalog→lesson flow does this.)
-- **Frontend**: `src/components/DataExplorer/` (`DataExplorer.tsx` catalog + `lessons.ts` manifest). Lessons are placeholders for now — add manifest entries + `.qmd` files as content is defined.
+- **Frontend**: `src/components/DataExplorer/` (`DataExplorer.tsx` catalog + `lessons.ts` manifest). Lessons `intro` and `dataset` are authored; `filter`/`select`/`summarise` are placeholders — add manifest entries + `.qmd` files as content is defined.
+- **Authoring guide**: how to write a lesson (audience, communicative style, lesson anatomy, conventions, copy-paste skeleton, checklist, data dictionary) is in [docs/LESSON_AUTHORING_GUIDE.md](docs/LESSON_AUTHORING_GUIDE.md). Read it before writing any new lesson.
 
 #### Frontend Components
 - **ValidationTable**: Main data validation interface with filtering, sorting, and status updates

@@ -1,30 +1,105 @@
 ---
-title: "Welcome to the SSF Data Explorer"
-subtitle: "Placeholder lesson"
+title: "Welcome — your first look at the data"
 format: live-html
 engine: knitr
 ---
 
 {{< include _extensions/r-wasm/live/_knitr.qmd >}}
 
-::: {.callout-note}
-**Placeholder lesson.** This page exists to prove the in-browser R runtime is wired to
-your own permission-filtered landings data. Real lessons will be added later.
+## What is R?
+
+When you collect fisheries data, you need a way to make sense of it: to add up catches,
+compare landing sites, or spot a month when something looks wrong. **R is a free tool made
+for exactly this.**
+
+Think of R as a careful, very fast assistant. You give it a short written instruction —
+*"add up the weight"*, *"show me only the landings from Vanga"* — and it does the work exactly
+and straight away, whether you have ten records or one hundred thousand. It is the same tool
+used by the scientists who prepare your data.
+
+A spreadsheet like Excel is fine for a small table. R goes further: it does not slow down with
+large amounts of data, it does not make copy-and-paste mistakes, and it remembers every step —
+so the same work can be repeated next month without starting over.
+
+::: {.callout-note appearance="simple"}
+## What is this page, then?
+
+This page runs R **right inside your web browser**. There is nothing to download or install —
+it just works, and it is free.
+
+You do **not** need to be a programmer. In these lessons you will mostly **press a button** and
+change a few small things. And **you cannot break anything**: if something looks wrong, just
+press **Run** again.
 :::
 
-## Your landings data
+## How it works: press Run
 
-This lesson runs against **your country's landing records** — the same data, with the
-same access permissions, as the Data Download tab. It is loaded into the R environment
-below as a data frame called `landings`.
+Below is a small table of fish landings — just six rows, so it is easy to read.
+
+The first box runs **on its own** when the page opens. (The very first time, the page may take a few
+seconds to wake up — that is normal.) Look for the green **▶ Run** button on the box: you can press it
+to run the box again.
+
+```{webr}
+#| autorun: true
+# A small example table: six catches from two landing sites.
+landings_example <- data.frame(
+  date      = c("2024-01-05", "2024-01-05", "2024-01-06", "2024-01-06", "2024-01-07", "2024-01-07"),
+  site      = c("Shimoni", "Shimoni", "Vanga", "Shimoni", "Vanga", "Vanga"),
+  fish      = c("Tilapia", "Snapper", "Tilapia", "Octopus", "Snapper", "Tilapia"),
+  weight_kg = c(12, 5, 8, 3, 6, 10)
+)
+
+landings_example
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** a table with **6 rows** and **4 columns** — `date`, `site`, `fish` and `weight_kg`.
+:::
+
+## Now you try: press Run yourself
+
+This box adds up all the weights. **Press the ▶ Run button** to see the answer.
+
+```{webr}
+#| autorun: false
+sum(landings_example$weight_kg)
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** `44` — the total weight of all six catches, in kilograms.
+:::
+
+## Change one thing, then run again
+
+You do **not** need to understand the instruction below yet — that comes in the next lessons. For now,
+just see how easy it is to change an answer.
+
+This box shows only the catches **heavier than 5 kg**. **Change the `5` to `9`**, then press **Run** again.
+
+```{webr}
+#| autorun: false
+landings_example[landings_example$weight_kg > 5, ]
+```
+
+::: {.callout-tip appearance="simple"}
+**Try it:** with `5` you see **four** rows. Change it to `9` and press Run — now you see only the **two**
+catches above 9 kg. That is all "coding" is here: small instructions you can change, with the answer
+right away.
+:::
+
+## This works on YOUR data too
+
+The table above was made up. In the next lessons the table will be **your real landing records** — the
+same data you can open in **Data Download**, from your own sites.
+
+Here is a peek. Press **Run** to load the first rows of your data:
 
 ```{ojs}
 //| echo: false
-// Fetch the signed-in user's capped, permission-filtered landings as JSON, reusing the
-// exact API base URL the React app computed (apiConfig.getApiBaseUrl), which it publishes
-// to localStorage on load. This makes the lesson behave like the Data Download tab in
-// both dev (-> http://localhost:3001/api) and prod (-> same-origin /api). The lesson
-// shares the app's origin, so the JWT in localStorage is available here too.
+// Fetch the signed-in user's capped, permission-filtered landings as JSON, reusing the API base URL
+// the React app publishes to localStorage (getApiBaseUrl). Same bridge as before: behaves like the
+// Data Download tab in dev (-> :3001) and prod (-> /api).
 landings_data = {
   const token = localStorage.getItem("authToken");
   if (!token) return [];
@@ -41,32 +116,33 @@ landings_data = {
 ```
 
 ```{webr}
-#| autorun: true
+#| autorun: false
 #| input:
 #|   - landings_data
-# quarto-live converts the JS array of row objects (landings_data) into an R
-# data.frame automatically; guard the empty / not-signed-in case.
+# quarto-live converts the JS array of row objects into an R data.frame automatically.
 landings <- tryCatch(as.data.frame(landings_data), error = function(e) data.frame())
 
-cat("Rows loaded:", nrow(landings), "  Columns:", ncol(landings), "\n")
-head(landings)
+if (nrow(landings) == 0) {
+  cat("Your data will appear here once you are signed in to the platform.\n")
+} else {
+  cat("Loaded", nrow(landings), "of your landing records.\n")
+  head(landings)
+}
 ```
 
-## Try it yourself
+## What you will learn next
 
-`landings` is available in every cell on this page. Run or edit the cell below:
+Each lesson is short and uses your own data. You will learn to answer everyday questions:
 
-```{webr}
-#| autorun: false
-str(landings)
-```
+- 🔎 **Find the rows you need** — *"Show me only the landings from Vanga."* — *"Only last month."*
+- 📋 **Pick the columns you need** — *"I only want the date, the site and the weight."*
+- ➕ **Add it up** — *"What is the total catch at each site?"* — *"Which gear catches the most?"*
 
----
+You will only ever **press Run** and **change small things**. Take the lessons in order.
 
-<!-- Raw HTML so Quarto does NOT rewrite this root-relative link. The lesson is
-     served at /data-explorer/lessons/<slug>.html but Quarto bases relative links on
-     the doc's position in the source project (root), so a markdown link to
-     /data-explorer would be rewritten to ./data-explorer and break. -->
+<!-- Raw HTML so Quarto does NOT rewrite this root-relative link. The lesson is served at
+     /data-explorer/lessons/<slug>.html but Quarto bases relative links on the doc's position in
+     the source project (root), so a markdown link to /data-explorer would be rewritten and break. -->
 
 ```{=html}
 <p class="mt-4"><a href="/data-explorer" class="btn btn-outline-primary">← Back to Data Explorer</a></p>

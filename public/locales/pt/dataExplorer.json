@@ -7,28 +7,31 @@
   },
   "startLesson": "Iniciar lição",
   "comingSoon": "Em breve",
+  "lessonsHeading": "Lições",
   "categories": {
     "gettingStarted": "Primeiros passos",
-    "rBasics": "Fundamentos de R",
-    "visualization": "Visualização",
-    "fisheries": "Pescas"
+    "exploring": "Explorar os seus dados"
   },
   "lessons": {
     "intro": {
-      "title": "Bem-vindo ao Explorador de Dados",
-      "description": "Uma visita rápida que carrega os seus dados de desembarques numa sessão de R no navegador e mostra as primeiras linhas."
+      "title": "Bem-vindo — o seu primeiro olhar sobre os dados",
+      "description": "Comece aqui. O que é o R, como esta página funciona e os seus primeiros resultados — sem experiência necessária."
     },
-    "cleaning": {
-      "title": "Limpeza de dados de desembarques",
-      "description": "Marcador — técnicas para organizar e validar registos brutos de desembarques. Conteúdo em breve."
+    "dataset": {
+      "title": "Conhecer os seus dados",
+      "description": "O que está dentro dos seus dados — o que é cada linha, o que significam as colunas e como as viagens e as capturas se encaixam. Explore os seus próprios registos."
     },
-    "visualization": {
-      "title": "Visualizar dados de captura",
-      "description": "Marcador — crie gráficos de captura e esforço com ggplot2. Conteúdo em breve."
+    "filter": {
+      "title": "Encontrar as linhas de que precisa",
+      "description": "Mostre apenas os desembarques que lhe interessam — um local, um mês, um tipo de peixe. Conteúdo em breve."
     },
-    "cpue": {
-      "title": "Captura por unidade de esforço",
-      "description": "Marcador — calcule e compare a CPUE entre artes e locais. Conteúdo em breve."
+    "select": {
+      "title": "Escolher as colunas de que precisa",
+      "description": "Fique apenas com as colunas que importam, como data, local e peso. Conteúdo em breve."
+    },
+    "summarise": {
+      "title": "Somar tudo",
+      "description": "Some e faça a média da sua captura por local, arte ou mês para responder a perguntas do dia a dia. Conteúdo em breve."
     }
   }
 }

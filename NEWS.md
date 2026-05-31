@@ -1,4 +1,4 @@
-# Validation Portal 2.4.0
+# Management Platform 2.4.0
 
 ## New Features
 
@@ -21,7 +21,7 @@
 - **Lesson pipeline**: lessons are authored as Quarto `.qmd` files in `data-explorer/`, rendered to static HTML (`npm run render:lessons`) committed under `public/data-explorer/lessons/`, and served by Vercel. Cross-origin isolation headers (COOP + COEP `credentialless`) are scoped to `/data-explorer/lessons/*` only, so the rest of the app is unaffected while webR gets `SharedArrayBuffer`.
 - **New endpoint** `GET /api/data-download/explorer-data`: returns a capped (5,000-row), permission-filtered landings JSON array (quarto-live auto-converts it to an R data.frame in webR) for the in-browser R runtime, reusing the same permission gate as the data export.
 
-# Validation Portal 2.3.0
+# Management Platform 2.3.0
 
 ## New Features
 
@@ -46,7 +46,7 @@
   - Previously, audit log writes happened after the HTTP response was sent; in a serverless environment this means they were silently dropped
   - All audit writes now complete before the response is returned
 
-# Validation Portal 2.2.0
+# Management Platform 2.2.0
 
 ## Performance Improvements
 
@@ -68,7 +68,7 @@
 
 ---
 
-# Validation Portal 2.1.0
+# Management Platform 2.1.0
 
 ## Bug Fixes
 
@@ -102,7 +102,7 @@
 
 ---
 
-# Validation Portal 2.0.0
+# Management Platform 2.0.0
 
 ## What's New
 
@@ -200,7 +200,7 @@ This release focuses on making the data synchronization from Airtable more relia
 
 ---
 
-# Validation Portal 1.6.0
+# Management Platform 1.6.0
 
 ## New Features
 
@@ -393,7 +393,7 @@ All infrastructure improvements completed:
 
 ---
 
-# Validation Portal 1.5.0
+# Management Platform 1.5.0
 
 ## New Features
 
@@ -435,7 +435,7 @@ All infrastructure improvements completed:
 
 ---
 
-# Validation Portal 1.4.0
+# Management Platform 1.4.0
 
 ## Features
 
@@ -491,7 +491,7 @@ All infrastructure improvements completed:
 
 ---
 
-# Validation Portal 1.3.0
+# Management Platform 1.3.0
 
 ## Architecture & Scalability
 
@@ -574,7 +574,7 @@ All infrastructure improvements completed:
 
 ---
 
-# Validation Portal 1.2.1
+# Management Platform 1.2.1
 
 ## Features
 
@@ -622,7 +622,7 @@ All infrastructure improvements completed:
 
 ---
 
-# Validation Portal 1.2.0
+# Management Platform 1.2.0
 
 ## Features
 
@@ -682,7 +682,7 @@ All infrastructure improvements completed:
 
 ---
 
-# Validation Portal 1.1.0
+# Management Platform 1.1.0
 
 ## New Features
 
@@ -768,7 +768,7 @@ All infrastructure improvements completed:
 
 ---
 
-# Validation Portal 1.0.0
+# Management Platform 1.0.0
 
 ## New features
 

@@ -7,28 +7,31 @@
   },
   "startLesson": "Anza somo",
   "comingSoon": "Inakuja hivi karibuni",
+  "lessonsHeading": "Masomo",
   "categories": {
     "gettingStarted": "Kuanza",
-    "rBasics": "Misingi ya R",
-    "visualization": "Taswira",
-    "fisheries": "Uvuvi"
+    "exploring": "Kuchunguza data yako"
   },
   "lessons": {
     "intro": {
-      "title": "Karibu kwenye Kichunguzi cha Data",
-      "description": "Ziara fupi inayopakia data yako ya mavuno kwenye kipindi cha R cha kivinjari na kuonyesha safu za kwanza."
+      "title": "Karibu — mtazamo wako wa kwanza wa data",
+      "description": "Anza hapa. R ni nini, ukurasa huu unavyofanya kazi, na matokeo yako ya kwanza — hakuna uzoefu unaohitajika."
     },
-    "cleaning": {
-      "title": "Kusafisha data ya mavuno",
-      "description": "Nafasi — mbinu za kupanga na kuthibitisha rekodi ghafi za mavuno. Maudhui yanakuja hivi karibuni."
+    "dataset": {
+      "title": "Kuifahamu data yako",
+      "description": "Kilicho ndani ya data yako — kila safu ni nini, safu wima zinamaanisha nini, na jinsi safari na mavuno vinavyohusiana. Vinjari rekodi zako mwenyewe."
     },
-    "visualization": {
-      "title": "Kuonyesha data ya samaki waliovuliwa",
-      "description": "Nafasi — tengeneza chati za uvuvi na juhudi kwa kutumia ggplot2. Maudhui yanakuja hivi karibuni."
+    "filter": {
+      "title": "Tafuta safu unazohitaji",
+      "description": "Onyesha tu mavuno yanayokuhusu — eneo moja, mwezi mmoja, aina moja ya samaki. Maudhui yanakuja hivi karibuni."
     },
-    "cpue": {
-      "title": "Mavuno kwa kila kipimo cha juhudi",
-      "description": "Nafasi — kokotoa na linganisha CPUE kati ya zana na maeneo. Maudhui yanakuja hivi karibuni."
+    "select": {
+      "title": "Chagua safu wima unazohitaji",
+      "description": "Baki na safu wima muhimu pekee, kama tarehe, eneo na uzito. Maudhui yanakuja hivi karibuni."
+    },
+    "summarise": {
+      "title": "Jumlisha",
+      "description": "Jumlisha na pata wastani wa mavuno yako kwa eneo, zana au mwezi ili kujibu maswali ya kila siku. Maudhui yanakuja hivi karibuni."
     }
   }
 }

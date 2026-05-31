@@ -52,6 +52,7 @@ const DataExplorer: React.FC = () => {
           </div>
 
           {/* Lessons grid */}
+          <h3 className="mb-3">{t('lessonsHeading')}</h3>
           <div className="row row-cards">
             {lessons.map((lesson) => {
               const href = `${LESSON_BASE_PATH}/${lesson.slug}.html`;
