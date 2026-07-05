@@ -25,7 +25,7 @@
     "scopeGroupFiltered": "Visualizações Filtradas",
     "scopeHelpLink": "#data-scope-explanation",
     "surveys": "Pesquisas",
-    "surveysHint": "Selecione pesquisas específicas ou deixe vazio para todas",
+    "surveysHint": "Selecione uma pesquisa para filtrar, ou escolha \"Todas as pesquisas\"",
     "gaulCodes": "Área Administrativa",
     "gaulCodesHint": "Selecione uma área ou deixe vazio para todas",
     "gaulGroupAll": "Todas as Áreas",
@@ -36,7 +36,12 @@
     "statusHelpLink": "#data-validation-status",
     "previewData": "Visualizar Dados",
     "resetFilters": "Redefinir Filtros",
-    "loading": "Carregando..."
+    "loading": "Carregando...",
+    "surveysAll": "Todas as pesquisas",
+    "noSurveysAssigned": "Nenhuma pesquisa atribuída à sua conta. Entre em contato com um administrador.",
+    "defaultBadge": "Padrão",
+    "surveysAllDesc": "Todas as pesquisas a que tem acesso",
+    "surveyAreaHint": "Escolha uma pesquisa específica acima para filtrar por área administrativa."
   },
   "preview": {
     "title": "Visualização de Dados",

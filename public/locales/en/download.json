@@ -25,7 +25,7 @@
     "scopeGroupFiltered": "Filtered Views",
     "scopeHelpLink": "#data-scope-explanation",
     "surveys": "Survey",
-    "surveysHint": "Select one survey or leave empty for all",
+    "surveysHint": "Select a survey to filter by, or choose \"All forms\"",
     "gaulCodes": "Administrative Area",
     "gaulCodesHint": "Select one area or leave empty for all",
     "gaulGroupAll": "All Areas",
@@ -36,7 +36,12 @@
     "statusHelpLink": "#data-validation-status",
     "previewData": "Preview Data",
     "resetFilters": "Reset Filters",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "surveysAll": "All forms",
+    "noSurveysAssigned": "No surveys are assigned to your account. Please contact an administrator.",
+    "defaultBadge": "Default",
+    "surveysAllDesc": "Every survey you can access",
+    "surveyAreaHint": "Choose a specific survey above to filter by administrative area."
   },
   "preview": {
     "title": "Data Preview",

@@ -34,10 +34,11 @@
  */
 
 const { withMiddleware, authenticateUser } = require('../../lib/middleware');
-const { fetchLandingsData, PeskasAPIError } = require('../../lib/peskas-api');
-const { applyDownloadPermissions } = require('../../lib/filter-permissions');
+const { fetchLandingsPreviewMerged, PeskasAPIError } = require('../../lib/peskas-api');
+const { resolveDownloadRequests, DownloadPermissionError } = require('../../lib/filter-permissions');
 const {
   sendSuccess,
+  sendError,
   sendServerError,
   setCorsHeaders
 } = require('../../lib/response');
@@ -62,11 +63,10 @@ async function handler(req, res) {
   try {
     const database = await getDb();
 
-    const {
-      effectiveCountry,
-      effectiveSurveyIds, // eslint-disable-line no-unused-vars -- Reserved for future survey_id filtering
-      effectiveGaulCodes
-    } = await applyDownloadPermissions(req.user, req.query);
+    // Resolve the selection into permission-safe PeSKAS requests. Each request is pinned
+    // to a survey the user may access, with the country derived per-survey. A user with
+    // several forms/districts fans out to multiple requests that are merged below.
+    const requests = await resolveDownloadRequests(req.user, req.query);
 
     const {
       status = 'validated',
@@ -74,47 +74,24 @@ async function handler(req, res) {
       scope
     } = req.query;
 
-    // PeSKAS API requires lowercase country codes
-    const apiFilters = {
-      country: effectiveCountry.toLowerCase(),
-      status: status || 'validated'
-    };
-
-    // Add optional filters only if provided
+    // Filters applied to every request (single-valued, shared across the fan-out)
+    const sharedFilters = { status: status || 'validated' };
     if (scope && scope.trim()) {
-      apiFilters.scope = scope.trim();
-    }
-    // TEMPORARY: Survey ID filtering disabled - PeSKAS API uses different survey IDs
-    // TODO: Map MongoDB survey IDs to PeSKAS API survey IDs or remove survey filter
-    // if (effectiveSurveyIds.length > 0) {
-    //   apiFilters.survey_id = effectiveSurveyIds[0];
-    // }
-    if (effectiveGaulCodes.length > 0) {
-      // PeSKAS API doesn't support multiple gaul_2 codes - use first one
-      apiFilters.gaul_2 = effectiveGaulCodes[0];
+      sharedFilters.scope = scope.trim();
     }
     if (catch_taxon && catch_taxon.trim()) {
-      apiFilters.catch_taxon = catch_taxon.trim();
+      sharedFilters.catch_taxon = catch_taxon.trim();
     }
 
-    const apiResponse = await fetchLandingsData(apiFilters, 20);
+    // PeSKAS API requires lowercase country codes
+    const normalizedRequests = requests.map(r => ({ ...r, country: r.country.toLowerCase() }));
 
-    let data = [];
-    let totalCount = 0;
+    const { data, total_count } = await fetchLandingsPreviewMerged(normalizedRequests, sharedFilters, 20);
 
-    if (Array.isArray(apiResponse)) {
-      // Response is directly an array
-      data = apiResponse;
-      totalCount = apiResponse.length;
-    } else if (apiResponse.data && Array.isArray(apiResponse.data)) {
-      // Response has data property
-      data = apiResponse.data;
-      totalCount = apiResponse.count || apiResponse.total || apiResponse.data.length;
-    } else {
-      // Unexpected format - return empty data
-      data = [];
-      totalCount = 0;
-    }
+    // Distinct scope actually served (for display + audit)
+    const countries = [...new Set(normalizedRequests.map(r => r.country))];
+    const surveyIds = [...new Set(normalizedRequests.map(r => r.survey_id).filter(Boolean))];
+    const districts = [...new Set(normalizedRequests.map(r => r.gaul_2).filter(Boolean))];
 
     await logAuditEvent(database, {
       username: req.user.username,
@@ -123,24 +100,42 @@ async function handler(req, res) {
       action: 'data_preview',
       status: 'success',
       details: {
-        country_id: apiFilters.country || null,
-        survey_asset_id: req.query.survey_id || null,
-        data_status: apiFilters.status || null,
-        scope: apiFilters.scope || null,
-        catch_taxon: apiFilters.catch_taxon || null,
-        district: apiFilters.gaul_2 || null,
+        country_id: countries.join(',') || null,
+        survey_asset_id: surveyIds.join(',') || null,
+        data_status: sharedFilters.status || null,
+        scope: sharedFilters.scope || null,
+        catch_taxon: sharedFilters.catch_taxon || null,
+        district: districts.join(',') || null,
+        request_count: normalizedRequests.length,
       },
       req
     });
 
+    // Display-only summary of what was actually served (permission-limited). The download
+    // endpoint re-derives its own scope from req.user + the same query, so this is not
+    // fed back as export input.
+    const filters_applied = {
+      status: sharedFilters.status,
+      scope: sharedFilters.scope || '',
+      ...(sharedFilters.catch_taxon ? { catch_taxon: sharedFilters.catch_taxon } : {}),
+      ...(countries.length ? { country: countries.join(', ') } : {}),
+      ...(surveyIds.length ? { survey_id: surveyIds } : {}),
+      ...(districts.length ? { gaul_2: districts.join(', ') } : {}),
+    };
+
     return sendSuccess(res, {
-      data: data,
-      total_count: totalCount,
-      filters_applied: apiFilters
+      data,
+      total_count,
+      filters_applied
     });
 
   } catch (error) {
     console.error('Preview error:', error);
+
+    // Permission/selection errors → clear 400/403 for the client
+    if (error instanceof DownloadPermissionError) {
+      return sendError(res, error.message, error.statusCode);
+    }
 
     // Handle PeSKAS API errors with user-friendly messages
     if (error instanceof PeskasAPIError) {

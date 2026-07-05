@@ -25,7 +25,7 @@
     "scopeGroupFiltered": "Mwonekano Uliochujwa",
     "scopeHelpLink": "#data-scope-explanation",
     "surveys": "Utafiti",
-    "surveysHint": "Chagua tafiti maalum au acha tupu kwa zote",
+    "surveysHint": "Chagua utafiti wa kuchuja, au chagua \"Tafiti zote\"",
     "gaulCodes": "Maeneo ya Utawala",
     "gaulCodesHint": "Chagua mikoa maalum au acha tupu kwa yote",
     "gaulGroupAll": "Maeneo Yote",
@@ -36,7 +36,12 @@
     "statusHelpLink": "#data-validation-status",
     "previewData": "Angalia Data",
     "resetFilters": "Weka Upya Vichujio",
-    "loading": "Inapakia..."
+    "loading": "Inapakia...",
+    "surveysAll": "Tafiti zote",
+    "noSurveysAssigned": "Hakuna tafiti zilizopewa akaunti yako. Tafadhali wasiliana na msimamizi.",
+    "defaultBadge": "Chaguo-msingi",
+    "surveysAllDesc": "Kila utafiti unaoweza kufikia",
+    "surveyAreaHint": "Chagua utafiti maalum hapo juu ili kuchuja kwa eneo la utawala."
   },
   "preview": {
     "title": "Maangalizi ya Data",
