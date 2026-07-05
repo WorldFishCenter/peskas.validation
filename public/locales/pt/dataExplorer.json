@@ -21,17 +21,13 @@
       "title": "Conhecer os seus dados",
       "description": "O que está dentro dos seus dados — o que é cada linha, o que significam as colunas e como as viagens e as capturas se encaixam. Explore os seus próprios registos."
     },
-    "filter": {
-      "title": "Encontrar as linhas de que precisa",
-      "description": "Mostre apenas os desembarques que lhe interessam — um local, um mês, um tipo de peixe. Conteúdo em breve."
-    },
-    "select": {
-      "title": "Escolher as colunas de que precisa",
-      "description": "Fique apenas com as colunas que importam, como data, local e peso. Conteúdo em breve."
+    "find": {
+      "title": "Encontrar o que precisa",
+      "description": "Três comandos simples para reduzir os seus dados: listar os valores de uma coluna, ficar apenas com as linhas que quer e ficar apenas com as colunas que quer."
     },
     "summarise": {
       "title": "Somar tudo",
-      "description": "Some e faça a média da sua captura por local, arte ou mês para responder a perguntas do dia a dia. Conteúdo em breve."
+      "description": "Some, faça a média e conte a sua captura por local, arte ou tipo de peixe para responder a perguntas do dia a dia."
     }
   }
 }

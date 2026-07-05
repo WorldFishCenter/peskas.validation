@@ -21,17 +21,13 @@
       "title": "Getting to know your data",
       "description": "What's inside your data — what each row is, what the columns mean, and how trips and catches fit together. Browse your own records."
     },
-    "filter": {
-      "title": "Find the rows you need",
-      "description": "Show only the landings you care about — one site, one month, one kind of fish. Content coming soon."
-    },
-    "select": {
-      "title": "Pick the columns you need",
-      "description": "Keep just the columns that matter, like date, site and weight. Content coming soon."
+    "find": {
+      "title": "Find what you need",
+      "description": "Three simple commands to narrow your data: list the values in a column, keep only the rows you want, and keep only the columns you want."
     },
     "summarise": {
       "title": "Add it up",
-      "description": "Total and average your catch by site, gear or month to answer everyday questions. Content coming soon."
+      "description": "Total, average and count your catch by site, gear or kind of fish to answer everyday questions."
     }
   }
 }

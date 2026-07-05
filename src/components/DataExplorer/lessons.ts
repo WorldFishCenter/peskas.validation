@@ -29,8 +29,7 @@ export interface ExplorerLesson {
 export const lessons: ExplorerLesson[] = [
   { slug: 'intro', categories: ['gettingStarted'], available: true },
   { slug: 'dataset', categories: ['gettingStarted'], available: true },
-  // Placeholders — the practical "consult your data" sequence Lesson 1 points to. Content to be added.
-  { slug: 'filter', categories: ['exploring'], available: false },
-  { slug: 'select', categories: ['exploring'], available: false },
-  { slug: 'summarise', categories: ['exploring'], available: false }
+  // The "narrowing" verbs (distinct/filter/select) live in one lesson; aggregation in the next.
+  { slug: 'find', categories: ['exploring'], available: true },
+  { slug: 'summarise', categories: ['exploring'], available: true }
 ];

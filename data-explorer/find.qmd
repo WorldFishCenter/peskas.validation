@@ -1,0 +1,182 @@
+---
+title: "Find what you need"
+format: live-html
+engine: knitr
+webr:
+  packages:
+    - dplyr
+  render-df: reactable
+---
+
+{{< include _extensions/r-wasm/live/_knitr.qmd >}}
+
+::: {.callout-note appearance="simple"}
+## What this lesson is for
+
+Until now you have looked at your **whole** table. But usually you want just a part of it — only your
+landing site, only the big catches, or only a few columns.
+
+This lesson gives you three simple commands to do that: **list the values** in a column, **keep only the
+rows** you want, and **keep only the columns** you want. Press **Run** on each box. Remember: **you
+cannot break anything.**
+:::
+
+These commands come from a free toolkit called **dplyr**. Run the box below once to switch it on (the
+first time, it may take a few moments to download) — it also loads the small example table from the last
+lesson.
+
+```{webr}
+#| autorun: true
+suppressPackageStartupMessages(library(dplyr))
+
+example <- data.frame(
+  trip_id      = c("trip_1", "trip_1", "trip_1", "trip_2", "trip_2"),
+  landing_date = c("2024-01-05", "2024-01-05", "2024-01-05", "2024-01-06", "2024-01-06"),
+  site         = c("Shimoni", "Shimoni", "Shimoni", "Vanga", "Vanga"),
+  gear         = c("hand line", "hand line", "hand line", "gillnet", "gillnet"),
+  fish         = c("Tilapia", "Snapper", "Octopus", "Tilapia", "Snapper"),
+  catch_kg     = c(12, 5, 3, 8, 6)
+)
+example
+```
+
+## What values are in a column?
+
+Before you can ask for "only Vanga", you need to know which sites exist. **`distinct()`** lists each
+value in a column **once**, leaving out the repeats. Press **Run**:
+
+```{webr}
+#| autorun: false
+distinct(example, site)
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** just **Shimoni** and **Vanga**. Even though Shimoni is on three rows, it is
+listed once. This is also how you find the **exact spelling** of a value to use in the next step.
+:::
+
+Now on your own data — these are your real landing sites. Press **Run**, then try changing `gaul_2_name`
+to `gear` to see your fishing methods:
+
+```{webr}
+#| autorun: false
+distinct(landings, gaul_2_name)
+```
+
+## Show only the rows you want
+
+**`filter()`** keeps only the rows that match a condition you give — for example, only the `gillnet`
+trips.
+
+::: {.callout-important appearance="simple"}
+Two small things to get right:
+
+- Use **two** equals signs `==` for "is equal to" (one `=` means something else and will not work).
+- A word like `"gillnet"` needs **quotes**. A number, like `5`, does not.
+:::
+
+Press **Run**:
+
+```{webr}
+#| autorun: false
+filter(example, gear == "gillnet")
+```
+
+```{=html}
+<style>
+tr.keep td { background:#e6f4ea !important; }
+tr.drop td { color:#b0b0b0 !important; }
+</style>
+<table class="table" style="font-size:.9rem">
+  <thead><tr><th>site</th><th>gear</th><th>fish</th><th>catch_kg</th></tr></thead>
+  <tbody>
+    <tr class="drop"><td>Shimoni</td><td>hand line</td><td>Tilapia</td><td>12</td></tr>
+    <tr class="drop"><td>Shimoni</td><td>hand line</td><td>Snapper</td><td>5</td></tr>
+    <tr class="drop"><td>Shimoni</td><td>hand line</td><td>Octopus</td><td>3</td></tr>
+    <tr class="keep"><td>Vanga</td><td>gillnet</td><td>Tilapia</td><td>8</td></tr>
+    <tr class="keep"><td>Vanga</td><td>gillnet</td><td>Snapper</td><td>6</td></tr>
+  </tbody>
+</table>
+```
+*`filter(gear == "gillnet")` keeps the green rows and drops the rest.*
+
+You can also filter on a **number** — no quotes needed. This keeps only catches heavier than 5 kg:
+
+```{webr}
+#| autorun: false
+filter(example, catch_kg > 5)
+```
+
+On your real data, keep only one site (use a name you saw with `distinct` above). Press **Run**, then
+change the name to one of **your** sites:
+
+```{webr}
+#| autorun: false
+filter(landings, gaul_2_name == "Vanga")
+```
+
+## Keep only the columns you want
+
+Your table has many columns. Often you want just a few — say the date, the site and the weight.
+**`select()`** keeps only the columns you name:
+
+```{webr}
+#| autorun: false
+select(example, landing_date, site, catch_kg)
+```
+
+```{=html}
+<style>
+.cols span { display:inline-block; padding:3px 8px; margin:2px; border-radius:5px; font-family:monospace; font-size:.85rem; }
+.cols .keep { background:#e6f4ea; border:1px solid #8cc6a0; }
+.cols .drop { background:#f2f2f2; color:#aaa; border:1px solid #ddd; }
+</style>
+<div class="cols">
+  Keep: <span class="keep">landing_date</span><span class="keep">site</span><span class="keep">catch_kg</span>
+  &#160;&#160; Drop: <span class="drop">trip_id</span><span class="drop">gear</span><span class="drop">fish</span>
+</div>
+```
+*`select()` keeps the green columns and leaves out the rest.*
+
+On your real data, keep just three useful columns. Press **Run**, then try adding another column name:
+
+```{webr}
+#| autorun: false
+select(landings, landing_date, gaul_2_name, catch_kg)
+```
+
+## Do two steps at once: the pipe `|>`
+
+Most real questions need two steps: keep only **your** site, **and** keep only a few columns. The little
+symbol **`|>`** (called the *pipe*) lets you do steps **in order**, left to right. Read it as the word
+**"then"**.
+
+The box below says: *take the landings, **then** keep only Vanga, **then** keep these three columns.*
+Press **Run**:
+
+```{webr}
+#| autorun: false
+landings |>
+  filter(gaul_2_name == "Vanga") |>
+  select(landing_date, gear, catch_kg)
+```
+
+::: {.callout-tip appearance="simple"}
+This is the kind of question you will ask most often: **narrow the rows, then narrow the columns.** Change
+`"Vanga"` to one of your own sites and press **Run** again.
+:::
+
+## What you have learned
+
+- **`distinct(table, column)`** — list the values in a column once (find your sites, gears, …).
+- **`filter(table, condition)`** — keep only the rows that match (use `==`, and quotes for words).
+- **`select(table, columns…)`** — keep only the columns you name.
+- **`|>`** ("then") — do several steps in order.
+
+Next: **Add it up** — totals and averages by site, gear or month.
+
+<!-- Raw HTML so Quarto does NOT rewrite this root-relative link (served at depth 2). -->
+
+```{=html}
+<p class="mt-4"><a href="/data-explorer" class="btn btn-outline-primary">← Back to Data Explorer</a></p>
+```

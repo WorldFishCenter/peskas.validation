@@ -1,0 +1,177 @@
+---
+title: "Add it up"
+format: live-html
+engine: knitr
+webr:
+  packages:
+    - dplyr
+  render-df: reactable
+---
+
+{{< include _extensions/r-wasm/live/_knitr.qmd >}}
+
+::: {.callout-note appearance="simple"}
+## What this lesson is for
+
+This is where the data starts answering real questions: *What is the total catch at each site? Which
+gear brings in the most? How many trips were recorded last month?*
+
+All of these are **"add it up by group"** questions. This lesson shows you how, with two commands.
+Press **Run** on each box. Remember: **you cannot break anything.**
+:::
+
+Run the box below once to switch on **dplyr** (as in the last lesson) and load the small example table.
+
+```{webr}
+#| autorun: true
+suppressPackageStartupMessages(library(dplyr))
+
+example <- data.frame(
+  trip_id      = c("trip_1", "trip_1", "trip_1", "trip_2", "trip_2"),
+  landing_date = c("2024-01-05", "2024-01-05", "2024-01-05", "2024-01-06", "2024-01-06"),
+  site         = c("Shimoni", "Shimoni", "Shimoni", "Vanga", "Vanga"),
+  gear         = c("hand line", "hand line", "hand line", "gillnet", "gillnet"),
+  fish         = c("Tilapia", "Snapper", "Octopus", "Tilapia", "Snapper"),
+  catch_kg     = c(12, 5, 3, 8, 6)
+)
+example
+```
+
+## One number for your whole table
+
+**`summarise()`** turns a whole column into a single answer. To add up all the weights, you give the
+answer a name (`total_kg`) and tell R to `sum` the `catch_kg` column. Press **Run**:
+
+```{webr}
+#| autorun: false
+example |>
+  summarise(total_kg = sum(catch_kg))
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** one row with **`total_kg = 34`** — the weight of all five catches added
+together (12 + 5 + 3 + 8 + 6). The part `total_kg =` is just the **name** you chose for the answer.
+:::
+
+You can ask for more than one answer at a time. **`n()`** counts the rows. Press **Run**:
+
+```{webr}
+#| autorun: false
+example |>
+  summarise(total_kg = sum(catch_kg), number_of_catches = n())
+```
+
+## A number for each group
+
+A single total for everything is rarely what you want. Usually you want **one total per site**, or per
+gear, or per month. That is what **`group_by()`** is for: you tell R which column to group on, and then
+`summarise()` gives you **one answer for each group**.
+
+```{webr}
+#| autorun: false
+example |>
+  group_by(site) |>
+  summarise(total_kg = sum(catch_kg))
+```
+
+Read it as: *take the example, **group by** site, **then** add up the weight in each group.* Here is what
+that does to the rows:
+
+```{=html}
+<style>
+tr.s1 td { background:#dbe9f6 !important; }   /* Shimoni — blue */
+tr.s2 td { background:#fdebd0 !important; }   /* Vanga — amber */
+.agg-wrap { display:flex; gap:18px; align-items:center; flex-wrap:wrap; margin:.6rem 0; }
+.agg-arrow { font-size:1.6rem; color:#666; }
+.agg-wrap table { width:auto; font-size:.9rem; }
+</style>
+<div class="agg-wrap">
+<table class="table">
+  <thead><tr><th>site</th><th>catch_kg</th></tr></thead>
+  <tbody>
+    <tr class="s1"><td>Shimoni</td><td>12</td></tr>
+    <tr class="s1"><td>Shimoni</td><td>5</td></tr>
+    <tr class="s1"><td>Shimoni</td><td>3</td></tr>
+    <tr class="s2"><td>Vanga</td><td>8</td></tr>
+    <tr class="s2"><td>Vanga</td><td>6</td></tr>
+  </tbody>
+</table>
+<div class="agg-arrow">&#8594;</div>
+<table class="table">
+  <thead><tr><th>site</th><th>total_kg</th></tr></thead>
+  <tbody>
+    <tr class="s1"><td>Shimoni</td><td>20</td></tr>
+    <tr class="s2"><td>Vanga</td><td>14</td></tr>
+  </tbody>
+</table>
+</div>
+```
+*Each site's rows collapse into one total: Shimoni's three rows (12 + 5 + 3) become **20**; Vanga's two
+(8 + 6) become **14**.*
+
+## More than one summary, on any column
+
+You can group by **any** column, and ask for several summaries at once. **`mean()`** gives the average.
+This groups by the kind of fish and shows the total, the average, and the count for each:
+
+```{webr}
+#| autorun: false
+example |>
+  group_by(fish) |>
+  summarise(
+    total_kg   = sum(catch_kg),
+    average_kg = mean(catch_kg),
+    number     = n()
+  )
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** one row per kind of fish — Tilapia, Snapper, Octopus — each with its total
+weight, its average weight, and how many catches there were.
+:::
+
+## Now your own data
+
+Let's total the catch **per landing site** in your real data. Real records sometimes have a **missing**
+weight; `na.rm = TRUE` tells R to skip those so you still get an answer. Press **Run**:
+
+```{webr}
+#| autorun: false
+landings |>
+  group_by(gaul_2_name) |>
+  summarise(total_kg = sum(catch_kg, na.rm = TRUE))
+```
+
+## Put it all together
+
+This is the real reward. Using everything from the last two lessons, you can answer a proper question
+like *"in my district, how much does each gear bring in?"* — **filter** to your site, **group by** gear,
+then **add up**. Press **Run**, then change `"Vanga"` to one of your own sites:
+
+```{webr}
+#| autorun: false
+landings |>
+  filter(gaul_2_name == "Vanga") |>
+  group_by(gear) |>
+  summarise(
+    total_kg = sum(catch_kg, na.rm = TRUE),
+    number   = n()
+  )
+```
+
+## What you have learned
+
+- **`summarise(name = sum(column))`** — add a column up into one answer (also `mean()` for the average,
+  `n()` for a count).
+- **`group_by(column)`** before `summarise()` — get **one answer per group** instead of one overall.
+- **`na.rm = TRUE`** — skip missing values so you still get a result.
+
+Put together with `filter` and `select` from the last lesson, you can now answer most everyday questions
+about your data: totals and averages, for any group, in any part of your records. That is the whole
+toolkit — well done.
+
+<!-- Raw HTML so Quarto does NOT rewrite this root-relative link (served at depth 2). -->
+
+```{=html}
+<p class="mt-4"><a href="/data-explorer" class="btn btn-outline-primary">← Back to Data Explorer</a></p>
+```

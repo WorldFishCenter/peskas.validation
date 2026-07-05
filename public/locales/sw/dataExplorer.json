@@ -21,17 +21,13 @@
       "title": "Kuifahamu data yako",
       "description": "Kilicho ndani ya data yako — kila safu ni nini, safu wima zinamaanisha nini, na jinsi safari na mavuno vinavyohusiana. Vinjari rekodi zako mwenyewe."
     },
-    "filter": {
-      "title": "Tafuta safu unazohitaji",
-      "description": "Onyesha tu mavuno yanayokuhusu — eneo moja, mwezi mmoja, aina moja ya samaki. Maudhui yanakuja hivi karibuni."
-    },
-    "select": {
-      "title": "Chagua safu wima unazohitaji",
-      "description": "Baki na safu wima muhimu pekee, kama tarehe, eneo na uzito. Maudhui yanakuja hivi karibuni."
+    "find": {
+      "title": "Tafuta unachohitaji",
+      "description": "Amri tatu rahisi za kupunguza data yako: orodhesha thamani zilizomo kwenye safu wima, baki na safu unazotaka tu, na baki na safu wima unazotaka tu."
     },
     "summarise": {
       "title": "Jumlisha",
-      "description": "Jumlisha na pata wastani wa mavuno yako kwa eneo, zana au mwezi ili kujibu maswali ya kila siku. Maudhui yanakuja hivi karibuni."
+      "description": "Jumlisha, pata wastani na uhesabu mavuno yako kwa eneo, zana au aina ya samaki ili kujibu maswali ya kila siku."
     }
   }
 }
