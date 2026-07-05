@@ -2,13 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Current Version**: 2.3.0 (see [NEWS.md](NEWS.md) for full changelog)
+**Current Version**: 2.4.0 (see [NEWS.md](NEWS.md) for full changelog)
 
 ## 📚 Documentation
 
 - **[CLAUDE.md](CLAUDE.md)** - This file - comprehensive project guide
 - **[README.md](README.md)** - Quick start and overview
-- **[NEWS.md](NEWS.md)** - Version history and changelog (v1.0.0 - v2.3.0)
+- **[NEWS.md](NEWS.md)** - Version history and changelog (v1.0.0 - v2.4.0)
 - **[.env.example](.env.example)** - Environment configuration template with detailed comments
 
 ## Development Commands

@@ -1,3 +1,24 @@
+# Validation Portal 2.4.0
+
+## Bug Fixes
+
+- **Fixed: Data Download could return data from the wrong forms** (critical)
+  - Problem: Downloads and previews were filtered by **country only** — the survey (form) you selected had no effect on the data returned. A user assigned to specific forms could receive data from *other* forms in the same country, and users with forms in more than one country only ever saw their first country's data. The survey selector in the filters was effectively decorative.
+  - Solution: Every download and preview is now strictly scoped to the surveys you are permitted to access. Each request is pinned to one of your forms, with its country derived from the form itself. Data from forms you are not assigned to can no longer appear in your results.
+
+## New Features
+
+- **Download all of your forms at once**
+  - If you have access to several forms and leave the survey selector on **All forms**, the portal now fetches each form and merges them into a single preview and CSV — correctly, even when your forms span multiple countries.
+
+## Improvements
+
+- **Clearer Data Download filters**
+  - **All forms** is now an explicit, visually distinct option (green icon and "Default" badge) — you can finally return to "all forms" after picking a specific one.
+  - The **Administrative Area** filter now appears only after you choose a specific survey, following a clear Country → Survey → Area flow, with a hint explaining how to reveal it.
+  - Added scannable icons to each filter and a friendlier message when your account has no surveys assigned.
+  - Permission problems (e.g. requesting a survey or area you can't access) now return a clear message instead of a generic error.
+
 # Validation Portal 2.3.0
 
 ## New Features

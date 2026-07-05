@@ -1,6 +1,19 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { IconSearch, IconX, IconInfoCircle, IconExternalLink } from '@tabler/icons-react';
+import {
+  IconSearch,
+  IconX,
+  IconInfoCircle,
+  IconExternalLink,
+  IconWorld,
+  IconCircleCheck,
+  IconAdjustmentsHorizontal,
+  IconFish,
+  IconClipboardList,
+  IconMapPin,
+  IconStack2,
+  IconFileDescription
+} from '@tabler/icons-react';
 import { DownloadFilters as FiltersType } from '../../types/download';
 import { useFetchDownloadMetadata } from '../../api/api';
 
@@ -13,6 +26,11 @@ interface DownloadFiltersProps {
   user: any;
 }
 
+/** Small leading icon for a field label (subtle, for scannability). */
+const LabelIcon: React.FC<{ icon: React.ElementType }> = ({ icon: Icon }) => (
+  <Icon className="icon icon-inline me-1 text-secondary" size={16} stroke={1.75} />
+);
+
 const DownloadFilters: React.FC<DownloadFiltersProps> = ({
   filters,
   setFilters,
@@ -24,48 +42,52 @@ const DownloadFilters: React.FC<DownloadFiltersProps> = ({
   const { t } = useTranslation('download');
   const isAdmin = user?.role === 'admin';
 
-  // Fetch all metadata in one request (pre-filtered by server)
-  // Pass selected survey to enable cascade filtering (Country → Survey → Districts)
+  // Fetch all metadata in one request (pre-filtered server-side by user permissions).
+  // Pass the selected survey so districts cascade to that survey (Country → Survey → District).
   const { metadata, isLoading: loadingMetadata } = useFetchDownloadMetadata(
     isAdmin ? filters.country : undefined,
-    filters.survey_id?.[0] // Pass selected survey for district filtering
+    filters.survey_id?.[0]
   );
   const { countries, districts, surveys } = metadata;
 
+  const selectedSurveyId = filters.survey_id?.[0] || '';
+  const hasSurveySelected = selectedSurveyId !== '';
+
+  // Regular users are scoped to their assigned surveys (country is derived per-survey
+  // server-side); admins must pick a country first.
+  const hasAccess = isAdmin ? !!filters.country : surveys.length > 0;
+  const isPreviewDisabled = isLoading || loadingMetadata || !hasAccess;
+
   const handleChange = (field: keyof FiltersType, value: any) => {
-    // CASCADE: Country → Survey → Districts
     if (field === 'country') {
-      // Reset survey and GAUL selections when country changes
+      // Country changed → reset the cascade below it (survey + district).
       setFilters({ ...filters, [field]: value, survey_id: [], gaul_2: '' });
-    } else if (field === 'survey_id') {
-      // Reset GAUL selection when survey changes (districts will be filtered by survey)
-      setFilters({ ...filters, [field]: value, gaul_2: '' });
     } else {
       setFilters({ ...filters, [field]: value });
     }
   };
 
-  const handleSurveySelect = (assetId: string) => {
-    // Single-select: if already selected, deselect; otherwise select
-    const updated = filters.survey_id?.[0] === assetId ? [] : [assetId];
-    handleChange('survey_id', updated);
+  // Survey is single-select with an explicit "All forms" option so it can be cleared.
+  const handleSelectAllSurveys = () => {
+    // No specific survey → download all accessible forms. District only applies to a
+    // single survey, so clear it.
+    setFilters({ ...filters, survey_id: [], gaul_2: '' });
   };
 
-  // Server returns pre-filtered data based on user permissions
-  // No client-side filtering needed - use data directly
-  const filteredSurveys = surveys;
-  const filteredDistricts = districts;
-
-  // Validation
-  const isPreviewDisabled = isLoading || loadingMetadata ||
-    (!isAdmin && !user?.country?.length) || (isAdmin && !filters.country);
+  const handleSurveySelect = (assetId: string) => {
+    // New survey → reset district (its options depend on the survey).
+    setFilters({ ...filters, survey_id: [assetId], gaul_2: '' });
+  };
 
   return (
     <div>
       {/* Admin Only: Country Selector */}
       {isAdmin && (
         <div className="mb-3">
-          <label className="form-label required">{t('filters.country')}</label>
+          <label className="form-label required">
+            <LabelIcon icon={IconWorld} />
+            {t('filters.country')}
+          </label>
           <select
             className="form-select"
             value={filters.country || ''}
@@ -77,15 +99,16 @@ const DownloadFilters: React.FC<DownloadFiltersProps> = ({
               <option key={c.code} value={c.code}>{c.name}</option>
             ))}
           </select>
-          <small className="form-hint">
-            {t('filters.countryHint')}{' '}
-          </small>
+          <small className="form-hint">{t('filters.countryHint')}</small>
         </div>
       )}
 
       {/* Status Selector */}
       <div className="mb-3">
-        <label className="form-label required">{t('filters.status')}</label>
+        <label className="form-label required">
+          <LabelIcon icon={IconCircleCheck} />
+          {t('filters.status')}
+        </label>
         <select
           className="form-select"
           value={filters.status}
@@ -94,14 +117,15 @@ const DownloadFilters: React.FC<DownloadFiltersProps> = ({
           <option value="validated">{t('filters.statusValidated')}</option>
           <option value="raw">{t('filters.statusRaw')}</option>
         </select>
-        <small className="form-hint">
-          {t('filters.statusHint')}{' '}
-        </small>
+        <small className="form-hint">{t('filters.statusHint')}</small>
       </div>
 
       {/* Scope Selector */}
       <div className="mb-3">
-        <label className="form-label">{t('filters.scope')}</label>
+        <label className="form-label">
+          <LabelIcon icon={IconAdjustmentsHorizontal} />
+          {t('filters.scope')}
+        </label>
         <select
           className="form-select"
           value={filters.scope || ''}
@@ -115,14 +139,15 @@ const DownloadFilters: React.FC<DownloadFiltersProps> = ({
             <option value="catch_info">{t('filters.scopeCatchInfo')}</option>
           </optgroup>
         </select>
-        <small className="form-hint">
-          {t('filters.scopeHint')}{' '}
-        </small>
+        <small className="form-hint">{t('filters.scopeHint')}</small>
       </div>
 
       {/* Catch Taxon */}
       <div className="mb-3">
-        <label className="form-label">{t('filters.catchTaxon')}</label>
+        <label className="form-label">
+          <LabelIcon icon={IconFish} />
+          {t('filters.catchTaxon')}
+        </label>
         <input
           type="text"
           className="form-control"
@@ -130,96 +155,135 @@ const DownloadFilters: React.FC<DownloadFiltersProps> = ({
           value={filters.catch_taxon || ''}
           onChange={(e) => handleChange('catch_taxon', e.target.value)}
         />
-        <small 
+        <small
           className="form-hint"
           dangerouslySetInnerHTML={{ __html: t('filters.catchTaxonHint') }}
         />
       </div>
 
-      {/* Divider for advanced filters */}
-      {(filteredSurveys.length > 0 || filteredDistricts.length > 0) && (
-        <hr className="my-3" />
-      )}
+      {/* Survey + District cascade (only once the user has access) */}
+      {surveys.length > 0 && (
+        <>
+          <hr className="my-3" />
 
-      {/* Surveys (Single-select) */}
-      {filteredSurveys.length > 0 && (
-        <div className="mb-3">
-
-          <label className="form-label">{t('filters.surveys')}</label>
-          <div className="form-selectgroup">
-            {filteredSurveys.map(survey => (
-              <label key={survey.asset_id} className="form-selectgroup-item">
+          {/* Survey (single-select; "All forms" is the distinct default) */}
+          <div className="mb-3">
+            <label className="form-label">
+              <LabelIcon icon={IconClipboardList} />
+              {t('filters.surveys')}
+            </label>
+            <div className="form-selectgroup form-selectgroup-boxes d-flex flex-column gap-2">
+              {/* All forms — the default, visually distinct (green icon + badge) */}
+              <label className="form-selectgroup-item">
                 <input
                   type="radio"
                   name="survey_select"
+                  value=""
                   className="form-selectgroup-input"
-                  checked={filters.survey_id?.[0] === survey.asset_id || false}
-                  onChange={() => handleSurveySelect(survey.asset_id)}
+                  checked={!hasSurveySelected}
+                  onChange={handleSelectAllSurveys}
                 />
-                <span className="form-selectgroup-label">{survey.name}</span>
+                <span className="form-selectgroup-label d-flex align-items-center p-3">
+                  <span className="me-3">
+                    <span className="form-selectgroup-check"></span>
+                  </span>
+                  <IconStack2 className="icon me-3 text-green" size={24} stroke={1.5} />
+                  <span className="flex-fill">
+                    <span className="d-flex align-items-center gap-2">
+                      <strong>{t('filters.surveysAll')}</strong>
+                      <span className="badge bg-green-lt">{t('filters.defaultBadge')}</span>
+                    </span>
+                    <span className="d-block text-secondary small">
+                      {t('filters.surveysAllDesc')}
+                    </span>
+                  </span>
+                </span>
               </label>
-            ))}
-          </div>
-          <small className="form-hint">{t('filters.surveysHint')}</small>
-        </div>
-      )}
 
-      {/* GAUL Codes (Single-select Dropdown) */}
-      {(isAdmin || filteredDistricts.length > 0) && (
-        <div className="mb-3">
-          <label className="form-label">{t('filters.gaulCodes')}</label>
-          <select
-            className="form-select"
-            value={filters.gaul_2 || ''}
-            onChange={(e) => handleChange('gaul_2', e.target.value)}
-            disabled={loadingMetadata || (isAdmin && !filters.country) || (isAdmin && filteredSurveys.length > 0 && filters.survey_id?.length === 0) || filteredDistricts.length === 0}
-          >
-            <optgroup label={t('filters.gaulGroupAll')}>
-              <option value="">{t('filters.gaulAll')}</option>
-            </optgroup>
-            {filteredDistricts.length > 0 && (
-              <optgroup label={t('filters.gaulGroupDistricts')}>
-                {filteredDistricts.map(district => (
+              {/* Specific surveys */}
+              {surveys.map(survey => (
+                <label key={survey.asset_id} className="form-selectgroup-item">
+                  <input
+                    type="radio"
+                    name="survey_select"
+                    value={survey.asset_id}
+                    className="form-selectgroup-input"
+                    checked={selectedSurveyId === survey.asset_id}
+                    onChange={() => handleSurveySelect(survey.asset_id)}
+                  />
+                  <span className="form-selectgroup-label d-flex align-items-center p-3">
+                    <span className="me-3">
+                      <span className="form-selectgroup-check"></span>
+                    </span>
+                    <IconFileDescription className="icon me-3 text-secondary" size={24} stroke={1.5} />
+                    <span className="flex-fill">
+                      <span className="d-block">{survey.name}</span>
+                      {typeof survey.country_id === 'string' && survey.country_id && (
+                        <span className="d-block text-secondary small text-capitalize">
+                          {survey.country_id}
+                        </span>
+                      )}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            {/* Signpost: districts unlock once a specific survey is chosen */}
+            {!hasSurveySelected && (
+              <small className="form-hint d-flex align-items-center mt-2">
+                <IconMapPin className="icon icon-inline me-1" size={14} />
+                {t('filters.surveyAreaHint')}
+              </small>
+            )}
+          </div>
+
+          {/* District (GAUL 2) — only after a specific survey is chosen */}
+          {hasSurveySelected && districts.length > 0 && (
+            <div className="mb-3">
+              <label className="form-label">
+                <LabelIcon icon={IconMapPin} />
+                {t('filters.gaulCodes')}
+              </label>
+              <select
+                className="form-select"
+                value={filters.gaul_2 || ''}
+                onChange={(e) => handleChange('gaul_2', e.target.value)}
+                disabled={loadingMetadata}
+              >
+                <option value="">{t('filters.gaulAll')}</option>
+                {districts.map(district => (
                   <option key={district.code} value={district.code}>
                     {district.name}
                   </option>
                 ))}
-              </optgroup>
-            )}
-          </select>
-          <small className="form-hint">
-            {loadingMetadata ? t('filters.loading') : (
-              <>
-                {isAdmin && !filters.country ? (
-                  'Select a country first'
-                ) : isAdmin && filteredSurveys.length > 0 && (!filters.survey_id || filters.survey_id.length === 0) ? (
-                  'Select a survey to see available districts'
-                ) : filteredDistricts.length === 0 && filters.survey_id && filters.survey_id.length > 0 ? (
-                  'No districts available for selected survey'
-                ) : (
-                  <>
-                    {t('filters.gaulCodesHint')}{' '}
-                    <a href={t('filters.gaulHelpLink')} target="_blank" rel="noopener noreferrer" className="link-secondary">
-                      <IconExternalLink className="icon icon-inline" size={14} />
-                      {t('common.learnMore')}
-                    </a>
-                  </>
-                )}
-              </>
-            )}
-          </small>
-        </div>
+              </select>
+              <small className="form-hint">
+                {t('filters.gaulCodesHint')}{' '}
+                <a
+                  href={t('filters.gaulHelpLink')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="link-secondary"
+                >
+                  <IconExternalLink className="icon icon-inline" size={14} />
+                  {t('common.learnMore')}
+                </a>
+              </small>
+            </div>
+          )}
+        </>
       )}
 
-      {/* Warning for users with no country */}
-      {!isAdmin && (!user?.country || user.country.length === 0) && (
+      {/* Regular user with no accessible surveys */}
+      {!isAdmin && !loadingMetadata && surveys.length === 0 && (
         <div className="alert alert-warning mb-3">
           <IconInfoCircle className="icon me-2" />
-          {t('filters.noCountryAssigned')}
+          {t('filters.noSurveysAssigned')}
         </div>
       )}
 
-      {/* Warning for admin without country selection */}
+      {/* Admin without a country selected */}
       {isAdmin && !filters.country && (
         <div className="alert alert-info mb-3">
           <IconInfoCircle className="icon me-2" />
