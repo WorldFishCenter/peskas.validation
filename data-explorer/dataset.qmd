@@ -1,7 +1,5 @@
 ---
 title: "Getting to know your data"
-format: live-html
-engine: knitr
 webr:
   render-df: reactable
 ---
@@ -12,7 +10,7 @@ webr:
 ## What this lesson is for
 
 In the first lesson you learned to press **Run** and read the answer. Before you start asking
-questions of your data — *which site landed the most fish? how much tilapia last month?* — it helps to
+questions of your data — *which district landed the most fish? how much tilapia last month?* — it helps to
 know **how your data is arranged**: what one line in the table stands for, how the lines fit together,
 and what each column is telling you.
 
@@ -51,7 +49,7 @@ p.legend span { display:inline-block; width:.9em; height:.9em; vertical-align:mi
 </style>
 
 <table class="table">
-  <thead><tr><th>survey_id</th><th>trip_id</th><th>landing_date</th><th>site</th><th>gear</th><th>fish</th><th>catch_kg</th><th>n_catch</th><th>tot_catch_kg</th></tr></thead>
+  <thead><tr><th>survey_id</th><th>trip_id</th><th>landing_date</th><th>gaul_2_name</th><th>gear</th><th>catch_taxon</th><th>catch_kg</th><th>n_catch</th><th>tot_catch_kg</th></tr></thead>
   <tbody>
     <tr class="trip1"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>Tilapia</td><td>12</td><td>3</td><td>20</td></tr>
     <tr class="trip1"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>Snapper</td><td>5</td><td>3</td><td>20</td></tr>
@@ -65,7 +63,38 @@ p.legend span { display:inline-block; width:.9em; height:.9em; vertical-align:mi
 ```
 
 Take a moment to read it. Notice that some things **repeat** down the table while others **change** on
-every line — we will come back to that, because it is the key to understanding your data.
+every line. We will come back to that, because it is the key to understanding your data.
+
+The headings are the **real headings from your own data**. Here is that same little table inside R, so we
+can work with it. This box runs on its own when the page opens — you do not have to do anything yet.
+
+::: {.callout-note appearance="simple"}
+**If nothing happens at first,** R is still waking up — it can take a minute the first time, on a slow
+connection. A small **spinning circle** on the box means it is working. Wait for it to stop.
+:::
+
+```{webr}
+#| autorun: true
+# The same five rows as the coloured table above.
+example <- data.frame(
+  survey_id    = c("survey_1", "survey_1", "survey_1", "survey_2", "survey_2"),
+  trip_id      = c("trip_1", "trip_1", "trip_1", "trip_2", "trip_2"),
+  landing_date = c("2024-01-05", "2024-01-05", "2024-01-05", "2024-01-06", "2024-01-06"),
+  gaul_2_name  = c("Shimoni", "Shimoni", "Shimoni", "Vanga", "Vanga"),
+  gear         = c("hand line", "hand line", "hand line", "gillnet", "gillnet"),
+  catch_taxon  = c("Tilapia", "Snapper", "Octopus", "Tilapia", "Snapper"),
+  catch_kg     = c(12, 5, 3, 8, 6),
+  n_catch      = c(3, 3, 3, 2, 2),
+  tot_catch_kg = c(20, 20, 20, 14, 14)
+)
+
+example
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** the same **5 rows** as the coloured table. You can slide it sideways to see all
+the columns.
+:::
 
 ## What one row means
 
@@ -82,7 +111,7 @@ trip fills **three rows**.
 
 ## How the rows fit into trips
 
-You may have noticed something that confuses almost everyone at first: the same site, the same date and
+You may have noticed something that confuses almost everyone at first: the same district, the same date and
 the same `trip_id` appear on several lines. Nothing is wrong — this is exactly how the data is meant to
 look.
 
@@ -116,13 +145,7 @@ recorded**. You don't have to take it on trust — you can count the rows for ea
 
 ```{webr}
 #| autorun: false
-# the same six rows as the coloured table above
-example <- data.frame(
-  trip_id  = c("trip_1", "trip_1", "trip_1", "trip_2", "trip_2"),
-  fish     = c("Tilapia", "Snapper", "Octopus", "Tilapia", "Snapper"),
-  catch_kg = c(12, 5, 3, 8, 6)
-)
-
+# Count how many rows carry each trip_id.
 table(example$trip_id)
 ```
 
@@ -139,21 +162,21 @@ Now look across the columns. Once you see it, you cannot un-see it: the columns 
 <div style="display:flex;gap:14px;flex-wrap:wrap;margin:.6rem 0;font-size:.95rem">
   <div style="flex:1;min-width:240px;background:#e6f4ea;border:1px solid #8cc6a0;border-radius:8px;padding:10px">
     <strong>About the trip</strong> <span style="color:#555">(same on every row)</span><br>
-    <code>landing_date</code>, <code>site</code>, <code>gear</code>, <code>n_fishers</code>, <code>tot_catch_kg</code> &#8230;
+    <code>landing_date</code>, <code>gaul_2_name</code>, <code>gear</code>, <code>n_fishers</code>, <code>tot_catch_kg</code> &#8230;
   </div>
   <div style="flex:1;min-width:240px;background:#f3e8f7;border:1px solid #c79bd6;border-radius:8px;padding:10px">
     <strong>About each catch</strong> <span style="color:#555">(changes on each row)</span><br>
-    <code>fish</code> (<code>catch_taxon</code>), <code>catch_kg</code>, <code>length_cm</code>, <code>catch_price</code>
+    <code>catch_taxon</code>, <code>catch_kg</code>, <code>length_cm</code>, <code>catch_price</code>
   </div>
 </div>
 ```
 
 Some columns describe the **whole trip**. They are the **same on every row of that trip**, because the
-trip happened once: `landing_date`, `site`, `gear`, and `tot_catch_kg` — the **total** weight the trip
-brought in.
+trip happened once: `landing_date`, `gaul_2_name`, `gear`, and `tot_catch_kg`, the **total** weight the
+trip brought in.
 
-Other columns describe **each catch on its own**, so they **change from row to row**: `fish`, and
-`catch_kg` — the weight of that **one** kind of fish.
+Other columns describe **each catch on its own**, so they **change from row to row**: `catch_taxon`, and
+`catch_kg`, the weight of that **one** kind of fish.
 
 ::: {.callout-tip appearance="simple"}
 This difference matters in real work. **`tot_catch_kg` is the whole trip's weight; `catch_kg` is one
@@ -172,21 +195,7 @@ You now know the shape. Let's load **your real landing records** — the same da
 **Data Download** tab — into the same kind of table. Press **Run**; the first time it may take a few
 seconds.
 
-```{ojs}
-//| echo: false
-// Fetch the signed-in user's capped, permission-filtered landings as JSON, reusing the API base URL
-// the React app publishes to localStorage (getApiBaseUrl). Same bridge as Lesson 1.
-landings_data = {
-  const token = localStorage.getItem("authToken");
-  if (!token) return [];
-  const apiBase = localStorage.getItem("apiBaseUrl") || "/api";
-  const res = await fetch(`${apiBase}/data-download/explorer-data`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
-  });
-  if (!res.ok) { console.warn(`explorer-data fetch failed: ${res.status}`); return []; }
-  return await res.json();
-}
-```
+{{< include _landings-data.qmd >}}
 
 ```{webr}
 #| autorun: false
@@ -203,7 +212,7 @@ if (nrow(landings) == 0) {
 
 ::: {.callout-tip appearance="simple"}
 This is your real data, and it has the **same shape** as the small example. Try typing the name of your
-landing site, or a fish, into the **search box** — or click a column heading to **sort**. Looking
+district, or a kind of fish, into the **search box** — or click a column heading to **sort**. Looking
 around like this is the best way to get a feel for what you actually have.
 :::
 
@@ -268,9 +277,16 @@ above. **Keep this nearby — it is the dictionary for your data.**
 | `catch_price` | The value of that catch |
 
 ::: {.callout-note appearance="simple"}
-In your real data the fish appears as a short **code** in `catch_taxon` (for example `SKJ`). The
-`scientific_name` column gives its full name. We used everyday names in the small example above just to
-keep it easy to read.
+## Two things that look different in your real table
+
+The **column headings** are the same as the small example, so what you practised will work here. But two
+of the **values** look different, and it is worth knowing why before you go on.
+
+- **The fish is a code.** In your real data `catch_taxon` holds a short code (for example `SKJ`), not a
+  name. The `scientific_name` column gives its full name. We used everyday names such as *Tilapia* in
+  the small example only to keep it easy to read.
+- **`gaul_2_name` is the district, not the landing site.** The odd name comes from an international list
+  of areas. Your table records the **district** a record belongs to, not the individual beach or jetty.
 :::
 
 ## What you have learned
@@ -283,7 +299,7 @@ You can now read the shape of your data:
 - your real data has this same shape — just much bigger.
 
 That is the foundation. In the next lesson you will start to **find the rows you need** — for example,
-showing only the landings from your site, or only one month.
+showing only the landings from your district, or only one month.
 
 <!-- Raw HTML so Quarto does NOT rewrite this root-relative link (served at depth 2). -->
 

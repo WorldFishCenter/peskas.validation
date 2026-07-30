@@ -1,10 +1,6 @@
 ---
 title: "Add it up"
-format: live-html
-engine: knitr
 webr:
-  packages:
-    - dplyr
   render-df: reactable
 ---
 
@@ -13,29 +9,30 @@ webr:
 ::: {.callout-note appearance="simple"}
 ## What this lesson is for
 
-This is where the data starts answering real questions: *What is the total catch at each site? Which
+This is where the data starts answering real questions: *What is the total catch at each district? Which
 gear brings in the most? How many trips were recorded last month?*
 
 All of these are **"add it up by group"** questions. This lesson shows you how, with two commands.
 Press **Run** on each box. Remember: **you cannot break anything.**
 :::
 
-Run the box below once to switch on **dplyr** (as in the last lesson) and load the small example table.
+## Before we start
 
-```{webr}
-#| autorun: true
-suppressPackageStartupMessages(library(dplyr))
+The box below switches on **dplyr** (as in the last lesson) and loads the small example table. It runs on
+its own when the page opens.
 
-example <- data.frame(
-  trip_id      = c("trip_1", "trip_1", "trip_1", "trip_2", "trip_2"),
-  landing_date = c("2024-01-05", "2024-01-05", "2024-01-05", "2024-01-06", "2024-01-06"),
-  site         = c("Shimoni", "Shimoni", "Shimoni", "Vanga", "Vanga"),
-  gear         = c("hand line", "hand line", "hand line", "gillnet", "gillnet"),
-  fish         = c("Tilapia", "Snapper", "Octopus", "Tilapia", "Snapper"),
-  catch_kg     = c(12, 5, 3, 8, 6)
-)
-example
-```
+::: {.callout-note appearance="simple"}
+**If nothing happens at first,** R is still waking up — up to a minute the first time, on a slow
+connection. A small **spinning circle** on a box means it is working. Wait for it to stop.
+:::
+
+{{< include _example-data.qmd >}}
+
+This box brings in **your own landing records** under the name `landings`, ready for later in the lesson.
+
+{{< include _landings-data.qmd >}}
+
+{{< include _landings-guard.qmd >}}
 
 ## One number for your whole table
 
@@ -63,19 +60,43 @@ example |>
 
 ## A number for each group
 
-A single total for everything is rarely what you want. Usually you want **one total per site**, or per
+A single total for everything is rarely what you want. Usually you want **one total per district**, or per
 gear, or per month. That is what **`group_by()`** is for: you tell R which column to group on, and then
 `summarise()` gives you **one answer for each group**.
+
+**Have a guess first.** The `example` table has **5 rows**, in two districts: Shimoni and Vanga.
+
+```{ojs}
+//| echo: false
+viewof predict_group = Inputs.radio(
+  ["5 rows — one for each catch", "2 rows — one for each district", "1 row — one grand total"],
+  { label: "How many rows will the answer have?" }
+)
+```
+
+```{ojs}
+//| echo: false
+html`${
+  // `== null` on purpose: Inputs.radio starts at null, not undefined, when nothing is picked.
+  predict_group == null
+    ? '<div class="alert alert-light py-2">Pick an answer above, then press Run below to check it.</div>'
+    : predict_group === "2 rows — one for each district"
+      ? '<div class="alert alert-success py-2"><strong>Yes — 2 rows.</strong> This is the whole idea of grouping: <strong>one row of answer for each group</strong>. Two districts, so two rows.</div>'
+      : '<div class="alert alert-warning py-2"><strong>Have another look.</strong> Grouping gives you <strong>one row of answer per group</strong>. So ask yourself: how many different districts are there? A wrong guess here is a useful one — this is the step people find hardest.</div>'
+}`
+```
+
+Now press **Run**:
 
 ```{webr}
 #| autorun: false
 example |>
-  group_by(site) |>
+  group_by(gaul_2_name) |>
   summarise(total_kg = sum(catch_kg))
 ```
 
-Read it as: *take the example, **group by** site, **then** add up the weight in each group.* Here is what
-that does to the rows:
+Read it as: *take the example, **group by** district, **then** add up the weight in each group.* Here is
+what that does to the rows:
 
 ```{=html}
 <style>
@@ -87,7 +108,7 @@ tr.s2 td { background:#fdebd0 !important; }   /* Vanga — amber */
 </style>
 <div class="agg-wrap">
 <table class="table">
-  <thead><tr><th>site</th><th>catch_kg</th></tr></thead>
+  <thead><tr><th>gaul_2_name</th><th>catch_kg</th></tr></thead>
   <tbody>
     <tr class="s1"><td>Shimoni</td><td>12</td></tr>
     <tr class="s1"><td>Shimoni</td><td>5</td></tr>
@@ -98,7 +119,7 @@ tr.s2 td { background:#fdebd0 !important; }   /* Vanga — amber */
 </table>
 <div class="agg-arrow">&#8594;</div>
 <table class="table">
-  <thead><tr><th>site</th><th>total_kg</th></tr></thead>
+  <thead><tr><th>gaul_2_name</th><th>total_kg</th></tr></thead>
   <tbody>
     <tr class="s1"><td>Shimoni</td><td>20</td></tr>
     <tr class="s2"><td>Vanga</td><td>14</td></tr>
@@ -106,7 +127,7 @@ tr.s2 td { background:#fdebd0 !important; }   /* Vanga — amber */
 </table>
 </div>
 ```
-*Each site's rows collapse into one total: Shimoni's three rows (12 + 5 + 3) become **20**; Vanga's two
+*Each district's rows collapse into one total: Shimoni's three rows (12 + 5 + 3) become **20**; Vanga's two
 (8 + 6) become **14**.*
 
 ## More than one summary, on any column
@@ -117,7 +138,7 @@ This groups by the kind of fish and shows the total, the average, and the count 
 ```{webr}
 #| autorun: false
 example |>
-  group_by(fish) |>
+  group_by(catch_taxon) |>
   summarise(
     total_kg   = sum(catch_kg),
     average_kg = mean(catch_kg),
@@ -132,7 +153,7 @@ weight, its average weight, and how many catches there were.
 
 ## Now your own data
 
-Let's total the catch **per landing site** in your real data. Real records sometimes have a **missing**
+Let's total the catch **per district** in your real data. Real records sometimes have a **missing**
 weight; `na.rm = TRUE` tells R to skip those so you still get an answer. Press **Run**:
 
 ```{webr}
@@ -145,19 +166,66 @@ landings |>
 ## Put it all together
 
 This is the real reward. Using everything from the last two lessons, you can answer a proper question
-like *"in my district, how much does each gear bring in?"* — **filter** to your site, **group by** gear,
-then **add up**. Press **Run**, then change `"Vanga"` to one of your own sites:
+like *"how much does each gear bring in?"* — **group by** gear, then **add up**. Press **Run**:
 
 ```{webr}
 #| autorun: false
 landings |>
-  filter(gaul_2_name == "Vanga") |>
   group_by(gear) |>
   summarise(
     total_kg = sum(catch_kg, na.rm = TRUE),
     number   = n()
   )
 ```
+
+### Your turn: your own district
+
+Now answer the question a supervisor actually asks: *"in **my** district, how much does each gear bring
+in?"* That means one more step at the front — **filter** to your district, **group by** gear, then **add
+up**.
+
+Replace the blanks `______` with one district name from your own data, keeping the quotes, then press
+**Run**. Press **Hint** if you need it.
+
+```{webr}
+#| exercise: ex_summary_district
+#| envir: global
+#| caption: "Total catch per gear, in your own district"
+landings |>
+  filter(gaul_2_name == "______") |>
+  group_by(gear) |>
+  summarise(
+    total_kg = sum(catch_kg, na.rm = TRUE),
+    number   = n()
+  )
+```
+
+::: { .hint exercise="ex_summary_district" }
+You can see the district names in your own data with `distinct(landings, gaul_2_name)`. Copy one **exactly**
+as it is spelled, between the quotes.
+:::
+
+::: { .solution exercise="ex_summary_district" }
+With a district called `Kilifi` it would be:
+
+```r
+landings |>
+  filter(gaul_2_name == "Kilifi") |>
+  group_by(gear) |>
+  summarise(
+    total_kg = sum(catch_kg, na.rm = TRUE),
+    number   = n()
+  )
+```
+:::
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** one row per fishing method used in that district, with its total weight and how
+many catch records there were. That is a real answer to a real question — from your own records.
+
+If the table comes back **empty**, the district name is spelled differently in your data. Check it with
+`distinct(landings, gaul_2_name)` and copy it again.
+:::
 
 ## What you have learned
 

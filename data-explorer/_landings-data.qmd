@@ -1,0 +1,25 @@
+```{ojs}
+//| echo: false
+// SHARED DATA BRIDGE for every Data Explorer lesson — include it with:
+//     {{< include _landings-data.qmd >}}
+// It fetches the signed-in user's capped, permission-filtered landing records from
+// GET /api/data-download/explorer-data and publishes them as the OJS value `landings_data`.
+// Each lesson then hands that value to a {webr} cell with quarto-live's `input` option, where the
+// array of row objects becomes an R data.frame (types preserved, no CSV parsing).
+// Keep this the ONLY copy: it encodes the contract with the app — the localStorage keys `authToken`
+// and `apiBaseUrl` (published by getApiBaseUrl in src/utils/axiosConfig.ts) and the endpoint path.
+// Reading the base URL from localStorage is what lets a static lesson reach the API exactly like the
+// app does: dev -> http://localhost:3001/api, prod -> same-origin /api.
+// NOTE: everything explanatory lives in these JS comments on purpose. A prose comment outside the
+// code fence would be re-parsed as markdown at the first blank line and shown on the lesson page.
+landings_data = {
+  const token = localStorage.getItem("authToken");
+  if (!token) return [];
+  const apiBase = localStorage.getItem("apiBaseUrl") || "/api";
+  const res = await fetch(`${apiBase}/data-download/explorer-data`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
+  });
+  if (!res.ok) { console.warn(`explorer-data fetch failed: ${res.status}`); return []; }
+  return await res.json();
+}
+```

@@ -1,7 +1,5 @@
 ---
 title: "Welcome — your first look at the data"
-format: live-html
-engine: knitr
 ---
 
 {{< include _extensions/r-wasm/live/_knitr.qmd >}}
@@ -36,25 +34,42 @@ press **Run** again.
 
 Below is a small table of fish landings — just six rows, so it is easy to read.
 
-The first box runs **on its own** when the page opens. (The very first time, the page may take a few
-seconds to wake up — that is normal.) Look for the green **▶ Run** button on the box: you can press it
-to run the box again.
+The first box runs **on its own** when the page opens. Look for the green **▶ Run** button on the box:
+you can press it to run the box again.
+
+::: {.callout-note appearance="simple"}
+## The first time, R has to wake up
+
+When you open a lesson, your browser quietly downloads R. **This can take a minute on a slow
+connection** — and only the first time.
+
+While it is waiting you will see a small **spinning circle** on the box, and pressing **Run** will seem
+to do nothing. That is not a fault. Wait for the spinner to stop, and the answer will appear.
+:::
 
 ```{webr}
 #| autorun: true
-# A small example table: six catches from two landing sites.
+# A small example table: six catches from two areas.
 landings_example <- data.frame(
-  date      = c("2024-01-05", "2024-01-05", "2024-01-06", "2024-01-06", "2024-01-07", "2024-01-07"),
-  site      = c("Shimoni", "Shimoni", "Vanga", "Shimoni", "Vanga", "Vanga"),
-  fish      = c("Tilapia", "Snapper", "Tilapia", "Octopus", "Snapper", "Tilapia"),
-  weight_kg = c(12, 5, 8, 3, 6, 10)
+  landing_date = c("2024-01-05", "2024-01-05", "2024-01-06", "2024-01-06", "2024-01-07", "2024-01-07"),
+  gaul_2_name  = c("Shimoni", "Shimoni", "Vanga", "Shimoni", "Vanga", "Vanga"),
+  catch_taxon  = c("Tilapia", "Snapper", "Tilapia", "Octopus", "Snapper", "Tilapia"),
+  catch_kg     = c(12, 5, 8, 3, 6, 10)
 )
 
 landings_example
 ```
 
 ::: {.callout-tip appearance="simple"}
-**What you should see:** a table with **6 rows** and **4 columns** — `date`, `site`, `fish` and `weight_kg`.
+**What you should see:** a table with **6 rows** and **4 columns**.
+
+The headings look odd, so let's name them now. They are the **real headings from your own data**, and
+you will meet them again in every lesson:
+
+- `landing_date` — the day the catch came to shore
+- `gaul_2_name` — the **district**, or area
+- `catch_taxon` — the **kind of fish**
+- `catch_kg` — the **weight**, in kilograms
 :::
 
 ## Now you try: press Run yourself
@@ -63,7 +78,7 @@ This box adds up all the weights. **Press the ▶ Run button** to see the answer
 
 ```{webr}
 #| autorun: false
-sum(landings_example$weight_kg)
+sum(landings_example$catch_kg)
 ```
 
 ::: {.callout-tip appearance="simple"}
@@ -79,7 +94,7 @@ This box shows only the catches **heavier than 5 kg**. **Change the `5` to `9`**
 
 ```{webr}
 #| autorun: false
-landings_example[landings_example$weight_kg > 5, ]
+landings_example[landings_example$catch_kg > 5, ]
 ```
 
 ::: {.callout-tip appearance="simple"}
@@ -91,29 +106,11 @@ right away.
 ## This works on YOUR data too
 
 The table above was made up. In the next lessons the table will be **your real landing records** — the
-same data you can open in **Data Download**, from your own sites.
+same data you can open in **Data Download**, from your own district.
 
 Here is a peek. Press **Run** to load the first rows of your data:
 
-```{ojs}
-//| echo: false
-// Fetch the signed-in user's capped, permission-filtered landings as JSON, reusing the API base URL
-// the React app publishes to localStorage (getApiBaseUrl). Same bridge as before: behaves like the
-// Data Download tab in dev (-> :3001) and prod (-> /api).
-landings_data = {
-  const token = localStorage.getItem("authToken");
-  if (!token) return [];
-  const apiBase = localStorage.getItem("apiBaseUrl") || "/api";
-  const res = await fetch(`${apiBase}/data-download/explorer-data`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
-  });
-  if (!res.ok) {
-    console.warn(`explorer-data fetch failed: ${res.status}`);
-    return [];
-  }
-  return await res.json();
-}
-```
+{{< include _landings-data.qmd >}}
 
 ```{webr}
 #| autorun: false
@@ -135,8 +132,8 @@ if (nrow(landings) == 0) {
 Each lesson is short and uses your own data. You will learn to answer everyday questions:
 
 - 🔎 **Find the rows you need** — *"Show me only the landings from Vanga."* — *"Only last month."*
-- 📋 **Pick the columns you need** — *"I only want the date, the site and the weight."*
-- ➕ **Add it up** — *"What is the total catch at each site?"* — *"Which gear catches the most?"*
+- 📋 **Pick the columns you need** — *"I only want the date, the district and the weight."*
+- ➕ **Add it up** — *"What is the total catch at each district?"* — *"Which gear catches the most?"*
 
 You will only ever **press Run** and **change small things**. Take the lessons in order.
 

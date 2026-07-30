@@ -1,0 +1,19 @@
+```{webr}
+#| autorun: true
+# SHARED EXAMPLE TABLE for the dplyr lessons — include it with:
+#     {{< include _example-data.qmd >}}
+# Five rows, two trips, using the real column names from the user's data so that what the learner
+# practises here transfers unchanged to their own records. Lessons that teach a dplyr verb should share
+# this table rather than declaring their own, so the same five rows carry across the course.
+suppressPackageStartupMessages(library(dplyr))
+
+example <- data.frame(
+  trip_id      = c("trip_1", "trip_1", "trip_1", "trip_2", "trip_2"),
+  landing_date = c("2024-01-05", "2024-01-05", "2024-01-05", "2024-01-06", "2024-01-06"),
+  gaul_2_name  = c("Shimoni", "Shimoni", "Shimoni", "Vanga", "Vanga"),
+  gear         = c("hand line", "hand line", "hand line", "gillnet", "gillnet"),
+  catch_taxon  = c("Tilapia", "Snapper", "Octopus", "Tilapia", "Snapper"),
+  catch_kg     = c(12, 5, 3, 8, 6)
+)
+example
+```

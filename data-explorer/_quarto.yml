@@ -10,3 +10,9 @@
 # have Quarto/R installed.
 project:
   output-dir: ../public/data-explorer/lessons
+
+# House defaults for every lesson, so a new .qmd only declares what differs (its title, and
+# `webr: render-df:` if it shows tables). `live-html` is the quarto-live format; `knitr` is the
+# engine quarto-live requires.
+format: live-html
+engine: knitr
