@@ -1,7 +1,13 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { IconSchool, IconExternalLink, IconLock } from '@tabler/icons-react';
-import { lessons, LESSON_BASE_PATH } from './lessons';
+import {
+  IconSchool,
+  IconExternalLink,
+  IconLock,
+  IconClock,
+  IconChecklist,
+} from '@tabler/icons-react';
+import { lessons, LESSON_BASE_PATH, LESSON_COUNT, lessonNumber } from './lessons';
 
 /**
  * Data Explorer catalog page.
@@ -47,6 +53,18 @@ const DataExplorer: React.FC = () => {
               <div>
                 <h4 className="alert-title">{t('intro.title')}</h4>
                 <div className="text-secondary">{t('intro.body')}</div>
+                {/* Points at WorldFish's fuller R course so the deliberately narrow scope of these
+                    five lessons reads as a choice, not a gap. */}
+                <div className="text-secondary mt-2">
+                  {t('intro.deeper')}{' '}
+                  <a
+                    href="https://worldfishcenter.github.io/ssf.training/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    R for SSF
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -56,16 +74,32 @@ const DataExplorer: React.FC = () => {
           <div className="row row-cards">
             {lessons.map((lesson) => {
               const href = `${LESSON_BASE_PATH}/${lesson.slug}.html`;
+              const number = lessonNumber(lesson.slug);
+              // A reference page's three call-to-action differences (button style, icon, label)
+              // always travel together, so they are chosen once rather than branched three times.
+              const cta =
+                lesson.kind === 'reference'
+                  ? { variant: 'btn-outline-primary', Icon: IconChecklist, label: t('openCard') }
+                  : { variant: 'btn-primary', Icon: IconExternalLink, label: t('startLesson') };
               return (
                 <div className="col-sm-6 col-lg-4" key={lesson.slug}>
                   <div className="card h-100">
                     <div className="card-body d-flex flex-column">
-                      <div className="mb-2">
+                      <div className="mb-2 d-flex flex-wrap align-items-center gap-1">
+                        {number !== null && (
+                          <span className="badge bg-primary-lt">
+                            {t('lessonNumber', { number, total: LESSON_COUNT })}
+                          </span>
+                        )}
                         {lesson.categories.map((cat) => (
-                          <span className="badge bg-blue-lt me-1" key={cat}>
+                          <span className="badge bg-blue-lt" key={cat}>
                             {t(`categories.${cat}`)}
                           </span>
                         ))}
+                        <span className="text-secondary ms-1 d-inline-flex align-items-center">
+                          <IconClock className="icon me-1" size={15} stroke={2} />
+                          <small>{t('minutes', { count: lesson.minutes })}</small>
+                        </span>
                         {!lesson.available && (
                           <span className="badge bg-secondary-lt">{t('comingSoon')}</span>
                         )}
@@ -75,9 +109,9 @@ const DataExplorer: React.FC = () => {
                         {t(`lessons.${lesson.slug}.description`)}
                       </p>
                       {lesson.available ? (
-                        <a href={href} className="btn btn-primary w-100 mt-2">
-                          <IconExternalLink className="icon me-1" size={18} stroke={2} />
-                          {t('startLesson')}
+                        <a href={href} className={`btn w-100 mt-2 ${cta.variant}`}>
+                          <cta.Icon className="icon me-1" size={18} stroke={2} />
+                          {cta.label}
                         </a>
                       ) : (
                         <button type="button" className="btn w-100 mt-2" disabled>

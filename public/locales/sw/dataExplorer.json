@@ -3,14 +3,17 @@
   "description": "Jifunze kuchambua data ya uvuvi mdogo kwa masomo shirikishi ya R yanayoendeshwa kwenye kivinjari chako.",
   "intro": {
     "title": "R shirikishi, moja kwa moja kwenye kivinjari chako",
-    "body": "Kila somo linaendesha msimbo halisi wa R kwa kutumia data yako ya mavuno — data ile ile na ruhusa za ufikiaji kama kichupo cha Pakua Data. Hakuna cha kusakinisha. Chagua somo ili kuanza."
+    "body": "Kila somo linaendesha msimbo halisi wa R kwa kutumia data yako ya mavuno — data ile ile na ruhusa za ufikiaji kama kichupo cha Pakua Data. Hakuna cha kusakinisha. Chagua somo ili kuanza. Yafuate kwa mpangilio — kila somo linajenga juu ya lile lililotangulia.",
+    "deeper": "Unataka kujifunza R kwa kina zaidi? Tazama kozi kamili ya WorldFish:"
   },
   "startLesson": "Anza somo",
   "comingSoon": "Inakuja hivi karibuni",
   "lessonsHeading": "Masomo",
   "categories": {
     "gettingStarted": "Kuanza",
-    "exploring": "Kuchunguza data yako"
+    "exploring": "Kuchunguza data yako",
+    "presenting": "Kuonyesha matokeo yako",
+    "reference": "Marejeleo"
   },
   "lessons": {
     "intro": {
@@ -27,7 +30,18 @@
     },
     "summarise": {
       "title": "Jumlisha",
-      "description": "Jumlisha, pata wastani na uhesabu mavuno yako kwa eneo, zana au aina ya samaki ili kujibu maswali ya kila siku."
+      "description": "Jumlisha, pata wastani na uhesabu mavuno yako kwa wilaya, zana au aina ya samaki ili kujibu maswali ya kila siku."
+    },
+    "chart": {
+      "title": "Iona kama picha",
+      "description": "Badilisha mojawapo ya jumla zako kuwa chati ya pau rahisi — aina unayoweza kuweka katika ripoti au kumuonyesha msimamizi."
+    },
+    "recipes": {
+      "title": "Kadi yako ya maelekezo",
+      "description": "Amri zote za kozi katika ukurasa mmoja. Ichapishe au ipige picha, na uiweke kando yako."
     }
-  }
+  },
+  "lessonNumber": "Somo {{number}} kati ya {{total}}",
+  "minutes": "dakika {{count}} hivi",
+  "openCard": "Fungua kadi"
 }

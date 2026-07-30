@@ -10,8 +10,13 @@
  * `lessons.<slug>.title` / `lessons.<slug>.description`; category labels under
  * `categories.<category>`.
  *
- * Lessons are placeholders for now — add real entries here as `.qmd` lessons are
- * authored and rendered.
+ * ORDER MATTERS. The array order is the curriculum order, and lesson numbering
+ * ("Lesson 3 of 5") is derived from it — see `lessonNumber` below.
+ *
+ * Each `.qmd` repeats its own position AND its `minutes` in a hard-coded strip at the top
+ * ("Lesson 3 of 5 · about 20 minutes"), because a static lesson page cannot read this file.
+ * So if you reorder, insert a lesson, or change a `minutes` value here, update that strip and
+ * the "Next:" footer links in the affected `.qmd` files to match.
  */
 
 /** Path under which rendered lesson HTML is served (static, outside React Router). */
@@ -24,12 +29,39 @@ export interface ExplorerLesson {
   categories: string[];
   /** Whether the rendered lesson exists yet. Placeholders render as "coming soon". */
   available: boolean;
+  /** Rough time to complete, in minutes. Shown on the card so a busy officer can plan. */
+  minutes: number;
+  /**
+   * `reference` pages are not part of the numbered sequence (currently the printable recipe
+   * card). They are excluded from lesson numbering and get their own call to action.
+   */
+  kind?: 'reference';
 }
 
 export const lessons: ExplorerLesson[] = [
-  { slug: 'intro', categories: ['gettingStarted'], available: true },
-  { slug: 'dataset', categories: ['gettingStarted'], available: true },
+  { slug: 'intro', categories: ['gettingStarted'], available: true, minutes: 10 },
+  { slug: 'dataset', categories: ['gettingStarted'], available: true, minutes: 15 },
   // The "narrowing" verbs (distinct/filter/select) live in one lesson; aggregation in the next.
-  { slug: 'find', categories: ['exploring'], available: true },
-  { slug: 'summarise', categories: ['exploring'], available: true }
+  { slug: 'find', categories: ['exploring'], available: true, minutes: 20 },
+  { slug: 'summarise', categories: ['exploring'], available: true, minutes: 15 },
+  { slug: 'chart', categories: ['presenting'], available: true, minutes: 15 },
+  {
+    slug: 'recipes',
+    categories: ['reference'],
+    available: true,
+    minutes: 5,
+    kind: 'reference',
+  },
 ];
+
+/** Total number of numbered lessons, i.e. excluding `reference` pages. */
+export const LESSON_COUNT = lessons.filter((l) => l.kind !== 'reference').length;
+
+/**
+ * 1-based position of a lesson in the curriculum, or `null` for `reference` pages.
+ * Derived from array order so the catalog and the lesson pages agree.
+ */
+export const lessonNumber = (slug: string): number | null => {
+  const index = lessons.filter((l) => l.kind !== 'reference').findIndex((l) => l.slug === slug);
+  return index === -1 ? null : index + 1;
+};
