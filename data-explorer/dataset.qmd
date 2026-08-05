@@ -11,7 +11,7 @@ webr:
 ## What this lesson is for
 
 In the first lesson you learned to press **Run** and read the answer. Now you will start asking questions
-of your data. *Which district landed the most fish? How much tilapia last month?*
+of your data. *Which district landed the most fish? How much was landed last month?*
 
 First, though, it helps to know how your data is arranged:
 
@@ -43,18 +43,19 @@ The rest of this lesson is about what the rows and columns in *your* table mean.
 ## A small example to look at
 
 It is easier to see the shape on a small table first. Here is a made-up example — just **two fishing
-trips**, with each trip shown in its **own colour**.
+trips**, with each trip shown in its **own colour**. The fish are simply numbered, **species 1** and so
+on, so that nothing here depends on telling one fish from another.
 
 ```{=html}
 <div class="diagram">
 <table class="table">
   <thead><tr><th>survey_id</th><th>trip_id</th><th>landing_date</th><th>gaul_2_name</th><th>gear</th><th>catch_taxon</th><th>catch_kg</th><th>n_catch</th><th>tot_catch_kg</th></tr></thead>
   <tbody>
-    <tr class="grp-a"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>Tilapia</td><td>12</td><td>3</td><td>20</td></tr>
-    <tr class="grp-a"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>Snapper</td><td>5</td><td>3</td><td>20</td></tr>
-    <tr class="grp-a"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>Octopus</td><td>3</td><td>3</td><td>20</td></tr>
-    <tr class="grp-b"><td>survey_2</td><td>trip_2</td><td>2024-01-06</td><td>Vanga</td><td>gillnet</td><td>Tilapia</td><td>8</td><td>2</td><td>14</td></tr>
-    <tr class="grp-b"><td>survey_2</td><td>trip_2</td><td>2024-01-06</td><td>Vanga</td><td>gillnet</td><td>Snapper</td><td>6</td><td>2</td><td>14</td></tr>
+    <tr class="grp-a"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>species 1</td><td>12</td><td>3</td><td>20</td></tr>
+    <tr class="grp-a"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>species 2</td><td>5</td><td>3</td><td>20</td></tr>
+    <tr class="grp-a"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>species 3</td><td>3</td><td>3</td><td>20</td></tr>
+    <tr class="grp-b"><td>survey_2</td><td>trip_2</td><td>2024-01-06</td><td>Vanga</td><td>gillnet</td><td>species 1</td><td>8</td><td>2</td><td>14</td></tr>
+    <tr class="grp-b"><td>survey_2</td><td>trip_2</td><td>2024-01-06</td><td>Vanga</td><td>gillnet</td><td>species 2</td><td>6</td><td>2</td><td>14</td></tr>
   </tbody>
 </table>
 </div>
@@ -79,7 +80,7 @@ example <- data.frame(
   landing_date = c("2024-01-05", "2024-01-05", "2024-01-05", "2024-01-06", "2024-01-06"),
   gaul_2_name  = c("Shimoni", "Shimoni", "Shimoni", "Vanga", "Vanga"),
   gear         = c("hand line", "hand line", "hand line", "gillnet", "gillnet"),
-  catch_taxon  = c("Tilapia", "Snapper", "Octopus", "Tilapia", "Snapper"),
+  catch_taxon  = c("species 1", "species 2", "species 3", "species 1", "species 2"),
   catch_kg     = c(12, 5, 3, 8, 6),
   n_catch      = c(3, 3, 3, 2, 2),
   tot_catch_kg = c(20, 20, 20, 14, 14)
@@ -95,8 +96,8 @@ the columns.
 
 ## What one row means
 
-Look at the very first line. It is one **catch**: *Tilapia, 12 kg*. The second line is another catch:
-*Snapper, 5 kg*.
+Look at the very first line. It is one **catch**: *species 1, 12 kg*. The second line is another catch:
+*species 2, 5 kg*.
 
 ::: {.callout-important appearance="simple"}
 **Each row is one catch — one kind of fish from one trip.**
@@ -130,9 +131,9 @@ two, so it fills two rows. Here is that first trip drawn as a picture:
   <path class="link" d="M185 105 C 235 105 235 35 285 35"/>
   <path class="link" d="M185 105 H 285"/>
   <path class="link" d="M185 105 C 235 105 235 175 285 175"/>
-  <rect class="row-box" x="285" y="15"  width="345" height="40" rx="6"/><text x="300" y="40" font-size="13">Tilapia &#8212; 12 kg &#160;&#160;<tspan class="row-label">row 1</tspan></text>
-  <rect class="row-box" x="285" y="85"  width="345" height="40" rx="6"/><text x="300" y="110" font-size="13">Snapper &#8212; 5 kg &#160;&#160;<tspan class="row-label">row 2</tspan></text>
-  <rect class="row-box" x="285" y="155" width="345" height="40" rx="6"/><text x="300" y="180" font-size="13">Octopus &#8212; 3 kg &#160;&#160;<tspan class="row-label">row 3</tspan></text>
+  <rect class="row-box" x="285" y="15"  width="345" height="40" rx="6"/><text x="300" y="40" font-size="13">species 1 &#8212; 12 kg &#160;&#160;<tspan class="row-label">row 1</tspan></text>
+  <rect class="row-box" x="285" y="85"  width="345" height="40" rx="6"/><text x="300" y="110" font-size="13">species 2 &#8212; 5 kg &#160;&#160;<tspan class="row-label">row 2</tspan></text>
+  <rect class="row-box" x="285" y="155" width="345" height="40" rx="6"/><text x="300" y="180" font-size="13">species 3 &#8212; 3 kg &#160;&#160;<tspan class="row-label">row 3</tspan></text>
 </svg>
 ```
 
@@ -252,9 +253,10 @@ above. **Keep this nearby. It is the dictionary for your data.**
 The **column headings** are the same as the small example, so what you practised will work here. But two
 of the **values** look different, and it is worth knowing why before you go on.
 
-- **The fish is a code.** In your real data `catch_taxon` holds a short code (for example `SKJ`), not a
-  name. The `scientific_name` column gives its full name. We used everyday names such as *Tilapia* in
-  the small example only to keep it easy to read.
+- **The fish is a code.** In your real data `catch_taxon` holds a short code (for example `SKJ`, which
+  means skipjack tuna), not a plain name. The `scientific_name` column gives its full name. In the small
+  example we simply wrote *species 1*, *species 2* and *species 3*, so that nothing you practised
+  depended on knowing which fish is which.
 - **`gaul_2_name` is the district, not the landing site.** The odd name comes from an international list
   of areas. Your table records the **district** a record belongs to, not the individual beach or jetty.
 :::

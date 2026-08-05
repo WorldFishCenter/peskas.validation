@@ -1,4 +1,4 @@
-# Management Platform
+# PESKAS | Management Platform
 
 A scalable web platform for managing KoboToolbox survey data — validating submissions, tracking enumerator performance, downloading data, and exploring it interactively — with multi-survey support and centralized management.
 
@@ -6,6 +6,8 @@ A scalable web platform for managing KoboToolbox survey data — validating subm
 
 - **Data Validation Interface** - Review and validate survey submissions with filtering and status updates
 - **Enumerator Performance Dashboard** - Track submission quality, error rates, and trends with interactive charts
+- **Data Download** - Preview and export permission-filtered landings data as CSV from the PeSKAS API
+- **Data Explorer** - Five interactive R lessons that run entirely in the browser (quarto-live + webR), teaching non-coders to filter, summarise and chart their own data
 - **Multi-Survey Support** - Manage multiple surveys across different KoboToolbox servers
 - **Role-Based Access Control** - Admin and user roles with survey-level permissions
 - **Airtable Integration** - Centralized user and survey management with automated GitHub Actions sync
@@ -121,7 +123,8 @@ User and survey management is automatically synced from Airtable using **GitHub 
 - **✅ Features**: Retry logic, error handling, audit logs, Slack notifications
 
 **Quick Start**:
-1. Configure GitHub Secrets (see [Setup Guide](.github/AIRTABLE_SYNC_SETUP.md))
+1. Configure GitHub Secrets: `MONGODB_VALIDATION_URI`, `MONGODB_VALIDATION_DB`,
+   `AIRTABLE_BASE_ID`, `AIRTABLE_TOKEN`, and optionally `SLACK_WEBHOOK_URL`
 2. Test: Actions → Run workflow → Select sync type
 3. View logs and artifacts in GitHub Actions tab
 
@@ -133,7 +136,8 @@ npm run sync:surveys    # Sync only surveys
 npm run sync:districts  # Sync only districts
 ```
 
-For detailed setup instructions, see [`.github/AIRTABLE_SYNC_SETUP.md`](.github/AIRTABLE_SYNC_SETUP.md)
+The workflow itself is [.github/workflows/sync-airtable.yml](.github/workflows/sync-airtable.yml);
+a longer setup walkthrough is kept locally in `.github/AIRTABLE_SYNC_SETUP.md` (not committed).
 
 ## Architecture
 
@@ -174,12 +178,12 @@ peskas-management-platform/
 
 ## Documentation
 
-Comprehensive documentation is available in the [docs/](docs/) folder:
+- [CLAUDE.md](CLAUDE.md) - Project guide: commands, architecture, conventions
+- [NEWS.md](NEWS.md) - Version history and changelog
 
-- [Deployment Checklist](docs/DEPLOYMENT_CHECKLIST.md) - Production deployment guide
-- [Security Fixes](docs/SECURITY_FIXES_COMPLETED.md) - Security hardening details
-- [Lesson Authoring Guide](docs/LESSON_AUTHORING_GUIDE.md) - How to write Data Explorer R lessons
-- [Documentation Index](docs/README.md) - Complete documentation overview
+A local `docs/` folder holds the longer working material — architecture reference, decision log,
+lesson authoring guide, data download notes. It is deliberately **not** version-controlled, so it is
+only present on a maintainer's machine.
 
 ## Deployment
 
@@ -189,5 +193,6 @@ The application is configured for deployment on Vercel:
 2. Configure environment variables in Vercel dashboard
 3. Deploy
 
-For detailed deployment instructions, see [docs/DEPLOYMENT_CHECKLIST.md](docs/DEPLOYMENT_CHECKLIST.md).
+Build configuration and function limits are in [vercel.json](vercel.json); required environment
+variables are documented in [.env.example](.env.example).
 

@@ -1,14 +1,25 @@
-# Management Platform 2.4.0
+# Management Platform 2.5.0
 
 ## New Features
 
-- **Data Explorer — interactive R training**
-  - A new Data Explorer tab presents a catalog of bite-sized lessons (inspired by [fhdsl/data_snacks](https://github.com/fhdsl/data_snacks)), reshaped into the Tabler UI
-  - Lessons run **R entirely in the browser** (no install) via the [quarto-live](https://github.com/r-wasm/quarto-live) extension and [webR](https://docs.r-wasm.org/webr/latest/) (R 4.6, WebAssembly)
-  - Each lesson loads the signed-in user's **own landings data** — the same data and the same access permissions as the Data Download tab — into the R session
-  - Lessons are placeholders for now; the pipeline ships with one working sample lesson that proves the live-data wiring end to end
+- **Data Explorer — learn to work with your own data, in the browser**
+  - A new **Data Explorer** tab presents a catalog of short, interactive R lessons (inspired by [fhdsl/data_snacks](https://github.com/fhdsl/data_snacks)), written for people who have never written code
+  - Lessons run **R entirely inside your browser** — nothing to install, and your data never leaves the page — via the [quarto-live](https://github.com/r-wasm/quarto-live) extension and [webR](https://docs.r-wasm.org/webr/latest/) (R 4.6, WebAssembly)
+  - Every lesson works on **your own landings data**, under exactly the same permissions as the Data Download tab. Your records are fetched automatically when the page opens, and a panel tells you how many loaded, with a button to load them again
+  - **Five lessons, in order**, each about 10–20 minutes:
+    1. *Welcome — your first look at the data* — what R is, and how to press **Run**
+    2. *Getting to know your data* — what one row means, how rows group into trips, and what each column holds
+    3. *Find what you need* — `distinct()`, `filter()`, `select()`, the pipe `|>`, and how to read an error message instead of fearing it
+    4. *Add it up* — `group_by()` and `summarise()`: totals and averages per district, gear or species
+    5. *See it as a picture* — turning a table of totals into a bar chart you can put in a report
+  - Plus a printable **recipe card** with every command from the course on one page
+  - Lessons are **practice-first**: a recap question opens each one, predict-then-run questions come before the answer, and fill-in-the-blank exercises have hints and worked solutions. Every lesson repeats that **nothing can be broken**
+  - Available from the **Data Tools** menu; lesson titles and descriptions are translated into English, Portuguese and Swahili
 
 ## Improvements
+
+- **The portal is now the "Management Platform"**
+  - Renamed throughout the interface, documentation and emails, from "Validation Portal" — the platform now covers validation, performance tracking, download and exploration, so the old name described only a part of it
 
 - **Compacter navigation with grouped menus**
   - Related tabs are now consolidated into Tabler dropdown menus to reduce navbar clutter
@@ -20,6 +31,30 @@
 
 - **Lesson pipeline**: lessons are authored as Quarto `.qmd` files in `data-explorer/`, rendered to static HTML (`npm run render:lessons`) committed under `public/data-explorer/lessons/`, and served by Vercel. Cross-origin isolation headers (COOP + COEP `credentialless`) are scoped to `/data-explorer/lessons/*` only, so the rest of the app is unaffected while webR gets `SharedArrayBuffer`.
 - **New endpoint** `GET /api/data-download/explorer-data`: returns a capped (5,000-row), permission-filtered landings JSON array (quarto-live auto-converts it to an R data.frame in webR) for the in-browser R runtime, reusing the same permission gate as the data export.
+- **Shared lesson parts**: the data panel, example table, field dictionary and standard notices are single include files (`data-explorer/_*.qmd`), so a definition cannot say one thing in a lesson and another on the recipe card. Presentation lives in one stylesheet (`data-explorer/lesson.css`) rather than per-lesson `<style>` blocks.
+- **Technical plumbing is hidden from learners**: the fetch, the data-frame conversion and package loading run in cells marked `include: false`, so every code box a learner can see contains only R the lesson actually explains.
+- **Authoring guide** ([docs/LESSON_AUTHORING_GUIDE.md](docs/LESSON_AUTHORING_GUIDE.md)) documents the audience, the writing rules, the lesson skeleton and a pre-publish checklist.
+
+# Management Platform 2.4.0
+
+## Bug Fixes
+
+- **Fixed: Data Download could return data from the wrong forms** (critical)
+  - Problem: Downloads and previews were filtered by **country only** — the survey (form) you selected had no effect on the data returned. A user assigned to specific forms could receive data from *other* forms in the same country, and users with forms in more than one country only ever saw their first country's data. The survey selector in the filters was effectively decorative.
+  - Solution: Every download and preview is now strictly scoped to the surveys you are permitted to access. Each request is pinned to one of your forms, with its country derived from the form itself. Data from forms you are not assigned to can no longer appear in your results.
+
+## New Features
+
+- **Download all of your forms at once**
+  - If you have access to several forms and leave the survey selector on **All forms**, the portal now fetches each form and merges them into a single preview and CSV — correctly, even when your forms span multiple countries.
+
+## Improvements
+
+- **Clearer Data Download filters**
+  - **All forms** is now an explicit, visually distinct option (green icon and "Default" badge) — you can finally return to "all forms" after picking a specific one.
+  - The **Administrative Area** filter now appears only after you choose a specific survey, following a clear Country → Survey → Area flow, with a hint explaining how to reveal it.
+  - Added scannable icons to each filter and a friendlier message when your account has no surveys assigned.
+  - Permission problems (e.g. requesting a survey or area you can't access) now return a clear message instead of a generic error.
 
 # Management Platform 2.3.0
 

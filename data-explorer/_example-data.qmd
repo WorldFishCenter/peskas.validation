@@ -39,7 +39,7 @@ example <- data.frame(
   landing_date = c("2024-01-05", "2024-01-05", "2024-01-05", "2024-01-06", "2024-01-06"),
   gaul_2_name  = c("Shimoni", "Shimoni", "Shimoni", "Vanga", "Vanga"),
   gear         = c("hand line", "hand line", "hand line", "gillnet", "gillnet"),
-  catch_taxon  = c("Tilapia", "Snapper", "Octopus", "Tilapia", "Snapper"),
+  catch_taxon  = c("species 1", "species 2", "species 3", "species 1", "species 2"),
   catch_kg     = c(12, 5, 3, 8, 6)
 )
 

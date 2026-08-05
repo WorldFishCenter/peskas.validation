@@ -61,7 +61,7 @@ suppressPackageStartupMessages(library(dplyr))
 landings_example <- data.frame(
   landing_date = c("2024-01-05", "2024-01-05", "2024-01-06", "2024-01-06", "2024-01-07", "2024-01-07"),
   gaul_2_name  = c("Shimoni", "Shimoni", "Vanga", "Shimoni", "Vanga", "Vanga"),
-  catch_taxon  = c("Tilapia", "Snapper", "Tilapia", "Octopus", "Snapper", "Tilapia"),
+  catch_taxon  = c("species 1", "species 2", "species 1", "species 3", "species 2", "species 1"),
   catch_kg     = c(12, 5, 8, 3, 6, 10)
 )
 
@@ -78,6 +78,10 @@ you will meet them again in every lesson:
 - `gaul_2_name` — the **district**, or area
 - `catch_taxon` — the **kind of fish**
 - `catch_kg` — the **weight**, in kilograms
+
+The fish here are simply numbered — **species 1**, **species 2**, **species 3** — so that nothing depends
+on knowing one fish from another. Your own records name real species instead, and everything you practise
+here works on them unchanged.
 :::
 
 ## Now you try: press Run yourself

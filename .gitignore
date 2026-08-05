@@ -37,12 +37,16 @@ yarn-error.log*
 Thumbs.db
 
 # Documentation
-# Keep CLAUDE.md (for Claude Code) and docs/ folder (for reference)
-# Ignore all other .md files in root
+# Only CLAUDE.md, README.md and NEWS.md are committed. Everything else is local working material:
+# docs/ (architecture reference, decision log, authoring guides) and .claude/ (rules, agents,
+# commands) stay out of the repo on purpose.
 *.md
 !CLAUDE.md
 !/README.md
-!docs/
+!/NEWS.md
+docs/
+.claude/
+.todo
 
 # Scripts - ignore all except those needed for GitHub Actions workflow
 scripts/

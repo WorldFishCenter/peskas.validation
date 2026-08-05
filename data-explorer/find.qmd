@@ -129,11 +129,11 @@ filter(example, gear == "gillnet")
 <table class="table">
   <thead><tr><th>gaul_2_name</th><th>gear</th><th>catch_taxon</th><th>catch_kg</th></tr></thead>
   <tbody>
-    <tr class="drop"><td>Shimoni</td><td>hand line</td><td>Tilapia</td><td>12</td></tr>
-    <tr class="drop"><td>Shimoni</td><td>hand line</td><td>Snapper</td><td>5</td></tr>
-    <tr class="drop"><td>Shimoni</td><td>hand line</td><td>Octopus</td><td>3</td></tr>
-    <tr class="keep"><td>Vanga</td><td>gillnet</td><td>Tilapia</td><td>8</td></tr>
-    <tr class="keep"><td>Vanga</td><td>gillnet</td><td>Snapper</td><td>6</td></tr>
+    <tr class="drop"><td>Shimoni</td><td>hand line</td><td>species 1</td><td>12</td></tr>
+    <tr class="drop"><td>Shimoni</td><td>hand line</td><td>species 2</td><td>5</td></tr>
+    <tr class="drop"><td>Shimoni</td><td>hand line</td><td>species 3</td><td>3</td></tr>
+    <tr class="keep"><td>Vanga</td><td>gillnet</td><td>species 1</td><td>8</td></tr>
+    <tr class="keep"><td>Vanga</td><td>gillnet</td><td>species 2</td><td>6</td></tr>
   </tbody>
 </table>
 </div>
