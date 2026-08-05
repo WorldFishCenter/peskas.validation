@@ -38,10 +38,11 @@
  */
 
 const { withMiddleware, authenticateUser } = require('../../lib/middleware');
-const { getLandingsCSVStream, PeskasAPIError } = require('../../lib/peskas-api');
-const { applyDownloadPermissions } = require('../../lib/filter-permissions');
+const { getLandingsCSVMerged, PeskasAPIError } = require('../../lib/peskas-api');
+const { resolveDownloadRequests, DownloadPermissionError } = require('../../lib/filter-permissions');
 const { sanitizeCSV } = require('../../lib/helpers');
 const {
+  sendError,
   sendServerError,
   setCorsHeaders
 } = require('../../lib/response');
@@ -66,11 +67,10 @@ async function handler(req, res) {
   try {
     const database = await getDb();
 
-    const {
-      effectiveCountry,
-      effectiveSurveyIds, // eslint-disable-line no-unused-vars -- Reserved for future survey_id filtering
-      effectiveGaulCodes
-    } = await applyDownloadPermissions(req.user, req.query);
+    // Resolve the selection into permission-safe PeSKAS requests. Each request is pinned
+    // to a survey the user may access, with the country derived per-survey. A user with
+    // several forms/districts fans out to multiple CSV requests that are merged below.
+    const requests = await resolveDownloadRequests(req.user, req.query);
 
     const {
       status = 'validated',
@@ -78,34 +78,29 @@ async function handler(req, res) {
       scope
     } = req.query;
 
-    // PeSKAS API requires lowercase country codes
-    const apiFilters = {
-      country: effectiveCountry.toLowerCase(),
-      status: status || 'validated'
-    };
-
-    // Add optional filters only if provided
+    // Filters applied to every request (single-valued, shared across the fan-out)
+    const sharedFilters = { status: status || 'validated' };
     if (scope && scope.trim()) {
-      apiFilters.scope = scope.trim();
-    }
-    // TEMPORARY: Survey ID filtering disabled - PeSKAS API uses different survey IDs
-    // TODO: Map MongoDB survey IDs to PeSKAS API survey IDs or remove survey filter
-    // if (effectiveSurveyIds.length > 0) {
-    //   apiFilters.survey_id = effectiveSurveyIds[0];
-    // }
-    if (effectiveGaulCodes.length > 0) {
-      // PeSKAS API doesn't support multiple gaul_2 codes - use first one
-      apiFilters.gaul_2 = effectiveGaulCodes[0];
+      sharedFilters.scope = scope.trim();
     }
     if (catch_taxon && catch_taxon.trim()) {
-      apiFilters.catch_taxon = catch_taxon.trim();
+      sharedFilters.catch_taxon = catch_taxon.trim();
     }
 
-    const csvData = await getLandingsCSVStream(apiFilters);
+    // PeSKAS API requires lowercase country codes
+    const normalizedRequests = requests.map(r => ({ ...r, country: r.country.toLowerCase() }));
+
+    const csvData = await getLandingsCSVMerged(normalizedRequests, sharedFilters);
     const sanitizedCSV = sanitizeCSV(csvData);
 
+    // Distinct scope actually served (for filename + audit)
+    const countries = [...new Set(normalizedRequests.map(r => r.country))];
+    const surveyIds = [...new Set(normalizedRequests.map(r => r.survey_id).filter(Boolean))];
+    const districts = [...new Set(normalizedRequests.map(r => r.gaul_2).filter(Boolean))];
+
     const timestamp = new Date().toISOString().split('T')[0];
-    const filename = `peskas-landings-${effectiveCountry.toLowerCase()}-${timestamp}.csv`;
+    const countryLabel = countries.length === 1 ? countries[0] : 'multi-country';
+    const filename = `peskas-landings-${countryLabel}-${timestamp}.csv`;
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -118,12 +113,13 @@ async function handler(req, res) {
       action: 'data_export',
       status: 'success',
       details: {
-        country_id: apiFilters.country || null,
-        survey_asset_id: req.query.survey_id || null,
-        data_status: apiFilters.status || null,
-        scope: apiFilters.scope || null,
-        catch_taxon: apiFilters.catch_taxon || null,
-        district: apiFilters.gaul_2 || null,
+        country_id: countries.join(',') || null,
+        survey_asset_id: surveyIds.join(',') || null,
+        data_status: sharedFilters.status || null,
+        scope: sharedFilters.scope || null,
+        catch_taxon: sharedFilters.catch_taxon || null,
+        district: districts.join(',') || null,
+        request_count: normalizedRequests.length,
       },
       req
     });
@@ -132,6 +128,11 @@ async function handler(req, res) {
 
   } catch (error) {
     console.error('Export error:', error);
+
+    // Permission/selection errors → clear 400/403 for the client
+    if (error instanceof DownloadPermissionError) {
+      return sendError(res, error.message, error.statusCode);
+    }
 
     // Handle PeSKAS API errors with user-friendly messages
     if (error instanceof PeskasAPIError) {

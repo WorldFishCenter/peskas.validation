@@ -41,11 +41,10 @@ const DataDownload: React.FC = () => {
   const handleDownload = async () => {
     setIsDownloading(true);
 
-    // Use applied filters from preview (which includes server-side permission filtering)
-    // If no preview yet, use current filters
-    const filtersToUse = appliedFilters || filters;
-
-    const success = await downloadCSV(filtersToUse);
+    // Send the user's own selections. The export endpoint re-applies permission
+    // scoping server-side from the authenticated user + these same query params
+    // (identical to preview), so it always downloads exactly what was previewed.
+    const success = await downloadCSV(filters);
     setIsDownloading(false);
 
     if (!success) {
@@ -59,7 +58,9 @@ const DataDownload: React.FC = () => {
   const handleResetFilters = () => {
     setFilters({
       status: 'validated',
-      scope: ''
+      scope: '',
+      survey_id: [],
+      gaul_2: ''
     });
     setShowPreview(false);
   };
