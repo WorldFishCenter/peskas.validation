@@ -5,8 +5,8 @@
  * (a bare array of row objects), for the in-browser R lessons in the Data Explorer tab.
  *
  * This is the Data Explorer counterpart to /api/data-download/export. It reuses the
- * exact same permission gate (applyDownloadPermissions), so a lesson can only ever see
- * the data the same user could download. Differences from export:
+ * exact same permission gate (resolveDownloadRequests + the per-form fan-out), so a lesson
+ * can only ever see the data the same user could download. Differences from export:
  *   - JSON, not CSV — the lesson's {ojs} cell hands the array to a {webr} cell via
  *     quarto-live's `input` option, where quarto-live converts the array of row objects
  *     directly into an R data.frame (types preserved, no brittle read.csv parsing).
@@ -26,9 +26,14 @@
  */
 
 const { withMiddleware, authenticateUser } = require('../../lib/middleware');
-const { fetchLandingsData, PeskasAPIError } = require('../../lib/peskas-api');
-const { applyDownloadPermissions, getAccessibleSurveys } = require('../../lib/filter-permissions');
+const { fetchLandingsPreviewMerged, PeskasAPIError } = require('../../lib/peskas-api');
 const {
+  resolveDownloadRequests,
+  getAccessibleSurveys,
+  DownloadPermissionError
+} = require('../../lib/filter-permissions');
+const {
+  sendError,
   sendServerError,
   setCorsHeaders
 } = require('../../lib/response');
@@ -54,7 +59,7 @@ async function handler(req, res) {
   try {
     const database = await getDb();
 
-    // Admins must normally specify a country (see applyDownloadPermissions). For the
+    // Admins must normally specify a country (resolveDownloadRequests throws without one). For the
     // Data Explorer we default it to their first accessible survey's country so a
     // lesson can load data without a country picker. Regular users are always scoped
     // to user.country[0] regardless of this value.
@@ -66,10 +71,10 @@ async function handler(req, res) {
       }
     }
 
-    const {
-      effectiveCountry,
-      effectiveGaulCodes
-    } = await applyDownloadPermissions(req.user, queryParams);
+    // Each request is pinned to one permitted form, with its country taken from the form
+    // itself — the same gate preview.js and export.js use, so a lesson can never see data
+    // the user could not download.
+    const requests = await resolveDownloadRequests(req.user, queryParams);
 
     const {
       status = 'validated',
@@ -77,30 +82,29 @@ async function handler(req, res) {
       scope
     } = queryParams;
 
-    // PeSKAS API requires lowercase country codes
-    const apiFilters = {
-      country: effectiveCountry.toLowerCase(),
-      status
-    };
-
-    // Add optional filters only if provided (mirrors preview.js/export.js)
+    // Filters applied to every request in the fan-out
+    const sharedFilters = { status: status || 'validated' };
     if (scope && scope.trim()) {
-      apiFilters.scope = scope.trim();
-    }
-    if (effectiveGaulCodes.length > 0) {
-      // PeSKAS API doesn't support multiple gaul_2 codes - use first one
-      apiFilters.gaul_2 = effectiveGaulCodes[0];
+      sharedFilters.scope = scope.trim();
     }
     if (catch_taxon && catch_taxon.trim()) {
-      apiFilters.catch_taxon = catch_taxon.trim();
+      sharedFilters.catch_taxon = catch_taxon.trim();
     }
 
-    // Fetch JSON (array of row objects). Normalize the response shape the same way
-    // preview.js does (the API returns either a bare array or { data: [...] }).
-    const apiResponse = await fetchLandingsData(apiFilters, LESSON_ROW_CAP);
-    const rows = Array.isArray(apiResponse)
-      ? apiResponse
-      : (Array.isArray(apiResponse?.data) ? apiResponse.data : []);
+    // PeSKAS API requires lowercase country codes
+    const normalizedRequests = requests.map(r => ({ ...r, country: r.country.toLowerCase() }));
+
+    // PeSKAS accepts one (country, survey_id, gaul_2) triple per call, so a user with
+    // several forms is served by one call each, merged and capped.
+    const { data: rows } = await fetchLandingsPreviewMerged(
+      normalizedRequests,
+      sharedFilters,
+      LESSON_ROW_CAP
+    );
+
+    const countries = [...new Set(normalizedRequests.map(r => r.country))];
+    const surveyIds = [...new Set(normalizedRequests.map(r => r.survey_id).filter(Boolean))];
+    const districts = [...new Set(normalizedRequests.map(r => r.gaul_2).filter(Boolean))];
 
     res.setHeader('Cache-Control', 'no-store');
 
@@ -118,11 +122,13 @@ async function handler(req, res) {
       action: 'data_explorer_load',
       status: 'success',
       details: {
-        country_id: apiFilters.country || null,
-        data_status: apiFilters.status || null,
-        scope: apiFilters.scope || null,
-        catch_taxon: apiFilters.catch_taxon || null,
-        district: apiFilters.gaul_2 || null,
+        country_id: countries.join(',') || null,
+        survey_asset_id: surveyIds.join(',') || null,
+        data_status: sharedFilters.status || null,
+        scope: sharedFilters.scope || null,
+        catch_taxon: sharedFilters.catch_taxon || null,
+        district: districts.join(',') || null,
+        request_count: normalizedRequests.length,
         row_cap: LESSON_ROW_CAP,
         row_count: rows.length
       },
@@ -133,6 +139,13 @@ async function handler(req, res) {
 
   } catch (error) {
     console.error('Data explorer load error:', error);
+
+    // Permission/selection problems are the user's situation, not a server fault. A 500 here
+    // makes the lesson panel say "connection problem", which sends the learner looking for a
+    // fault that does not exist.
+    if (error instanceof DownloadPermissionError) {
+      return sendError(res, error.message, error.statusCode);
+    }
 
     if (error instanceof PeskasAPIError) {
       return sendServerError(res, error.message);

@@ -35,19 +35,28 @@ Six cells, in this order:
  3. the status line — the only cell the learner reads. Written as a block with an early return per phase
     rather than a nested conditional, so each phase is named where it is handled.
 
- 4. the button, and 5. a hidden cell that disables it while a fetch is in flight, because every press is a
-    real PeSKAS call on a shared, rate-limited API key plus an audit row. Separate cell to avoid a cycle:
-    `landings_state` already depends on the click count, so the button cannot also depend on the state.
+ 4. the button. It is deliberately NOT disabled while a fetch is in flight: the cell that did that
+    returned no value, and an OJS cell whose value is undefined renders the word "undefined" on the
+    page. Guarding a stray click was not worth a visible defect, and a repeat press only restarts the
+    same generator.
 
- 6. the guard (webr, `include: false`) — turns those rows into the data frame every lesson box calls
+ 5. `landings_placeholder` / `landings_input` / `landings_empty` — the empty-data bridge. See the note
+    on the placeholder cell: an empty array cannot cross into webR at all.
+
+ 6. the guard (webr, `include: false`) — builds the data frame WITHOUT trusting the incoming shape.
+    quarto-live may hand over a data.frame already, or a list of row-lists. `as.data.frame()` on the
+    latter does not error: it silently returns ONE row with every column repeated per record, so
+    5,000 records become a 1 x 85,000 table that `nrow()` then reports as 1. A lesson built on that
+    would teach the wrong number with total confidence, so the shape is checked rather than assumed.
+    It turns those rows into the data frame every lesson box calls
     `landings`. `include: false` evaluates the cell but shows no editor, no source and no output
     (live.lua ~line 121), which is exactly what plumbing wants. `autorun` is deliberately absent: with
     `edit: false` the block renders from webr-evaluate.ojs, which calls process() unconditionally —
     `autorun` is read only by the editor template, so setting it here would mislead the next author.
-    When there is no data (not signed in, or the session has expired) it falls back to an EMPTY frame that
-    still HAS the columns the lessons name, so the boxes below return an empty table instead of reporting
-    a missing column — a message the learner would read as their own spelling mistake. If a lesson starts
-    naming another column, add it here too.
+    When there is no data (not signed in, session expired, no forms assigned) it drops the placeholder
+    row and leaves an EMPTY frame that still HAS the columns the lessons name, so the boxes below return
+    an empty table instead of reporting a missing column — a message the learner would read as their own
+    spelling mistake. If a lesson starts naming another column, add it to `landings_placeholder` too.
 
 The "not signed in" and "could not load" wording lives in the panel, not in R, so a learner who is not
 signed in reads it immediately instead of waiting ~30s for webR to boot before R can print a warning.
@@ -73,7 +82,20 @@ landings_state = {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
     });
     if (!res.ok) {
-      yield ({ phase: res.status === 401 || res.status === 403 ? "signed-out" : "failed" });
+      if (res.status === 401) {
+        yield ({ phase: "signed-out" });
+        return;
+      }
+      // 400/403 mean the account cannot reach this data (no forms assigned, district not
+      // permitted). Showing "connection problem" there sends the learner hunting a fault that
+      // does not exist, so the server's own sentence is passed through instead.
+      if (res.status === 400 || res.status === 403) {
+        let message = "";
+        try { message = (await res.json()).error || ""; } catch { /* body was not JSON */ }
+        yield ({ phase: "no-access", message });
+        return;
+      }
+      yield ({ phase: "failed" });
       return;
     }
     // The endpoint returns a bare array. Normalising anyway: `rows.length` is read straight into the
@@ -93,6 +115,31 @@ landings_state = {
 ```{ojs}
 //| echo: false
 mutable landings_rows = []
+```
+
+```{ojs}
+//| echo: false
+// NEVER pass an empty array to the webr cell below. quarto-live builds the R data.frame from the
+// FIRST row's keys, so an empty array means Object.keys(undefined) and the whole cell dies with
+// "Cannot convert undefined or null to object" — in JavaScript, before any R runs, which is why an
+// R-side nrow()==0 guard cannot save it. Sending one placeholder row keeps the column names and
+// types intact; R drops the row immediately, leaving a genuinely empty frame with real columns.
+landings_placeholder = ({
+  survey_id: "", trip_id: "", landing_date: "", gaul_2_name: "", gear: "",
+  vessel_type: "", catch_habitat: "", catch_taxon: "", scientific_name: "",
+  n_fishers: 0, n_catch: 0, trip_duration_hrs: 0, length_cm: 0,
+  catch_kg: 0, catch_price: 0, tot_catch_kg: 0, tot_catch_price: 0
+})
+```
+
+```{ojs}
+//| echo: false
+landings_input = landings_rows.length > 0 ? landings_rows : [landings_placeholder]
+```
+
+```{ojs}
+//| echo: false
+landings_empty = landings_rows.length === 0
 ```
 :::
 
@@ -118,6 +165,13 @@ mutable landings_rows = []
     <strong>You are not signed in, so there are no records to work with.</strong>
     The boxes below will still run, but they will come back empty.
     Open this lesson from the <strong>Data Explorer</strong> tab while signed in.
+  </div>`;
+
+  if (s.phase === "no-access") return html`<div class="alert alert-warning mb-0">
+    <strong>There are no records available for your account.</strong>
+    ${s.message ? html`<br>${s.message}` : ""}
+    The boxes below will still run, but they will come back empty. If that looks wrong, ask an
+    administrator which surveys your account can see.
   </div>`;
 
   if (s.phase === "failed") return html`<div class="alert alert-warning mb-0">
@@ -156,26 +210,36 @@ viewof landings_reload = {
 :::
 
 ::: {.lesson-plumbing}
-```{ojs}
-//| echo: false
-{
-  // Nothing rendered — this only keeps the button in step with the fetch. See note 5 in the header.
-  const button = viewof landings_reload.querySelector("button");
-  if (button) button.disabled = landings_state.phase === "loading";
-}
-```
-
 ```{webr}
 #| include: false
 #| input:
-#|   - landings_rows
-landings <- tryCatch(as.data.frame(landings_rows), error = function(e) data.frame())
+#|   - landings_input
+#|   - landings_empty
+landings <- tryCatch({
+  if (is.data.frame(landings_input)) {
+    landings_input
+  } else {
+    cols <- unique(unlist(lapply(landings_input, names)))
+    as.data.frame(
+      lapply(stats::setNames(cols, cols), function(k)
+        unlist(lapply(landings_input, function(row) {
+          value <- row[[k]]
+          if (is.null(value) || length(value) == 0) NA else value[[1]]
+        }), use.names = FALSE)),
+      stringsAsFactors = FALSE
+    )
+  }
+}, error = function(e) NULL)
 
-if (nrow(landings) == 0) {
+if (!is.data.frame(landings) || ncol(landings) == 0) {
   landings <- data.frame(
-    landing_date = character(), gaul_2_name = character(), gear = character(),
-    catch_taxon  = character(), catch_kg = numeric()
+    survey_id = character(), trip_id = character(), landing_date = character(),
+    gaul_2_name = character(), gear = character(), catch_taxon = character(),
+    catch_kg = numeric(), n_catch = numeric(), tot_catch_kg = numeric(),
+    stringsAsFactors = FALSE
   )
+} else if (isTRUE(as.logical(landings_empty))) {
+  landings <- landings[0, , drop = FALSE]
 }
 ```
 :::
