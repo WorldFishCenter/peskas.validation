@@ -1,14 +1,11 @@
 ---
 title: "Find what you need"
+subtitle: "Lesson 3 of 5 · about 20 minutes"
 webr:
   render-df: reactable
 ---
 
 {{< include _extensions/r-wasm/live/_knitr.qmd >}}
-
-```{=html}
-<p class="text-secondary" style="margin-top:-.75rem;font-size:.9rem">Lesson 3 of 5 &#183; about 20 minutes</p>
-```
 
 ::: {.callout-note appearance="simple"}
 ## What this lesson is for
@@ -50,21 +47,9 @@ html`${
 
 ## Before we start
 
-These commands come from a free toolkit called **dplyr**. The box below switches it on and loads the small
-example table from the last lesson. It runs **on its own** when the page opens.
+These commands come from a free toolkit called **dplyr**. It is already switched on for you.
 
-{{< include _slow-start-notice.qmd >}}
-
-{{< include _example-data.qmd >}}
-
-This next box brings in **your own landing records** and gives them the name `landings`. It is the same
-data you can open in the **Data Download** tab.
-
-It also runs on its own, so your data is ready by the time you need it further down the page.
-
-{{< include _landings-data.qmd >}}
-
-{{< include _landings-guard.qmd >}}
+{{< include _before-we-start.qmd >}}
 
 ## What values are in a column?
 
@@ -89,7 +74,7 @@ Now on your own data. These are the real districts in your records. Press **Run*
 distinct(landings, gaul_2_name)
 ```
 
-::: {.callout-important appearance="simple"}
+::: {.callout-note appearance="simple"}
 **Keep this list in view.** These are your own names, spelled exactly as your data spells them. You will
 copy one of them further down the page.
 :::
@@ -140,11 +125,8 @@ filter(example, gear == "gillnet")
 ```
 
 ```{=html}
-<style>
-tr.keep td { background:#e6f4ea !important; }
-tr.drop td { color:#b0b0b0 !important; }
-</style>
-<table class="table" style="font-size:.9rem">
+<div class="diagram">
+<table class="table">
   <thead><tr><th>gaul_2_name</th><th>gear</th><th>catch_taxon</th><th>catch_kg</th></tr></thead>
   <tbody>
     <tr class="drop"><td>Shimoni</td><td>hand line</td><td>Tilapia</td><td>12</td></tr>
@@ -154,8 +136,9 @@ tr.drop td { color:#b0b0b0 !important; }
     <tr class="keep"><td>Vanga</td><td>gillnet</td><td>Snapper</td><td>6</td></tr>
   </tbody>
 </table>
+</div>
 ```
-*`filter(gear == "gillnet")` keeps the green rows and drops the rest.*
+[`filter(gear == "gillnet")` keeps the green rows and drops the rest.]{.diagram-caption}
 
 You can also filter on a **number** — no quotes needed. This keeps only catches heavier than 5 kg:
 
@@ -284,17 +267,12 @@ select(example, landing_date, gaul_2_name, catch_kg)
 ```
 
 ```{=html}
-<style>
-.cols span { display:inline-block; padding:3px 8px; margin:2px; border-radius:5px; font-family:monospace; font-size:.85rem; }
-.cols .keep { background:#e6f4ea; border:1px solid #8cc6a0; }
-.cols .drop { background:#f2f2f2; color:#aaa; border:1px solid #ddd; }
-</style>
-<div class="cols">
+<div class="col-chips diagram">
   Keep: <span class="keep">landing_date</span><span class="keep">gaul_2_name</span><span class="keep">catch_kg</span>
   &#160;&#160; Drop: <span class="drop">trip_id</span><span class="drop">gear</span><span class="drop">catch_taxon</span>
 </div>
 ```
-*`select()` keeps the green columns and leaves out the rest.*
+[`select()` keeps the green columns and leaves out the rest.]{.diagram-caption}
 
 On your real data, keep just three useful columns. Press **Run**, then try adding another column name:
 

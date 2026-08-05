@@ -4,7 +4,14 @@ subtitle: "Every command from the course, on one page"
 # Plain `html`, NOT `live-html`: this page has no code boxes, so it must not pull in the webR runtime.
 # That keeps it instant to open and usable on the worst connection — which is the whole point of a
 # reference card. Do not add {webr} cells here; if a page needs to run R, it is a lesson, not a card.
-format: html
+#
+# `css:` has to be repeated here because `html` and `live-html` are different format names, and Quarto
+# inherits project options per format name — so nothing the project sets under `live-html` reaches this
+# page. No `toc:` though — the card is one screen of tables, and a contents list beside it would only
+# take width from them.
+format:
+  html:
+    css: lesson.css
 ---
 
 ::: {.callout-note appearance="simple"}

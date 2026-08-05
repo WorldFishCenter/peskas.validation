@@ -1,17 +1,14 @@
 ---
 title: "Welcome — your first look at the data"
+subtitle: "Lesson 1 of 5 · about 10 minutes"
 ---
 
 {{< include _extensions/r-wasm/live/_knitr.qmd >}}
 
-```{=html}
-<p class="text-secondary" style="margin-top:-.75rem;font-size:.9rem">Lesson 1 of 5 &#183; about 10 minutes</p>
-```
-
 ## What is R?
 
 When you collect fisheries data, you need a way to make sense of it: to add up catches,
-compare landing sites, or spot a month when something looks wrong. **R is a free tool made
+compare districts, or spot a month when something looks wrong. **R is a free tool made
 for exactly this.**
 
 Think of R as a careful, very fast assistant. You give it a short written instruction, such as
@@ -51,12 +48,16 @@ While it is waiting you will see a small **spinning circle** on the box, and pre
 to do nothing. That is not a fault. Wait for the spinner to stop, and the answer will appear.
 :::
 
+::: {.lesson-plumbing}
+```{webr}
+#| include: false
+suppressPackageStartupMessages(library(dplyr))
+```
+:::
+
 ```{webr}
 #| autorun: true
-# Switch on dplyr, the toolkit these lessons use.
-suppressPackageStartupMessages(library(dplyr))
-
-# A small example table: six catches from two areas.
+# A small example table: six catches from two districts.
 landings_example <- data.frame(
   landing_date = c("2024-01-05", "2024-01-05", "2024-01-06", "2024-01-06", "2024-01-07", "2024-01-07"),
   gaul_2_name  = c("Shimoni", "Shimoni", "Vanga", "Shimoni", "Vanga", "Vanga"),
@@ -120,24 +121,32 @@ That is all "coding" is here. Small instructions you can change, with the answer
 The table above was made up. In the next lessons the table will be **your real landing records**. It is
 the same data you can open in **Data Download**, from your own district.
 
-Here is a peek. Press **Run** to load the first rows of your data:
+Your records are fetched for you as soon as you open a lesson. You do not have to do anything:
 
-{{< include _landings-data.qmd >}}
+{{< include _landings-panel.qmd >}}
+
+From here on, **`landings`** is the name of your own records.
+
+Your own table has many more columns than the little example, so this box picks out the same four you have
+just met. As with `filter` above, you do not need to understand it yet: `select` means "keep only the
+columns I ask for", and `head` means "just the first few rows". Press **Run**:
 
 ```{webr}
 #| autorun: false
-#| input:
-#|   - landings_data
-# quarto-live converts the JS array of row objects into an R data.frame automatically.
-landings <- tryCatch(as.data.frame(landings_data), error = function(e) data.frame())
-
-if (nrow(landings) == 0) {
-  cat("Your data will appear here once you are signed in to the platform.\n")
-} else {
-  cat("Loaded", nrow(landings), "of your landing records.\n")
-  head(landings)
-}
+four_columns <- select(landings, landing_date, gaul_2_name, catch_taxon, catch_kg)
+head(four_columns)
 ```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** the first few rows of **your** data, under the same four headings as the example
+above.
+
+That is the point of these lessons. What you practise on the small example works, unchanged, on your own
+records.
+
+If the box comes back **empty**, look at the panel above: you are most likely not signed in, and there are
+no records to show yet.
+:::
 
 ## What you will learn next
 

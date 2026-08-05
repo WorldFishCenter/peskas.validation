@@ -1,0 +1,358 @@
+/*
+ * Shared stylesheet for every Data Explorer lesson.
+ *
+ * Wired in _quarto.yml (`css: lesson.css`) so every lesson gets it, and again in recipes.qmd, which
+ * overrides `format:` to plain html and so does not inherit the project format's options.
+ *
+ * It exists for two reasons:
+ *
+ *  1. The lessons were carrying four near-duplicate inline <style> blocks for the little "here is what
+ *     that command did to the rows" diagrams, with different class names for the same idea — `s1`/`s2` in
+ *     one lesson and `trip1`/`trip2` in another both meant "group one, group two". Two lessons therefore
+ *     coloured the same concept differently, which quietly teaches the learner that the colours mean
+ *     nothing. One set of names, defined once, keeps a colour meaning the same thing all the way through.
+ *
+ *  2. Visual pacing. A lesson is a long single-column page of alternating prose, code box and callout. By
+ *     default those three sit at almost the same visual weight, so there is nothing to tell the eye where
+ *     one step ends and the next begins, and the routine "what you should see" note shouts exactly as
+ *     loudly as the one warning on the page that really matters. The rules below give sections a visible
+ *     boundary, give code boxes room to read as objects, and put the callouts into a deliberate order:
+ *     tip = quiet confirmation, note = aside, important = stop and read.
+ *
+ * House rules: use Bootstrap/Quarto variables rather than fixed colours where one exists, and keep the
+ * palette to the greens/blues/ambers already used, so the diagrams and the callouts agree. The diagram
+ * colours have no Bootstrap equivalent (they carry lesson meaning, not theme meaning), so they are
+ * declared once as custom properties below and referenced everywhere else — including from the SVG and
+ * legend markup in dataset.qmd, which would otherwise drift out of step with the tables they explain.
+ */
+
+:root {
+  /* Group one / group two: two trips in lesson 2, two districts in lesson 4. */
+  --lesson-grp-a: #dbe9f6;
+  --lesson-grp-a-border: #5b86b3;
+  --lesson-grp-b: #fdebd0;
+  /* Kept vs dropped, for filter() and select(). */
+  --lesson-keep: #e6f4ea;
+  --lesson-keep-border: #8cc6a0;
+  /* "About each catch", the second kind of column in lesson 2. */
+  --lesson-catch: #f3e8f7;
+  --lesson-catch-border: #c79bd6;
+}
+
+/* ------------------------------------------------------------------ *
+ * Page rhythm: sections, code boxes, captions
+ * ------------------------------------------------------------------ */
+
+/* A hairline above each section heading, so a long lesson reads as a stack of discrete steps rather than
+   one continuous scroll. The first heading gets no rule: it would sit right under the title block.
+   Quarto wraps every heading in its own `<section class="level2">` (section-divs, on by default), which
+   makes EVERY h2 the first of its type inside its own parent — so the obvious `h2:first-of-type` version
+   of this matches all of them and silently switches the rule off everywhere. Selecting on adjacent
+   sections instead is what actually distinguishes "the first heading" from "every later heading". */
+main.content section.level2 > h2 {
+  margin-top: 1.5rem;
+}
+
+main.content section.level2 + section.level2 > h2 {
+  margin-top: 2.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--bs-gray-200, #e9ecef);
+}
+
+main.content h3 {
+  margin-top: 2rem;
+}
+
+/* "Lesson 3 of 5 · about 20 minutes" — each lesson declares it as `subtitle:` so Quarto puts it in the
+   title block for us. Quarto styles a subtitle with `.lead` (1.25rem, the size of an opening sentence),
+   but this line is orientation rather than a headline: it should be readable and then get out of the way. */
+main.content .quarto-title .subtitle {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Code boxes are the thing the learner acts on, so give them room on both sides. Quarto's default
+   spacing lets a box collide with the paragraph that introduces it. */
+main.content div.cell,
+main.content .exercise-cell {
+  margin-top: 1.1rem;
+  margin-bottom: 1.1rem;
+}
+
+/* Cells that only exist to run something — the package load, the landings fetch, the guard that builds
+   `landings` — still emit a wrapper div, which would otherwise collect the margins set just above and
+   leave a lesson with several centimetres of unexplained blank space. Authors put those cells inside
+   `::: {.lesson-plumbing}` and this zeroes them. Note it does NOT use display:none: the cells must stay
+   in normal flow so nothing can defer their evaluation, and being empty they take no height anyway.
+   `.exercise-cell` has to be in this list: the real DOM is
+   `.lesson-plumbing > div.cell > div > div.exercise-cell`, and it is the INNER element that carries the
+   1.1rem set above. With no border or padding on the wrappers to stop it, that margin collapses straight
+   out through the zeroed ancestors and reopens the gap this class exists to close. */
+.lesson-plumbing,
+.lesson-plumbing div.cell,
+.lesson-plumbing .exercise-cell,
+.lesson-plumbing .cell-output,
+.lesson-plumbing .cell-output-display {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* The line under a diagram, explaining what it shows. `display: block` so the same class works whether
+   the caption is written as a fenced div or, more usually, as a one-line [span]{.diagram-caption}. */
+.diagram-caption {
+  display: block;
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--bs-secondary-color, #6c757d);
+  margin-top: 0.35rem;
+  margin-bottom: 1.4rem;
+}
+
+/* ------------------------------------------------------------------ *
+ * Callout hierarchy — three weights, on purpose
+ * ------------------------------------------------------------------ */
+
+/* tip = "what you should see". The workhorse: one after nearly every code box. Quiet, so that the page
+   does not read as a row of alarms and so the important ones keep their force. */
+main.content .callout.callout-style-simple.callout-tip {
+  border-left-width: 3px;
+  background: #f6faf7;
+  font-size: 0.95rem;
+}
+
+/* note = an aside: what the lesson is for, how to get out of trouble. */
+main.content .callout.callout-style-simple.callout-note {
+  background: #f5f8fb;
+}
+
+/* important = stop and read. Kept at full strength, and there are only ever one or two per lesson. */
+main.content .callout.callout-style-simple.callout-important {
+  border-left-width: 5px;
+  background: #fdf6f6;
+}
+
+main.content .callout {
+  margin-top: 1.1rem;
+  margin-bottom: 1.1rem;
+}
+
+/* Two callouts in a row need a real gap or they read as one box with a colour change. */
+main.content .callout + .callout {
+  margin-top: 1.5rem;
+}
+
+/* ------------------------------------------------------------------ *
+ * "Your own records" panel (_landings-panel.qmd)
+ *
+ * The box itself is a Bootstrap `.card` — border, radius, padding and background all come from the
+ * framework, as they already do for the `.alert` and `.btn` inside it. What is left here is only what
+ * Bootstrap has no opinion about: how the card sits in the flow of a lesson, and how the OJS cells
+ * inside it are spaced.
+ * ------------------------------------------------------------------ */
+
+.lesson-data-panel {
+  margin: 1.5rem 0 1.75rem;
+}
+
+/* The status line and the button are separate OJS cells; strip the default cell margins so the panel
+   reads as one object, and keep a fixed gap between them instead. */
+.lesson-data-panel div.cell {
+  margin: 0 !important;
+}
+
+/* The gap belongs on the wrapper, not on the cell: the status cell sits inside `.lesson-data-status`
+   (a static aria-live region, so a screen reader announces each phase change — an OJS cell replaces its
+   own output node on every run, and a live region that is itself replaced announces nothing). */
+.lesson-data-status {
+  margin-bottom: 0.75rem;
+}
+
+/* Observable Inputs wraps its button in a <form> that carries its own layout defaults. */
+.lesson-data-panel form {
+  margin: 0;
+  max-width: none;
+}
+
+/* ------------------------------------------------------------------ *
+ * Diagrams: what a command did to the rows
+ * ------------------------------------------------------------------ */
+
+/* Standard breathing room for the hand-written tables and SVGs that illustrate a command.
+   `overflow-x: auto` matters more than it looks: the lesson-2 diagram is nine columns wide, and without
+   it the whole page scrolls sideways on a phone instead of just that one table. */
+.diagram {
+  margin: 0.75rem 0 0;
+  overflow-x: auto;
+}
+
+.diagram table {
+  width: auto;
+  font-size: 0.9rem;
+}
+
+/* Group colours. `grp-a` and `grp-b` mean "the first group" and "the second group" everywhere: two trips
+   in lesson 2, two districts in lesson 4. Same idea, same colour, every lesson. */
+.diagram tr.grp-a td {
+  background: var(--lesson-grp-a) !important;
+}
+
+.diagram tr.grp-b td {
+  background: var(--lesson-grp-b) !important;
+}
+
+/* Kept vs dropped, for filter() and select(). Green is always "this survives", grey always "this goes". */
+.diagram tr.keep td {
+  background: var(--lesson-keep) !important;
+}
+
+.diagram tr.drop td {
+  color: var(--bs-gray-500, #adb5bd) !important;
+}
+
+/* SVG diagrams. The `fill`/`stroke` presentation attributes in the markup cannot read a custom property
+   (`var()` is not resolved inside an attribute value), so the SVG carries group classes instead and takes
+   its colours from here — otherwise the picture and the table it illustrates drift apart. */
+.diagram-svg {
+  max-width: 640px;
+  width: 100%;
+  height: auto;
+  font-family: var(--bs-font-sans-serif, sans-serif);
+}
+
+.diagram-svg .grp-a {
+  fill: var(--lesson-grp-a);
+  stroke: var(--lesson-grp-a-border);
+}
+
+.diagram-svg .link {
+  fill: none;
+  stroke: var(--lesson-grp-a-border);
+  stroke-width: 2;
+}
+
+.diagram-svg .row-box {
+  fill: var(--bs-body-bg, #fff);
+  stroke: var(--bs-gray-500, #adb5bd);
+}
+
+.diagram-svg .row-label {
+  fill: var(--bs-gray-600, #868e96);
+}
+
+.diagram-legend {
+  font-size: 0.9rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Legend swatches under a coloured table. The swatch colours come from the same variables as the rows
+   they explain, so a palette change cannot leave the legend pointing at the old colour. */
+.diagram-legend span {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  vertical-align: middle;
+  border: 1px solid var(--bs-gray-600, #888);
+  margin-right: 0.3em;
+}
+
+.diagram-legend .grp-a {
+  background: var(--lesson-grp-a);
+}
+
+.diagram-legend .grp-b {
+  background: var(--lesson-grp-b);
+}
+
+/* Before → after, side by side, for group_by() + summarise(). Always used as `class="diagram
+   diagram-flow"`, so the margin comes from `.diagram` and only the layout belongs here. */
+.diagram-flow {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.diagram-flow .arrow {
+  font-size: 1.6rem;
+  color: var(--bs-gray-600, #868e96);
+}
+
+/* Column chips, for select(). */
+.col-chips span {
+  display: inline-block;
+  padding: 3px 8px;
+  margin: 2px;
+  border-radius: 5px;
+  font-family: var(--bs-font-monospace, monospace);
+  font-size: 0.85rem;
+}
+
+.col-chips .keep {
+  background: var(--lesson-keep);
+  border: 1px solid var(--lesson-keep-border);
+}
+
+.col-chips .drop {
+  background: var(--bs-gray-100, #f2f2f2);
+  color: var(--bs-gray-500, #adb5bd);
+  border: 1px solid var(--bs-gray-300, #ddd);
+}
+
+/* The two kinds of columns, side by side (lesson 2). */
+.col-groups {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 0.75rem 0 0;
+  font-size: 0.95rem;
+}
+
+.col-groups > div {
+  flex: 1;
+  min-width: 240px;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.col-groups .about-trip {
+  background: var(--lesson-keep);
+  border: 1px solid var(--lesson-keep-border);
+}
+
+.col-groups .about-catch {
+  background: var(--lesson-catch);
+  border: 1px solid var(--lesson-catch-border);
+}
+
+/* ------------------------------------------------------------------ *
+ * Quiz feedback (the Predict and recall questions)
+ * ------------------------------------------------------------------ */
+
+/* The radio and its feedback are two separate OJS cells, so by default they sit as far apart as any two
+   unrelated blocks. Pull them together — a question and its answer have to read as one thing. Old
+   browsers without :has() simply keep the wider gap, which is untidy but not broken. */
+main.content div.cell:has(form) {
+  margin-bottom: 0.35rem;
+}
+
+/* ------------------------------------------------------------------ *
+ * Small screens — most of this audience is on a phone
+ * ------------------------------------------------------------------ */
+
+@media (max-width: 575.98px) {
+  /* Must mirror the section-based selector above, not plain `h2`: a media query adds no specificity, so
+     a weaker selector here would simply lose to the rule it is meant to override. */
+  main.content section.level2 + section.level2 > h2 {
+    margin-top: 2rem;
+    padding-top: 1rem;
+  }
+
+  .diagram table {
+    font-size: 0.8rem;
+  }
+
+  .diagram-flow {
+    gap: 8px;
+  }
+}

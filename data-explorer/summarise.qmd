@@ -1,14 +1,11 @@
 ---
 title: "Add it up"
+subtitle: "Lesson 4 of 5 · about 15 minutes"
 webr:
   render-df: reactable
 ---
 
 {{< include _extensions/r-wasm/live/_knitr.qmd >}}
-
-```{=html}
-<p class="text-secondary" style="margin-top:-.75rem;font-size:.9rem">Lesson 4 of 5 &#183; about 15 minutes</p>
-```
 
 ::: {.callout-note appearance="simple"}
 ## What this lesson is for
@@ -46,18 +43,7 @@ html`${
 
 ## Before we start
 
-The box below switches on **dplyr** (as in the last lesson) and loads the small example table. It runs on
-its own when the page opens.
-
-{{< include _slow-start-notice.qmd >}}
-
-{{< include _example-data.qmd >}}
-
-This box brings in **your own landing records** under the name `landings`, ready for later in the lesson.
-
-{{< include _landings-data.qmd >}}
-
-{{< include _landings-guard.qmd >}}
+{{< include _before-we-start.qmd >}}
 
 ## One number for your whole table
 
@@ -124,36 +110,29 @@ Read it as: *take the example, **group by** district, **then** add up the weight
 what that does to the rows:
 
 ```{=html}
-<style>
-tr.s1 td { background:#dbe9f6 !important; }   /* Shimoni — blue */
-tr.s2 td { background:#fdebd0 !important; }   /* Vanga — amber */
-.agg-wrap { display:flex; gap:18px; align-items:center; flex-wrap:wrap; margin:.6rem 0; }
-.agg-arrow { font-size:1.6rem; color:#666; }
-.agg-wrap table { width:auto; font-size:.9rem; }
-</style>
-<div class="agg-wrap">
+<div class="diagram diagram-flow">
 <table class="table">
   <thead><tr><th>gaul_2_name</th><th>catch_kg</th></tr></thead>
   <tbody>
-    <tr class="s1"><td>Shimoni</td><td>12</td></tr>
-    <tr class="s1"><td>Shimoni</td><td>5</td></tr>
-    <tr class="s1"><td>Shimoni</td><td>3</td></tr>
-    <tr class="s2"><td>Vanga</td><td>8</td></tr>
-    <tr class="s2"><td>Vanga</td><td>6</td></tr>
+    <tr class="grp-a"><td>Shimoni</td><td>12</td></tr>
+    <tr class="grp-a"><td>Shimoni</td><td>5</td></tr>
+    <tr class="grp-a"><td>Shimoni</td><td>3</td></tr>
+    <tr class="grp-b"><td>Vanga</td><td>8</td></tr>
+    <tr class="grp-b"><td>Vanga</td><td>6</td></tr>
   </tbody>
 </table>
-<div class="agg-arrow">&#8594;</div>
+<div class="arrow">&#8594;</div>
 <table class="table">
   <thead><tr><th>gaul_2_name</th><th>total_kg</th></tr></thead>
   <tbody>
-    <tr class="s1"><td>Shimoni</td><td>20</td></tr>
-    <tr class="s2"><td>Vanga</td><td>14</td></tr>
+    <tr class="grp-a"><td>Shimoni</td><td>20</td></tr>
+    <tr class="grp-b"><td>Vanga</td><td>14</td></tr>
   </tbody>
 </table>
 </div>
 ```
-*Each district's rows collapse into one total. Shimoni's three rows (12 + 5 + 3) become **20**. Vanga's
-two (8 + 6) become **14**.*
+[Each district's rows collapse into one total. Shimoni's three rows (12 + 5 + 3) become **20**. Vanga's
+two (8 + 6) become **14**.]{.diagram-caption}
 
 ## More than one summary, on any column
 

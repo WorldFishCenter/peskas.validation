@@ -1,12 +1,39 @@
+<!--
+SHARED EXAMPLE TABLE for the dplyr lessons — pull it into a lesson with Quarto's include shortcode,
+naming this file (see the "Before we start" section of find.qmd for a working example).
+
+NOTE: do not write that shortcode literally in this file, not even inside a comment like this one. Quarto
+resolves include shortcodes in a text pass that does not respect HTML comments, so a file naming itself
+includes itself, and the render dies with "Maximum call stack size exceeded".
+
+Five rows, two trips, using the real column names from the user's data so that what the learner practises
+here transfers unchanged to their own records. Lessons that teach a dplyr verb should share this table
+rather than declaring their own, so the same five rows carry across the course.
+
+Two cells, and the split is deliberate:
+
+ 1. `library(dplyr)`, hidden with `include: false`. It has to run, but nothing in the audience can read
+    `suppressPackageStartupMessages(library(dplyr))`, and the alternative — a bare `library(dplyr)` — dumps
+    a wall of "the following objects are masked from package:stats" at a learner who has been promised the
+    page is simple. Loading a package is plumbing; keep it out of sight. The lessons still *name* dplyr in
+    prose, which is what a learner needs in order to search for more later.
+
+ 2. the table itself, visible and editable, with one plain-English comment. This is the box the lesson
+    talks about, so it must contain only what the lesson explains.
+
+Anything written inside these fences is read by the learner. No authoring notes, no shortcodes, no jargon.
+-->
+
+::: {.lesson-plumbing}
+```{webr}
+#| include: false
+suppressPackageStartupMessages(library(dplyr))
+```
+:::
+
 ```{webr}
 #| autorun: true
-# SHARED EXAMPLE TABLE for the dplyr lessons — include it with:
-#     {{< include _example-data.qmd >}}
-# Five rows, two trips, using the real column names from the user's data so that what the learner
-# practises here transfers unchanged to their own records. Lessons that teach a dplyr verb should share
-# this table rather than declaring their own, so the same five rows carry across the course.
-suppressPackageStartupMessages(library(dplyr))
-
+# A small example table: five catches from two fishing trips.
 example <- data.frame(
   trip_id      = c("trip_1", "trip_1", "trip_1", "trip_2", "trip_2"),
   landing_date = c("2024-01-05", "2024-01-05", "2024-01-05", "2024-01-06", "2024-01-06"),
@@ -15,5 +42,6 @@ example <- data.frame(
   catch_taxon  = c("Tilapia", "Snapper", "Octopus", "Tilapia", "Snapper"),
   catch_kg     = c(12, 5, 3, 8, 6)
 )
+
 example
 ```

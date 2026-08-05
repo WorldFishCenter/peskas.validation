@@ -1,0 +1,181 @@
+<!--
+SHARED "YOUR OWN RECORDS" PANEL for every Data Explorer lesson — pull it into a lesson with Quarto's
+include shortcode, naming this file (see the "Before we start" section of find.qmd for a working example).
+It replaces the earlier pair of includes, _landings-data.qmd and _landings-guard.qmd, which put the fetch
+and the data-frame conversion in front of the learner as two editable code boxes. Nobody in the audience
+can read `tryCatch(as.data.frame(...))`, and nobody needs to: loading their own records is plumbing, not a
+lesson. So all of it is hidden here, and what the learner sees instead is a status line and one button.
+
+NOTE: do not write that shortcode literally in this file, not even inside a comment like this one. Quarto
+resolves include shortcodes in a text pass that does not respect HTML comments, so a file naming itself
+includes itself, and the render dies with "Maximum call stack size exceeded".
+
+Six cells, in this order:
+
+ 1. `landings_state` (OJS, hidden) — fetches GET /api/data-download/explorer-data. This is the ONLY copy
+    of the contract with the app: the localStorage keys `authToken` and `apiBaseUrl` (published by
+    getApiBaseUrl in src/utils/axiosConfig.ts) and the endpoint path. Reading the base URL from
+    localStorage is what lets a static lesson page reach the API exactly like the app does:
+    dev -> http://localhost:3001/api, prod -> same-origin /api.
+    It is a *generator* so the panel can show "getting your records" before the request settles, rather
+    than leaving a blank gap that shifts the page when it fills. quarto-live's own webr-evaluate.ojs
+    template does the same thing (yield a spinner, then yield the awaited result), so async generators in
+    OJS cells are load-bearing in this extension already.
+    Referencing `landings_reload` at the top is what makes the button work: OJS re-runs a cell when
+    anything it reads changes, and Inputs.button counts its clicks, so each press re-fetches.
+    The row cap comes back in the `X-Row-Cap` response header rather than being written here, so the
+    number the panel quotes cannot drift from LESSON_ROW_CAP in api/data-download/explorer-data.js.
+
+ 2. `landings_rows` (OJS mutable) — the last rows that loaded SUCCESSFULLY, and the value the R cell
+    consumes. `landings_state` writes it and nothing else does. It exists so a reload cannot briefly blank
+    the data: read straight off the state, the loading phase would pass an empty array to the guard, the
+    guard would rebuild `landings` as an empty frame, and a learner who pressed Run in that window would
+    get an empty table for no visible reason.
+
+ 3. the status line — the only cell the learner reads. Written as a block with an early return per phase
+    rather than a nested conditional, so each phase is named where it is handled.
+
+ 4. the button, and 5. a hidden cell that disables it while a fetch is in flight, because every press is a
+    real PeSKAS call on a shared, rate-limited API key plus an audit row. Separate cell to avoid a cycle:
+    `landings_state` already depends on the click count, so the button cannot also depend on the state.
+
+ 6. the guard (webr, `include: false`) — turns those rows into the data frame every lesson box calls
+    `landings`. `include: false` evaluates the cell but shows no editor, no source and no output
+    (live.lua ~line 121), which is exactly what plumbing wants. `autorun` is deliberately absent: with
+    `edit: false` the block renders from webr-evaluate.ojs, which calls process() unconditionally —
+    `autorun` is read only by the editor template, so setting it here would mislead the next author.
+    When there is no data (not signed in, or the session has expired) it falls back to an EMPTY frame that
+    still HAS the columns the lessons name, so the boxes below return an empty table instead of reporting
+    a missing column — a message the learner would read as their own spelling mistake. If a lesson starts
+    naming another column, add it here too.
+
+The "not signed in" and "could not load" wording lives in the panel, not in R, so a learner who is not
+signed in reads it immediately instead of waiting ~30s for webR to boot before R can print a warning.
+-->
+
+::: {.lesson-plumbing}
+```{ojs}
+//| echo: false
+landings_state = {
+  landings_reload;
+
+  yield ({ phase: "loading" });
+
+  const token = localStorage.getItem("authToken");
+  if (!token) {
+    yield ({ phase: "signed-out" });
+    return;
+  }
+
+  const apiBase = localStorage.getItem("apiBaseUrl") || "/api";
+  try {
+    const res = await fetch(`${apiBase}/data-download/explorer-data`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
+    });
+    if (!res.ok) {
+      yield ({ phase: res.status === 401 || res.status === 403 ? "signed-out" : "failed" });
+      return;
+    }
+    // The endpoint returns a bare array. Normalising anyway: `rows.length` is read straight into the
+    // panel text, so anything else here would throw and take the whole panel down with it.
+    const rows = await res.json();
+    const safeRows = Array.isArray(rows) ? rows : [];
+    // Absent on an older deployment; the panel then just omits the sentence about the cap.
+    const cap = Number(res.headers.get("X-Row-Cap"));
+    mutable landings_rows = safeRows;
+    yield ({ phase: "ready", rows: safeRows, cap: Number.isFinite(cap) && cap > 0 ? cap : null });
+  } catch {
+    yield ({ phase: "failed" });
+  }
+}
+```
+
+```{ojs}
+//| echo: false
+mutable landings_rows = []
+```
+:::
+
+::: {.card .lesson-data-panel}
+::: {.card-body}
+
+```{=html}
+<p class="card-title fw-semibold mb-2">Your own records</p>
+```
+
+::: {.lesson-data-status role="status" aria-live="polite"}
+```{ojs}
+//| echo: false
+{
+  const s = landings_state;
+
+  if (s.phase === "loading") return html`<div class="alert alert-light mb-0 d-flex align-items-center">
+    <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+    Getting your records&#8230;
+  </div>`;
+
+  if (s.phase === "signed-out") return html`<div class="alert alert-warning mb-0">
+    <strong>You are not signed in, so there are no records to work with.</strong>
+    The boxes below will still run, but they will come back empty.
+    Open this lesson from the <strong>Data Explorer</strong> tab while signed in.
+  </div>`;
+
+  if (s.phase === "failed") return html`<div class="alert alert-warning mb-0">
+    <strong>Your records could not be loaded just now.</strong>
+    This is usually a connection problem, and nothing is wrong with your data.
+    Press the button below to try again.
+  </div>`;
+
+  const capped = s.cap && s.rows.length >= s.cap;
+  return html`<div class="alert alert-success mb-0">
+    <strong>Your records are ready.</strong>
+    ${s.rows.length.toLocaleString()} records loaded when you opened this page.
+    ${capped
+      ? html`That is the most a lesson loads. If you have more records, open the
+             <strong>Data Download</strong> tab to get them all.`
+      : html`They are the same records you can open in the <strong>Data Download</strong> tab.`}
+  </div>`;
+}
+```
+:::
+
+```{ojs}
+//| echo: false
+viewof landings_reload = {
+  // Inputs.button starts at 0 and counts clicks, which is all the trigger `landings_state` needs.
+  // Its plain <button> is restyled to match the theme; guarded because a null here would break the cell
+  // and the learner would lose the button altogether.
+  const view = Inputs.button("Load my records again");
+  const button = view.querySelector("button");
+  if (button) button.className = "btn btn-sm btn-outline-primary";
+  return view;
+}
+```
+
+:::
+:::
+
+::: {.lesson-plumbing}
+```{ojs}
+//| echo: false
+{
+  // Nothing rendered — this only keeps the button in step with the fetch. See note 5 in the header.
+  const button = viewof landings_reload.querySelector("button");
+  if (button) button.disabled = landings_state.phase === "loading";
+}
+```
+
+```{webr}
+#| include: false
+#| input:
+#|   - landings_rows
+landings <- tryCatch(as.data.frame(landings_rows), error = function(e) data.frame())
+
+if (nrow(landings) == 0) {
+  landings <- data.frame(
+    landing_date = character(), gaul_2_name = character(), gear = character(),
+    catch_taxon  = character(), catch_kg = numeric()
+  )
+}
+```
+:::

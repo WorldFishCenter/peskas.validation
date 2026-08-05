@@ -1,14 +1,11 @@
 ---
 title: "See it as a picture"
+subtitle: "Lesson 5 of 5 · about 15 minutes"
 webr:
   render-df: reactable
 ---
 
 {{< include _extensions/r-wasm/live/_knitr.qmd >}}
-
-```{=html}
-<p class="text-secondary" style="margin-top:-.75rem;font-size:.9rem">Lesson 5 of 5 &#183; about 15 minutes</p>
-```
 
 ::: {.callout-note appearance="simple"}
 ## What this lesson is for
@@ -47,17 +44,7 @@ html`${
 
 ## Before we start
 
-The box below switches on **dplyr** and loads the small example table, the same five rows as before.
-
-{{< include _slow-start-notice.qmd >}}
-
-{{< include _example-data.qmd >}}
-
-This next box brings in **your own landing records** and gives them the name `landings`.
-
-{{< include _landings-data.qmd >}}
-
-{{< include _landings-guard.qmd >}}
+{{< include _before-we-start.qmd >}}
 
 ## A chart is just a table, drawn
 

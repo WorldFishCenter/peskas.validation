@@ -1,14 +1,11 @@
 ---
 title: "Getting to know your data"
+subtitle: "Lesson 2 of 5 · about 15 minutes"
 webr:
   render-df: reactable
 ---
 
 {{< include _extensions/r-wasm/live/_knitr.qmd >}}
-
-```{=html}
-<p class="text-secondary" style="margin-top:-.75rem;font-size:.9rem">Lesson 2 of 5 &#183; about 15 minutes</p>
-```
 
 ::: {.callout-note appearance="simple"}
 ## What this lesson is for
@@ -49,26 +46,20 @@ It is easier to see the shape on a small table first. Here is a made-up example 
 trips**, with each trip shown in its **own colour**.
 
 ```{=html}
-<style>
-/* colour rows by trip — scoped to row classes (Quarto re-renders the table and drops
-   table-level classes, but keeps row classes); !important beats Bootstrap's cell bg. */
-tr.trip1 td { background: #dbe9f6 !important; }   /* trip_1 — blue  */
-tr.trip2 td { background: #fdebd0 !important; }   /* trip_2 — amber */
-p.legend span { display:inline-block; width:.9em; height:.9em; vertical-align:middle; border:1px solid #888; margin-right:.3em; }
-</style>
-
+<div class="diagram">
 <table class="table">
   <thead><tr><th>survey_id</th><th>trip_id</th><th>landing_date</th><th>gaul_2_name</th><th>gear</th><th>catch_taxon</th><th>catch_kg</th><th>n_catch</th><th>tot_catch_kg</th></tr></thead>
   <tbody>
-    <tr class="trip1"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>Tilapia</td><td>12</td><td>3</td><td>20</td></tr>
-    <tr class="trip1"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>Snapper</td><td>5</td><td>3</td><td>20</td></tr>
-    <tr class="trip1"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>Octopus</td><td>3</td><td>3</td><td>20</td></tr>
-    <tr class="trip2"><td>survey_2</td><td>trip_2</td><td>2024-01-06</td><td>Vanga</td><td>gillnet</td><td>Tilapia</td><td>8</td><td>2</td><td>14</td></tr>
-    <tr class="trip2"><td>survey_2</td><td>trip_2</td><td>2024-01-06</td><td>Vanga</td><td>gillnet</td><td>Snapper</td><td>6</td><td>2</td><td>14</td></tr>
+    <tr class="grp-a"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>Tilapia</td><td>12</td><td>3</td><td>20</td></tr>
+    <tr class="grp-a"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>Snapper</td><td>5</td><td>3</td><td>20</td></tr>
+    <tr class="grp-a"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>Octopus</td><td>3</td><td>3</td><td>20</td></tr>
+    <tr class="grp-b"><td>survey_2</td><td>trip_2</td><td>2024-01-06</td><td>Vanga</td><td>gillnet</td><td>Tilapia</td><td>8</td><td>2</td><td>14</td></tr>
+    <tr class="grp-b"><td>survey_2</td><td>trip_2</td><td>2024-01-06</td><td>Vanga</td><td>gillnet</td><td>Snapper</td><td>6</td><td>2</td><td>14</td></tr>
   </tbody>
 </table>
+</div>
 
-<p class="legend"><span style="background:#dbe9f6"></span> Trip 1 &nbsp;&nbsp; <span style="background:#fdebd0"></span> Trip 2</p>
+<p class="diagram-legend"><span class="grp-a"></span> Trip 1 &nbsp;&nbsp; <span class="grp-b"></span> Trip 2</p>
 ```
 
 Take a moment to read it. Notice that some things **repeat** down the table while others **change** on
@@ -132,20 +123,20 @@ In the example, `trip_1` brought back three kinds of fish, so it fills three row
 two, so it fills two rows. Here is that first trip drawn as a picture:
 
 ```{=html}
-<svg viewBox="0 0 640 210" role="img" aria-label="One trip with three catches" style="max-width:640px;width:100%;height:auto;font-family:sans-serif;margin:.6rem 0">
-  <rect x="10" y="75" width="175" height="60" rx="8" fill="#dbe9f6" stroke="#5b86b3"/>
+<svg class="diagram diagram-svg" viewBox="0 0 640 210" role="img" aria-label="One trip with three catches">
+  <rect class="grp-a" x="10" y="75" width="175" height="60" rx="8"/>
   <text x="97" y="100" text-anchor="middle" font-size="15" font-weight="bold">Trip  trip_1</text>
   <text x="97" y="120" text-anchor="middle" font-size="12">Shimoni &#183; 5 Jan</text>
-  <path d="M185 105 C 235 105 235 35 285 35"   fill="none" stroke="#5b86b3" stroke-width="2"/>
-  <path d="M185 105 H 285"                       fill="none" stroke="#5b86b3" stroke-width="2"/>
-  <path d="M185 105 C 235 105 235 175 285 175"  fill="none" stroke="#5b86b3" stroke-width="2"/>
-  <rect x="285" y="15"  width="345" height="40" rx="6" fill="#fff" stroke="#aaa"/><text x="300" y="40" font-size="13">Tilapia &#8212; 12 kg &#160;&#160;<tspan fill="#888">row 1</tspan></text>
-  <rect x="285" y="85"  width="345" height="40" rx="6" fill="#fff" stroke="#aaa"/><text x="300" y="110" font-size="13">Snapper &#8212; 5 kg &#160;&#160;<tspan fill="#888">row 2</tspan></text>
-  <rect x="285" y="155" width="345" height="40" rx="6" fill="#fff" stroke="#aaa"/><text x="300" y="180" font-size="13">Octopus &#8212; 3 kg &#160;&#160;<tspan fill="#888">row 3</tspan></text>
+  <path class="link" d="M185 105 C 235 105 235 35 285 35"/>
+  <path class="link" d="M185 105 H 285"/>
+  <path class="link" d="M185 105 C 235 105 235 175 285 175"/>
+  <rect class="row-box" x="285" y="15"  width="345" height="40" rx="6"/><text x="300" y="40" font-size="13">Tilapia &#8212; 12 kg &#160;&#160;<tspan class="row-label">row 1</tspan></text>
+  <rect class="row-box" x="285" y="85"  width="345" height="40" rx="6"/><text x="300" y="110" font-size="13">Snapper &#8212; 5 kg &#160;&#160;<tspan class="row-label">row 2</tspan></text>
+  <rect class="row-box" x="285" y="155" width="345" height="40" rx="6"/><text x="300" y="180" font-size="13">Octopus &#8212; 3 kg &#160;&#160;<tspan class="row-label">row 3</tspan></text>
 </svg>
 ```
 
-*One trip, three kinds of fish → three rows, all sharing `trip_id = trip_1`.*
+[One trip, three kinds of fish → three rows, all sharing `trip_id = trip_1`.]{.diagram-caption}
 
 The column **`n_catch`** writes that number down for you: it is **how many kinds of catch the trip
 recorded**. You don't have to take it on trust — you can count the rows for each trip yourself. Press
@@ -168,13 +159,13 @@ Now look across the columns. Once you see it, you cannot un-see it: the columns 
 (Here the colours mark the **two kinds of columns** — not the trips as before.)
 
 ```{=html}
-<div style="display:flex;gap:14px;flex-wrap:wrap;margin:.6rem 0;font-size:.95rem">
-  <div style="flex:1;min-width:240px;background:#e6f4ea;border:1px solid #8cc6a0;border-radius:8px;padding:10px">
-    <strong>About the trip</strong> <span style="color:#555">(same on every row)</span><br>
+<div class="col-groups">
+  <div class="about-trip">
+    <strong>About the trip</strong> <span class="text-secondary">(same on every row)</span><br>
     <code>landing_date</code>, <code>gaul_2_name</code>, <code>gear</code>, <code>n_fishers</code>, <code>tot_catch_kg</code> &#8230;
   </div>
-  <div style="flex:1;min-width:240px;background:#f3e8f7;border:1px solid #c79bd6;border-radius:8px;padding:10px">
-    <strong>About each catch</strong> <span style="color:#555">(changes on each row)</span><br>
+  <div class="about-catch">
+    <strong>About each catch</strong> <span class="text-secondary">(changes on each row)</span><br>
     <code>catch_taxon</code>, <code>catch_kg</code>, <code>length_cm</code>, <code>catch_price</code>
   </div>
 </div>
@@ -206,24 +197,16 @@ three things in your head:
 
 ## Looking at your own data
 
-You now know the shape. Now let's load **your real landing records** into the same kind of table. This is
-the same data you can open in the **Data Download** tab.
+You now know the shape. Now look at **your real landing records** in the same kind of table. They were
+fetched for you when this page opened:
 
-Press **Run**. The first time, it may take a little while.
+{{< include _landings-panel.qmd >}}
 
-{{< include _landings-data.qmd >}}
+Your records are held under the name **`landings`**. Press **Run** to see them:
 
 ```{webr}
 #| autorun: false
-#| input:
-#|   - landings_data
-landings <- tryCatch(as.data.frame(landings_data), error = function(e) data.frame())
-
-if (nrow(landings) == 0) {
-  cat("Your data will appear here once you are signed in to the platform.\n")
-} else {
-  landings
-}
+landings
 ```
 
 ::: {.callout-tip appearance="simple"}

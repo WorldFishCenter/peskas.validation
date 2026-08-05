@@ -20,6 +20,7 @@
  *   defaults to their first accessible survey's country so lessons work without a picker.
  *
  * Response: application/json — a bare array of landing-record objects.
+ *   Header `X-Row-Cap` carries LESSON_ROW_CAP so the lesson can report the cap without duplicating it.
  *
  * @module api/data-download/explorer-data
  */
@@ -102,6 +103,13 @@ async function handler(req, res) {
       : (Array.isArray(apiResponse?.data) ? apiResponse.data : []);
 
     res.setHeader('Cache-Control', 'no-store');
+
+    // The lesson panel tells the learner how many records it loaded, so it has to read the cap from
+    // here rather than repeat the number — otherwise changing LESSON_ROW_CAP silently makes the lesson
+    // lie. A header keeps the body a bare array, which is the shape quarto-live's `input` option
+    // converts straight into an R data.frame. Readable cross-origin because setCorsHeaders lists this
+    // header in EXPOSED_HEADERS (lessons run on :3000 against the API on :3001 in development).
+    res.setHeader('X-Row-Cap', String(LESSON_ROW_CAP));
 
     await logAuditEvent(database, {
       username: req.user.username,
