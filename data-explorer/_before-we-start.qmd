@@ -1,0 +1,31 @@
+<!--
+SHARED BODY OF THE "Before we start" SECTION, for every dplyr lesson (find, summarise, chart) — pull it
+into a lesson with Quarto's include shortcode, naming this file (see the "Before we start" section of
+find.qmd for a working example).
+
+NOTE: do not write that shortcode literally in this file, not even inside a comment like this one. Quarto
+resolves include shortcodes in a text pass that does not respect HTML comments, so a file naming itself
+includes itself, and the render dies with "Maximum call stack size exceeded".
+
+Every lesson from 3 onwards opens exactly the same way: same example table, same first-load warning, same
+records panel. Written out per lesson it had already drifted into three versions differing only in wording
+("the same five rows as before" / "as the last lesson" / nothing at all) — three chances to say something
+slightly less clear, and three files to edit whenever the panel changes.
+
+The `## Before we start` heading stays in each LESSON rather than living here, so a lesson can put a line
+of its own between the heading and this body: find.qmd introduces dplyr by name that way, and it has to
+read before the boxes, not after them. Quarto resolves nested includes, so the three inner ones work from
+whichever lesson pulls this file in.
+-->
+
+The box below loads the small example table, the same five rows as the last lesson. It runs **on its own**
+when the page opens, so you do not have to do anything with it.
+
+{{< include _slow-start-notice.qmd >}}
+
+{{< include _example-data.qmd >}}
+
+Your own landing records are fetched at the same time, under the name **`landings`**, so they are ready by
+the time you need them further down the page.
+
+{{< include _landings-panel.qmd >}}

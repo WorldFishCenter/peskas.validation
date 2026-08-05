@@ -1,0 +1,329 @@
+---
+title: "Find what you need"
+subtitle: "Lesson 3 of 5 · about 20 minutes"
+webr:
+  render-df: reactable
+---
+
+{{< include _extensions/r-wasm/live/_knitr.qmd >}}
+
+::: {.callout-note appearance="simple"}
+## What this lesson is for
+
+Until now you have looked at your **whole** table. But usually you want just a part of it — only your own
+district, only the big catches, or only a few columns.
+
+This lesson gives you three simple commands to do that: **list the values** in a column, **keep only the
+rows** you want, and **keep only the columns** you want. At the end you will also learn **what to do when
+something goes wrong** — because it will, and it is easy to fix.
+
+Press **Run** on each box. Remember: **you cannot break anything.**
+:::
+
+## First, one question from last time
+
+Before we start, bring back the most important thing from the last lesson. There is no penalty for a
+wrong answer, and remembering it yourself makes the rest of this lesson easier.
+
+```{ojs}
+//| echo: false
+viewof recall_row = Inputs.radio(
+  ["One fishing trip", "One kind of fish from one trip", "One fisher"],
+  { label: "In your table, what is one row?" }
+)
+```
+
+```{ojs}
+//| echo: false
+html`${
+  // `== null` on purpose: Inputs.radio starts at null, not undefined, when nothing is picked.
+  recall_row == null
+    ? '<div class="alert alert-light py-2">Pick an answer above.</div>'
+    : recall_row === "One kind of fish from one trip"
+      ? '<div class="alert alert-success py-2"><strong>Yes.</strong> One row is one kind of fish from one trip. A trip that landed three kinds of fish fills three rows, and they all share the same <code>trip_id</code>.</div>'
+      : '<div class="alert alert-warning py-2"><strong>Not quite — and this one matters.</strong> One row is <strong>one kind of fish from one trip</strong>, not a whole trip and not one fisher. A trip that landed three kinds of fish fills three rows, sharing one <code>trip_id</code>.</div>'
+}`
+```
+
+## Before we start
+
+These commands come from a free toolkit called **dplyr**. It is already switched on for you.
+
+{{< include _before-we-start.qmd >}}
+
+## What values are in a column?
+
+Before you can ask for "only one district", you need to know which districts exist. **`distinct()`** lists
+each value in a column **once**, leaving out the repeats. Press **Run**:
+
+```{webr}
+#| autorun: false
+distinct(example, gaul_2_name)
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** just **Shimoni** and **Vanga**. Even though Shimoni is on three rows, it is
+listed once. This is also how you find the **exact spelling** of a value to use in the next step.
+:::
+
+Now on your own data. These are the real districts in your records. Press **Run**, then try changing
+`gaul_2_name` to `gear` to see your fishing methods:
+
+```{webr}
+#| autorun: false
+distinct(landings, gaul_2_name)
+```
+
+::: {.callout-note appearance="simple"}
+**Keep this list in view.** These are your own names, spelled exactly as your data spells them. You will
+copy one of them further down the page.
+:::
+
+## Show only the rows you want
+
+**`filter()`** keeps only the rows that match a condition you give — for example, only the `gillnet`
+trips.
+
+::: {.callout-important appearance="simple"}
+Two small things to get right:
+
+- Use **two** equals signs `==` for "is equal to" (one `=` means something else and will not work).
+- A word like `"gillnet"` needs **quotes**. A number, like `5`, does not.
+:::
+
+**First, have a guess.** Look back at the little `example` table at the top of the page. It has **5
+rows**. Now think about what `filter(example, gear == "gillnet")` will give back.
+
+Guessing first is not a test. It is the fastest way to understand what a command does, and a wrong guess
+teaches you more than a right one.
+
+```{ojs}
+//| echo: false
+viewof predict_filter = Inputs.radio(
+  ["1 row", "2 rows", "5 rows"],
+  { label: "How many rows will come back?" }
+)
+```
+
+```{ojs}
+//| echo: false
+html`${
+  // `== null` on purpose: Inputs.radio starts at null, not undefined, when nothing is picked.
+  predict_filter == null
+    ? '<div class="alert alert-light py-2">Pick an answer above, then press Run below to check it.</div>'
+    : predict_filter === "2 rows"
+      ? '<div class="alert alert-success py-2"><strong>Yes — 2 rows.</strong> Only two rows have <code>gillnet</code> in the <code>gear</code> column, so only those two are kept. Press <strong>Run</strong> and see.</div>'
+      : '<div class="alert alert-warning py-2"><strong>Have another look.</strong> Count the rows in the table above where <code>gear</code> says <code>gillnet</code> — that is how many you will get. A wrong guess is useful: it shows you exactly what to look at.</div>'
+}`
+```
+
+Now press **Run**:
+
+```{webr}
+#| autorun: false
+filter(example, gear == "gillnet")
+```
+
+```{=html}
+<div class="diagram">
+<table class="table">
+  <thead><tr><th>gaul_2_name</th><th>gear</th><th>catch_taxon</th><th>catch_kg</th></tr></thead>
+  <tbody>
+    <tr class="drop"><td>Shimoni</td><td>hand line</td><td>species 1</td><td>12</td></tr>
+    <tr class="drop"><td>Shimoni</td><td>hand line</td><td>species 2</td><td>5</td></tr>
+    <tr class="drop"><td>Shimoni</td><td>hand line</td><td>species 3</td><td>3</td></tr>
+    <tr class="keep"><td>Vanga</td><td>gillnet</td><td>species 1</td><td>8</td></tr>
+    <tr class="keep"><td>Vanga</td><td>gillnet</td><td>species 2</td><td>6</td></tr>
+  </tbody>
+</table>
+</div>
+```
+[`filter(gear == "gillnet")` keeps the green rows and drops the rest.]{.diagram-caption}
+
+You can also filter on a **number** — no quotes needed. This keeps only catches heavier than 5 kg:
+
+```{webr}
+#| autorun: false
+filter(example, catch_kg > 5)
+```
+
+Now on your real data. This keeps only the catches heavier than 20 kg — the big ones. Press **Run**:
+
+```{webr}
+#| autorun: false
+filter(landings, catch_kg > 20)
+```
+
+### Your turn: your own district
+
+Now you do one. In the box below, replace the blanks `______` with **one district name from your own
+list** further up the page. Keep the quotes. Then press **Run**.
+
+If you get stuck, press **Hint**. Nothing here can break.
+
+```{webr}
+#| exercise: ex_filter_district
+#| envir: global
+#| caption: "Keep only the rows from your own district"
+filter(landings, gaul_2_name == "______")
+```
+
+::: { .hint exercise="ex_filter_district" }
+Scroll up to the `distinct(landings, gaul_2_name)` box and copy one name **exactly** as it is spelled
+there, between the quotes. For example, if your list shows `Kilifi`, you would write
+`filter(landings, gaul_2_name == "Kilifi")`.
+:::
+
+::: { .solution exercise="ex_filter_district" }
+Any district from your own list works. With a district called `Kilifi` it would be:
+
+```r
+filter(landings, gaul_2_name == "Kilifi")
+```
+:::
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** only the rows for that one district.
+
+If you get an **empty** table, the name is probably spelled differently in your data. Go back to the
+`distinct()` list and copy it again, exactly.
+:::
+
+## When the answer comes back red
+
+Now that you are typing, sooner or later you will press **Run** and get **red text** instead of a table.
+This happens to everyone, every day, including the people who wrote these lessons.
+
+::: {.callout-important appearance="simple"}
+**Red text is not damage.** Nothing is broken, nothing is lost, and your real data cannot be changed from
+this page. Red text is simply R saying: *"I did not understand one word."*
+
+You do not need to read all of it. Look for the **last line** — that is the useful one.
+:::
+
+Almost every red message you will meet is one of just **two**. Here is each one, and what to do.
+
+### "object ... not found"
+
+This means R met a name it does not recognise. There are two common reasons.
+
+**The name is spelled differently from your data.** The box below has a mistake on purpose. Press **Run**
+to see the red text, then **fix the spelling** and press **Run** again.
+
+```{webr}
+#| autorun: false
+#| error: true
+# `geer` is not a column. Fix it, then press Run again.
+filter(example, geer == "gillnet")
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** a red line ending in `object 'geer' not found`. R is telling you the name it
+could not find — `geer`. Change it to `gear` and the table comes back.
+
+When this happens on your own data, check the real spelling with `names(landings)`, or with the
+`distinct()` list further up the page.
+:::
+
+**A word is missing its quotes.** `filter(example, gear == gillnet)` gives the *same* message,
+`object 'gillnet' not found`. Without quotes, R thinks `gillnet` is the name of a column.
+
+Words always need quotes, like `"gillnet"`. Numbers never do, like `5`.
+
+### "We detected a named input"
+
+This one means you typed **one** `=` where **two** are needed. Press **Run** to see it, then fix it.
+
+```{webr}
+#| autorun: false
+#| error: true
+# One = instead of two. Fix it, then press Run again.
+filter(example, gear = "gillnet")
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** red text saying R detected a *named input*, and suggesting you meant `==`. It is
+right. Change the single `=` to `==` and press **Run**.
+:::
+
+::: {.callout-note appearance="simple"}
+## Two ways out, always
+
+- **Edit and press Run again.** You can do this as many times as you like.
+- **Press "Start Over"** on the box to put the original instruction back, exactly as it was when the page
+  opened.
+
+You cannot get stuck, and you cannot break anything.
+:::
+
+## Keep only the columns you want
+
+Your table has many columns. Often you want just a few — say the date, the district and the weight.
+**`select()`** keeps only the columns you name:
+
+```{webr}
+#| autorun: false
+select(example, landing_date, gaul_2_name, catch_kg)
+```
+
+```{=html}
+<div class="col-chips diagram">
+  Keep: <span class="keep">landing_date</span><span class="keep">gaul_2_name</span><span class="keep">catch_kg</span>
+  &#160;&#160; Drop: <span class="drop">trip_id</span><span class="drop">gear</span><span class="drop">catch_taxon</span>
+</div>
+```
+[`select()` keeps the green columns and leaves out the rest.]{.diagram-caption}
+
+On your real data, keep just three useful columns. Press **Run**, then try adding another column name:
+
+```{webr}
+#| autorun: false
+select(landings, landing_date, gaul_2_name, catch_kg)
+```
+
+## Do two steps at once: the pipe `|>`
+
+Most real questions need two steps: keep only **your** district, **and** keep only a few columns. The little
+symbol **`|>`** (called the *pipe*) lets you do steps **in order**, left to right. Read it as the word
+**"then"**.
+
+The box below says: *take the landings, **then** keep only the catches over 20 kg, **then** keep these
+three columns.* Press **Run**:
+
+```{webr}
+#| autorun: false
+landings |>
+  filter(catch_kg > 20) |>
+  select(landing_date, gaul_2_name, catch_kg)
+```
+
+::: {.callout-tip appearance="simple"}
+This is the kind of question you will ask most often: **narrow the rows, then narrow the columns.**
+
+Try changing the `20` to a bigger number and pressing **Run** again — fewer rows come back. Or swap the
+first step for your own district, the way you did in the exercise above.
+:::
+
+## What you have learned
+
+- **`distinct(table, column)`** — list the values in a column once (find your districts, gears, …).
+- **`filter(table, condition)`** — keep only the rows that match (use `==`, and quotes for words).
+- **`select(table, columns…)`** — keep only the columns you name.
+- **`|>`** ("then") — do several steps in order.
+
+And when the answer comes back **red**:
+
+- `object ... not found` — a name is spelled wrong, or a word is missing its quotes.
+- `named input` — you typed one `=` where you need two, `==`.
+- Either way: edit and press **Run** again, or press **Start Over**. Nothing is broken.
+
+Next: **Add it up** — totals and averages by district, gear or month.
+
+<!-- Raw HTML so Quarto does NOT rewrite this root-relative link (served at depth 2). -->
+
+```{=html}
+<p class="mt-4">
+  <a href="/data-explorer/lessons/summarise.html" class="btn btn-primary">Next: Add it up &#8594;</a>
+  <a href="/data-explorer" class="btn btn-outline-primary ms-2">&#8592; Back to Data Explorer</a>
+</p>
+```

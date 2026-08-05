@@ -1,0 +1,305 @@
+---
+title: "Add it up"
+subtitle: "Lesson 4 of 5 · about 15 minutes"
+webr:
+  render-df: reactable
+---
+
+{{< include _extensions/r-wasm/live/_knitr.qmd >}}
+
+::: {.callout-note appearance="simple"}
+## What this lesson is for
+
+This is where the data starts answering real questions: *What is the total catch at each district? Which
+gear brings in the most? How many trips were recorded last month?*
+
+All of these are **"add it up by group"** questions. This lesson shows you how, with two commands.
+Press **Run** on each box. Remember: **you cannot break anything.**
+:::
+
+## First, one question from last time
+
+Bring back one thing from the last lesson before we add to it. A wrong answer costs nothing.
+
+```{ojs}
+//| echo: false
+viewof recall_filter = Inputs.radio(
+  ["distinct()", "filter()", "select()"],
+  { label: "Which command keeps only some of the rows?" }
+)
+```
+
+```{ojs}
+//| echo: false
+html`${
+  // `== null` on purpose: Inputs.radio starts at null, not undefined, when nothing is picked.
+  recall_filter == null
+    ? '<div class="alert alert-light py-2">Pick an answer above.</div>'
+    : recall_filter === "filter()"
+      ? '<div class="alert alert-success py-2"><strong>Yes.</strong> <code>filter()</code> keeps rows. <code>select()</code> keeps columns, and <code>distinct()</code> lists the values in a column once each.</div>'
+      : '<div class="alert alert-warning py-2"><strong>Have another look.</strong> Rows go across, and <code>filter()</code> is the one that keeps only some of them. <code>select()</code> keeps <em>columns</em>, and <code>distinct()</code> lists the values in a column once each.</div>'
+}`
+```
+
+## Before we start
+
+{{< include _before-we-start.qmd >}}
+
+## One number for your whole table
+
+**`summarise()`** turns a whole column into a single answer. To add up all the weights, you give the
+answer a name (`total_kg`) and tell R to `sum` the `catch_kg` column. Press **Run**:
+
+```{webr}
+#| autorun: false
+example |>
+  summarise(total_kg = sum(catch_kg))
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** one row with **`total_kg = 34`**. That is the weight of all five catches added
+together (12 + 5 + 3 + 8 + 6). The part `total_kg =` is just the **name** you chose for the answer.
+:::
+
+You can ask for more than one answer at a time. **`n()`** counts the rows. Press **Run**:
+
+```{webr}
+#| autorun: false
+example |>
+  summarise(total_kg = sum(catch_kg), number_of_catches = n())
+```
+
+## A number for each group
+
+A single total for everything is rarely what you want. Usually you want **one total per district**, or per
+gear, or per month. That is what **`group_by()`** is for: you tell R which column to group on, and then
+`summarise()` gives you **one answer for each group**.
+
+**Have a guess first.** The `example` table has **5 rows**, in two districts: Shimoni and Vanga.
+
+```{ojs}
+//| echo: false
+viewof predict_group = Inputs.radio(
+  ["5 rows — one for each catch", "2 rows — one for each district", "1 row — one grand total"],
+  { label: "How many rows will the answer have?" }
+)
+```
+
+```{ojs}
+//| echo: false
+html`${
+  // `== null` on purpose: Inputs.radio starts at null, not undefined, when nothing is picked.
+  predict_group == null
+    ? '<div class="alert alert-light py-2">Pick an answer above, then press Run below to check it.</div>'
+    : predict_group === "2 rows — one for each district"
+      ? '<div class="alert alert-success py-2"><strong>Yes — 2 rows.</strong> This is the whole idea of grouping: <strong>one row of answer for each group</strong>. Two districts, so two rows.</div>'
+      : '<div class="alert alert-warning py-2"><strong>Have another look.</strong> Grouping gives you <strong>one row of answer per group</strong>. So ask yourself: how many different districts are there? A wrong guess here is a useful one — this is the step people find hardest.</div>'
+}`
+```
+
+Now press **Run**:
+
+```{webr}
+#| autorun: false
+example |>
+  group_by(gaul_2_name) |>
+  summarise(total_kg = sum(catch_kg))
+```
+
+Read it as: *take the example, **group by** district, **then** add up the weight in each group.* Here is
+what that does to the rows:
+
+```{=html}
+<div class="diagram diagram-flow">
+<table class="table">
+  <thead><tr><th>gaul_2_name</th><th>catch_kg</th></tr></thead>
+  <tbody>
+    <tr class="grp-a"><td>Shimoni</td><td>12</td></tr>
+    <tr class="grp-a"><td>Shimoni</td><td>5</td></tr>
+    <tr class="grp-a"><td>Shimoni</td><td>3</td></tr>
+    <tr class="grp-b"><td>Vanga</td><td>8</td></tr>
+    <tr class="grp-b"><td>Vanga</td><td>6</td></tr>
+  </tbody>
+</table>
+<div class="arrow">&#8594;</div>
+<table class="table">
+  <thead><tr><th>gaul_2_name</th><th>total_kg</th></tr></thead>
+  <tbody>
+    <tr class="grp-a"><td>Shimoni</td><td>20</td></tr>
+    <tr class="grp-b"><td>Vanga</td><td>14</td></tr>
+  </tbody>
+</table>
+</div>
+```
+[Each district's rows collapse into one total. Shimoni's three rows (12 + 5 + 3) become **20**. Vanga's
+two (8 + 6) become **14**.]{.diagram-caption}
+
+## More than one summary, on any column
+
+You can group by **any** column, and ask for several summaries at once. **`mean()`** gives the average.
+This groups by the kind of fish and shows the total, the average, and the count for each:
+
+```{webr}
+#| autorun: false
+example |>
+  group_by(catch_taxon) |>
+  summarise(
+    total_kg   = sum(catch_kg),
+    average_kg = mean(catch_kg),
+    number     = n()
+  )
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** one row for each kind of fish: **species 1**, **species 2** and **species 3**.
+Each row has its total weight, its average weight, and how many catches there were.
+:::
+
+## Now your own data
+
+Let's total the catch **per district** in your real data.
+
+Real records sometimes have a **missing** weight. Adding `na.rm = TRUE` tells R to skip those, so you
+still get an answer. Press **Run**:
+
+```{webr}
+#| autorun: false
+landings |>
+  group_by(gaul_2_name) |>
+  summarise(total_kg = sum(catch_kg, na.rm = TRUE))
+```
+
+## Put it all together
+
+This is the real reward. Using everything from the last two lessons, you can answer a proper question,
+like *"how much does each gear bring in?"* You **group by** gear, then **add up**. Press **Run**:
+
+```{webr}
+#| autorun: false
+landings |>
+  group_by(gear) |>
+  summarise(
+    total_kg = sum(catch_kg, na.rm = TRUE),
+    number   = n()
+  )
+```
+
+### Your turn: your own district
+
+Now answer the question a supervisor actually asks: *"in **my** district, how much does each gear bring
+in?"*
+
+That means one more step at the front. **Filter** to your district, **group by** gear, then **add up**.
+
+Replace the blanks `______` with one district name from your own data, keeping the quotes, then press
+**Run**. Press **Hint** if you need it.
+
+```{webr}
+#| exercise: ex_summary_district
+#| envir: global
+#| caption: "Total catch per gear, in your own district"
+landings |>
+  filter(gaul_2_name == "______") |>
+  group_by(gear) |>
+  summarise(
+    total_kg = sum(catch_kg, na.rm = TRUE),
+    number   = n()
+  )
+```
+
+::: { .hint exercise="ex_summary_district" }
+You can see the district names in your own data with `distinct(landings, gaul_2_name)`. Copy one **exactly**
+as it is spelled, between the quotes.
+:::
+
+::: { .solution exercise="ex_summary_district" }
+With a district called `Kilifi` it would be:
+
+```r
+landings |>
+  filter(gaul_2_name == "Kilifi") |>
+  group_by(gear) |>
+  summarise(
+    total_kg = sum(catch_kg, na.rm = TRUE),
+    number   = n()
+  )
+```
+:::
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** one row per fishing method used in that district, with its total weight and how
+many catch records there were. That is a real answer to a real question — from your own records.
+
+If the table comes back **empty**, the district name is spelled differently in your data. Check it with
+`distinct(landings, gaul_2_name)` and copy it again.
+:::
+
+## Now write one from nothing
+
+One last task, and this time there are no blanks to fill. The box below is **empty**. Write the answer
+yourself, using the two commands from this lesson.
+
+**The question:** *across all your records, what is the total weight for each kind of fish?*
+
+Take your time. Press **Hint** as often as you need, and **Solution** if you would rather see it and read
+it through. Getting there with a hint still counts.
+
+```{webr}
+#| exercise: ex_make_taxon
+#| envir: global
+#| caption: "Total weight for each kind of fish"
+# Write your answer here. Start from landings.
+
+```
+
+::: { .hint exercise="ex_make_taxon" }
+Every answer in this lesson had the same three parts. Start from your table, **then** group, **then** add
+up:
+
+```r
+landings |>
+  group_by( ... ) |>
+  summarise( ... )
+```
+:::
+
+::: { .hint exercise="ex_make_taxon" }
+The kind of fish is the column `catch_taxon`, and the weight is `catch_kg`. Remember `na.rm = TRUE` so
+missing weights are skipped.
+:::
+
+::: { .solution exercise="ex_make_taxon" }
+```r
+landings |>
+  group_by(catch_taxon) |>
+  summarise(total_kg = sum(catch_kg, na.rm = TRUE))
+```
+:::
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** one row for each kind of fish in your records, with its total weight. The largest
+number is the species that brings in the most weight overall.
+
+Want to go further? Add `filter(gaul_2_name == "...")` as a first step to answer it for **your district
+only**.
+:::
+
+## What you have learned
+
+- **`summarise(name = sum(column))`** — add a column up into one answer (also `mean()` for the average,
+  `n()` for a count).
+- **`group_by(column)`** before `summarise()` — get **one answer per group** instead of one overall.
+- **`na.rm = TRUE`** — skip missing values so you still get a result.
+
+Put together with `filter` and `select` from the last lesson, you can now answer most everyday questions
+about your data: totals and averages, for any group, in any part of your records. That is the whole
+toolkit — well done.
+
+<!-- Raw HTML so Quarto does NOT rewrite this root-relative link (served at depth 2). -->
+
+```{=html}
+<p class="mt-4">
+  <a href="/data-explorer/lessons/chart.html" class="btn btn-primary">Next: See it as a picture &#8594;</a>
+  <a href="/data-explorer" class="btn btn-outline-primary ms-2">&#8592; Back to Data Explorer</a>
+</p>
+```

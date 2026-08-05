@@ -3,7 +3,7 @@
   "pageSubtitle": "Maelekezo ya kufuatilia ubora wa data na utendaji wa wakusanyaji",
   "title": "Jinsi Inavyofanya Kazi",
   "overview": "Muhtasari",
-  "overviewText": "Portal hii hukusaidia kusimamia ukusanyaji wa data kutoka kwa wakusanyaji. Unaweza kupitia uwasilishaji kwa masuala ya ubora, kusasisha hali ya uthibitishaji, na kufuatilia vipimo vya utendaji ili kuelekeza uboreshaji endelevu.",
+  "overviewText": "Jukwaa hili hukusaidia kusimamia ukusanyaji wa data kutoka kwa wakusanyaji. Unaweza kupitia uwasilishaji kwa masuala ya ubora, kusasisha hali ya uthibitishaji, kufuatilia vipimo vya utendaji, kupakua data, na kuichunguza kwa njia shirikishi ili kuelekeza uboreshaji endelevu.",
   "monitorPerformance": "Fuatilia Utendaji",
   "monitorDescription": "Fuatilia shughuli za wakusanyaji na vipimo vya ubora wa data",
   "reviewAlerts": "Kagua Tahadhari",
@@ -51,5 +51,5 @@
   "notApprovedDescription": "Data ina makosa",
   "validationStatusNote": "Kumbuka: Kagua data kwa makini kabla ya kusasisha hali ya uthibitishaji.",
   "needAssistance": "Unahitaji Msaada?",
-  "assistanceText": "Wasiliana na msimamizi wa mfumo kwa usaidizi wa kiufundi au maswali kuhusu kutumia portal hii."
+  "assistanceText": "Wasiliana na msimamizi wa mfumo kwa usaidizi wa kiufundi au maswali kuhusu kutumia jukwaa hili."
 }

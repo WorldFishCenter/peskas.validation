@@ -1,0 +1,47 @@
+{
+  "title": "Explorador de Dados",
+  "description": "Aprenda a analisar dados de pesca de pequena escala com lições interativas de R executadas no seu navegador.",
+  "intro": {
+    "title": "R interativo, diretamente no seu navegador",
+    "body": "Cada lição executa código R real sobre os seus próprios dados de desembarques — os mesmos dados e permissões de acesso do separador Download de Dados. Nada para instalar. Escolha uma lição para começar. Faça-as pela ordem — cada uma parte da anterior.",
+    "deeper": "Quer aprender R com mais profundidade? Veja o curso completo da WorldFish:"
+  },
+  "startLesson": "Iniciar lição",
+  "comingSoon": "Em breve",
+  "lessonsHeading": "Lições",
+  "categories": {
+    "gettingStarted": "Primeiros passos",
+    "exploring": "Explorar os seus dados",
+    "presenting": "Mostrar os seus resultados",
+    "reference": "Referência"
+  },
+  "lessons": {
+    "intro": {
+      "title": "Bem-vindo — o seu primeiro olhar sobre os dados",
+      "description": "Comece aqui. O que é o R, como esta página funciona e os seus primeiros resultados — sem experiência necessária."
+    },
+    "dataset": {
+      "title": "Conhecer os seus dados",
+      "description": "O que está dentro dos seus dados — o que é cada linha, o que significam as colunas e como as viagens e as capturas se encaixam. Explore os seus próprios registos."
+    },
+    "find": {
+      "title": "Encontrar o que precisa",
+      "description": "Três comandos simples para reduzir os seus dados: listar os valores de uma coluna, ficar apenas com as linhas que quer e ficar apenas com as colunas que quer."
+    },
+    "summarise": {
+      "title": "Somar tudo",
+      "description": "Some, faça a média e conte a sua captura por distrito, arte ou tipo de peixe para responder a perguntas do dia a dia."
+    },
+    "chart": {
+      "title": "Veja em imagem",
+      "description": "Transforme um dos seus totais num gráfico de barras simples — do tipo que pode colocar num relatório ou mostrar a um supervisor."
+    },
+    "recipes": {
+      "title": "O seu cartão de receitas",
+      "description": "Todos os comandos do curso numa página. Imprima-o ou fotografe-o e mantenha-o ao seu lado."
+    }
+  },
+  "lessonNumber": "Lição {{number}} de {{total}}",
+  "minutes": "cerca de {{count}} min",
+  "openCard": "Abrir o cartão"
+}

@@ -3,7 +3,7 @@ export const SUPPORT_EMAIL = 'peskas.platform@gmail.com' as const;
 
 export function getSupportMailtoHref(): string {
   const query = new URLSearchParams({
-    subject: 'PeSKAS validation portal – support request'
+    subject: 'PeSKAS management platform – support request'
   });
   return `mailto:${SUPPORT_EMAIL}?${query.toString()}`;
 }

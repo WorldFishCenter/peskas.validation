@@ -10,6 +10,7 @@ import MainLayout from './components/Layout/MainLayout';
 import ErrorBoundary from './components/ErrorBoundary';
 import EnumeratorPerformance from './components/EnumeratorPerformance/EnumeratorPerformance';
 import DataDownload from './components/DataDownload/DataDownload';
+import DataExplorer from './components/DataExplorer/DataExplorer';
 import AdminUsers from './components/Admin/AdminUsers';
 import AuditLog from './components/Admin/AuditLog';
 import HowItWorks from './components/HowItWorks/HowItWorks';
@@ -30,6 +31,11 @@ const AppRoutes: React.FC = () => {
       <Route path="/data-download" element={
         <ErrorBoundary>
           <DataDownload />
+        </ErrorBoundary>
+      } />
+      <Route path="/data-explorer" element={
+        <ErrorBoundary>
+          <DataExplorer />
         </ErrorBoundary>
       } />
       <Route path="/how-it-works" element={

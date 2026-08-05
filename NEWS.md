@@ -1,4 +1,41 @@
-# Validation Portal 2.4.0
+# Management Platform 2.5.0
+
+## New Features
+
+- **Data Explorer — learn to work with your own data, in the browser**
+  - A new **Data Explorer** tab presents a catalog of short, interactive R lessons (inspired by [fhdsl/data_snacks](https://github.com/fhdsl/data_snacks)), written for people who have never written code
+  - Lessons run **R entirely inside your browser** — nothing to install, and your data never leaves the page — via the [quarto-live](https://github.com/r-wasm/quarto-live) extension and [webR](https://docs.r-wasm.org/webr/latest/) (R 4.6, WebAssembly)
+  - Every lesson works on **your own landings data**, under exactly the same permissions as the Data Download tab. Your records are fetched automatically when the page opens, and a panel tells you how many loaded, with a button to load them again
+  - **Five lessons, in order**, each about 10–20 minutes:
+    1. *Welcome — your first look at the data* — what R is, and how to press **Run**
+    2. *Getting to know your data* — what one row means, how rows group into trips, and what each column holds
+    3. *Find what you need* — `distinct()`, `filter()`, `select()`, the pipe `|>`, and how to read an error message instead of fearing it
+    4. *Add it up* — `group_by()` and `summarise()`: totals and averages per district, gear or species
+    5. *See it as a picture* — turning a table of totals into a bar chart you can put in a report
+  - Plus a printable **recipe card** with every command from the course on one page
+  - Lessons are **practice-first**: a recap question opens each one, predict-then-run questions come before the answer, and fill-in-the-blank exercises have hints and worked solutions. Every lesson repeats that **nothing can be broken**
+  - Available from the **Data Tools** menu; lesson titles and descriptions are translated into English, Portuguese and Swahili
+
+## Improvements
+
+- **The portal is now the "Management Platform"**
+  - Renamed throughout the interface, documentation and emails, from "Validation Portal" — the platform now covers validation, performance tracking, download and exploration, so the old name described only a part of it
+
+- **Compacter navigation with grouped menus**
+  - Related tabs are now consolidated into Tabler dropdown menus to reduce navbar clutter
+  - **Validation** groups *Submissions* and *Enumerator Performance*
+  - **Data Tools** groups *Data Download* and *Data Explorer*
+  - The parent menu highlights while you are on any of its pages; available in all three languages (English, Portuguese, Swahili)
+
+## Infrastructure
+
+- **Lesson pipeline**: lessons are authored as Quarto `.qmd` files in `data-explorer/`, rendered to static HTML (`npm run render:lessons`) committed under `public/data-explorer/lessons/`, and served by Vercel. Cross-origin isolation headers (COOP + COEP `credentialless`) are scoped to `/data-explorer/lessons/*` only, so the rest of the app is unaffected while webR gets `SharedArrayBuffer`.
+- **New endpoint** `GET /api/data-download/explorer-data`: returns a capped (5,000-row), permission-filtered landings JSON array (quarto-live auto-converts it to an R data.frame in webR) for the in-browser R runtime, reusing the same permission gate as the data export.
+- **Shared lesson parts**: the data panel, example table, field dictionary and standard notices are single include files (`data-explorer/_*.qmd`), so a definition cannot say one thing in a lesson and another on the recipe card. Presentation lives in one stylesheet (`data-explorer/lesson.css`) rather than per-lesson `<style>` blocks.
+- **Technical plumbing is hidden from learners**: the fetch, the data-frame conversion and package loading run in cells marked `include: false`, so every code box a learner can see contains only R the lesson actually explains.
+- **Authoring guide** ([docs/LESSON_AUTHORING_GUIDE.md](docs/LESSON_AUTHORING_GUIDE.md)) documents the audience, the writing rules, the lesson skeleton and a pre-publish checklist.
+
+# Management Platform 2.4.0
 
 ## Bug Fixes
 
@@ -19,7 +56,7 @@
   - Added scannable icons to each filter and a friendlier message when your account has no surveys assigned.
   - Permission problems (e.g. requesting a survey or area you can't access) now return a clear message instead of a generic error.
 
-# Validation Portal 2.3.0
+# Management Platform 2.3.0
 
 ## New Features
 
@@ -44,7 +81,7 @@
   - Previously, audit log writes happened after the HTTP response was sent; in a serverless environment this means they were silently dropped
   - All audit writes now complete before the response is returned
 
-# Validation Portal 2.2.0
+# Management Platform 2.2.0
 
 ## Performance Improvements
 
@@ -66,7 +103,7 @@
 
 ---
 
-# Validation Portal 2.1.0
+# Management Platform 2.1.0
 
 ## Bug Fixes
 
@@ -100,7 +137,7 @@
 
 ---
 
-# Validation Portal 2.0.0
+# Management Platform 2.0.0
 
 ## What's New
 
@@ -198,7 +235,7 @@ This release focuses on making the data synchronization from Airtable more relia
 
 ---
 
-# Validation Portal 1.6.0
+# Management Platform 1.6.0
 
 ## New Features
 
@@ -391,7 +428,7 @@ All infrastructure improvements completed:
 
 ---
 
-# Validation Portal 1.5.0
+# Management Platform 1.5.0
 
 ## New Features
 
@@ -433,7 +470,7 @@ All infrastructure improvements completed:
 
 ---
 
-# Validation Portal 1.4.0
+# Management Platform 1.4.0
 
 ## Features
 
@@ -489,7 +526,7 @@ All infrastructure improvements completed:
 
 ---
 
-# Validation Portal 1.3.0
+# Management Platform 1.3.0
 
 ## Architecture & Scalability
 
@@ -572,7 +609,7 @@ All infrastructure improvements completed:
 
 ---
 
-# Validation Portal 1.2.1
+# Management Platform 1.2.1
 
 ## Features
 
@@ -620,7 +657,7 @@ All infrastructure improvements completed:
 
 ---
 
-# Validation Portal 1.2.0
+# Management Platform 1.2.0
 
 ## Features
 
@@ -680,7 +717,7 @@ All infrastructure improvements completed:
 
 ---
 
-# Validation Portal 1.1.0
+# Management Platform 1.1.0
 
 ## New Features
 
@@ -766,7 +803,7 @@ All infrastructure improvements completed:
 
 ---
 
-# Validation Portal 1.0.0
+# Management Platform 1.0.0
 
 ## New features
 

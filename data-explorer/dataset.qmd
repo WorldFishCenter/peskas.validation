@@ -1,0 +1,283 @@
+---
+title: "Getting to know your data"
+subtitle: "Lesson 2 of 5 · about 15 minutes"
+webr:
+  render-df: reactable
+---
+
+{{< include _extensions/r-wasm/live/_knitr.qmd >}}
+
+::: {.callout-note appearance="simple"}
+## What this lesson is for
+
+In the first lesson you learned to press **Run** and read the answer. Now you will start asking questions
+of your data. *Which district landed the most fish? How much was landed last month?*
+
+First, though, it helps to know how your data is arranged:
+
+- What does one line in the table stand for?
+- How do the lines fit together?
+- What is each column telling you?
+
+That is all this lesson does. Once the shape of the data is clear, the next lessons will make sense. Go
+slowly, press **Run** on each box, and remember: **you cannot break anything.**
+:::
+
+## Where your data comes from
+
+Your data does not appear from nowhere. Every time an enumerator meets a fisher coming back to a landing
+site, they fill in a short survey. It records the date, the landing site, the boat and gear used, how many
+people fished, and **what was caught**.
+
+All of those surveys, from every landing site, are collected into **one big table**. That table is your
+data. Reading it is simply reading those survey records, stacked one on top of another.
+
+A table has two simple parts:
+
+- a **row** is one line going across. One row is one record.
+- a **column** is one heading going down. One column is one piece of information that was recorded, like
+  the date or the weight.
+
+The rest of this lesson is about what the rows and columns in *your* table mean.
+
+## A small example to look at
+
+It is easier to see the shape on a small table first. Here is a made-up example — just **two fishing
+trips**, with each trip shown in its **own colour**. The fish are simply numbered, **species 1** and so
+on, so that nothing here depends on telling one fish from another.
+
+```{=html}
+<div class="diagram">
+<table class="table">
+  <thead><tr><th>survey_id</th><th>trip_id</th><th>landing_date</th><th>gaul_2_name</th><th>gear</th><th>catch_taxon</th><th>catch_kg</th><th>n_catch</th><th>tot_catch_kg</th></tr></thead>
+  <tbody>
+    <tr class="grp-a"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>species 1</td><td>12</td><td>3</td><td>20</td></tr>
+    <tr class="grp-a"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>species 2</td><td>5</td><td>3</td><td>20</td></tr>
+    <tr class="grp-a"><td>survey_1</td><td>trip_1</td><td>2024-01-05</td><td>Shimoni</td><td>hand line</td><td>species 3</td><td>3</td><td>3</td><td>20</td></tr>
+    <tr class="grp-b"><td>survey_2</td><td>trip_2</td><td>2024-01-06</td><td>Vanga</td><td>gillnet</td><td>species 1</td><td>8</td><td>2</td><td>14</td></tr>
+    <tr class="grp-b"><td>survey_2</td><td>trip_2</td><td>2024-01-06</td><td>Vanga</td><td>gillnet</td><td>species 2</td><td>6</td><td>2</td><td>14</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p class="diagram-legend"><span class="grp-a"></span> Trip 1 &nbsp;&nbsp; <span class="grp-b"></span> Trip 2</p>
+```
+
+Take a moment to read it. Notice that some things **repeat** down the table while others **change** on
+every line. We will come back to that, because it is the key to understanding your data.
+
+The headings are the **real headings from your own data**. Here is that same little table inside R, so we
+can work with it. This box runs on its own when the page opens — you do not have to do anything yet.
+
+{{< include _slow-start-notice.qmd >}}
+
+```{webr}
+#| autorun: true
+# The same five rows as the coloured table above.
+example <- data.frame(
+  survey_id    = c("survey_1", "survey_1", "survey_1", "survey_2", "survey_2"),
+  trip_id      = c("trip_1", "trip_1", "trip_1", "trip_2", "trip_2"),
+  landing_date = c("2024-01-05", "2024-01-05", "2024-01-05", "2024-01-06", "2024-01-06"),
+  gaul_2_name  = c("Shimoni", "Shimoni", "Shimoni", "Vanga", "Vanga"),
+  gear         = c("hand line", "hand line", "hand line", "gillnet", "gillnet"),
+  catch_taxon  = c("species 1", "species 2", "species 3", "species 1", "species 2"),
+  catch_kg     = c(12, 5, 3, 8, 6),
+  n_catch      = c(3, 3, 3, 2, 2),
+  tot_catch_kg = c(20, 20, 20, 14, 14)
+)
+
+example
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** the same **5 rows** as the coloured table. You can slide it sideways to see all
+the columns.
+:::
+
+## What one row means
+
+Look at the very first line. It is one **catch**: *species 1, 12 kg*. The second line is another catch:
+*species 2, 5 kg*.
+
+::: {.callout-important appearance="simple"}
+**Each row is one catch — one kind of fish from one trip.**
+:::
+
+This is the first thing to hold on to. A row is **not** a whole trip, and it is **not** one fisher. It
+is one *kind of fish* that was recorded. So if a single trip brought back three kinds of fish, that
+trip fills **three rows**.
+
+## How the rows fit into trips
+
+You may have noticed something that confuses almost everyone at first. The same district, the same date
+and the same `trip_id` appear on several lines.
+
+Nothing is wrong. This is exactly how the data is meant to look.
+
+The reason is simple. **One fishing trip usually brings back more than one kind of fish.**
+
+Each trip is given an identity code, called **`trip_id`**. Every kind of fish from that trip gets its own
+row, and they all carry the **same** `trip_id`. That shared code is how you know which rows belong to the
+same trip. (`survey_id` works the same way. It names the survey the record came from.)
+
+In the example, `trip_1` brought back three kinds of fish, so it fills three rows. `trip_2` brought back
+two, so it fills two rows. Here is that first trip drawn as a picture:
+
+```{=html}
+<svg class="diagram diagram-svg" viewBox="0 0 640 210" role="img" aria-label="One trip with three catches">
+  <rect class="grp-a" x="10" y="75" width="175" height="60" rx="8"/>
+  <text x="97" y="100" text-anchor="middle" font-size="15" font-weight="bold">Trip  trip_1</text>
+  <text x="97" y="120" text-anchor="middle" font-size="12">Shimoni &#183; 5 Jan</text>
+  <path class="link" d="M185 105 C 235 105 235 35 285 35"/>
+  <path class="link" d="M185 105 H 285"/>
+  <path class="link" d="M185 105 C 235 105 235 175 285 175"/>
+  <rect class="row-box" x="285" y="15"  width="345" height="40" rx="6"/><text x="300" y="40" font-size="13">species 1 &#8212; 12 kg &#160;&#160;<tspan class="row-label">row 1</tspan></text>
+  <rect class="row-box" x="285" y="85"  width="345" height="40" rx="6"/><text x="300" y="110" font-size="13">species 2 &#8212; 5 kg &#160;&#160;<tspan class="row-label">row 2</tspan></text>
+  <rect class="row-box" x="285" y="155" width="345" height="40" rx="6"/><text x="300" y="180" font-size="13">species 3 &#8212; 3 kg &#160;&#160;<tspan class="row-label">row 3</tspan></text>
+</svg>
+```
+
+[One trip, three kinds of fish → three rows, all sharing `trip_id = trip_1`.]{.diagram-caption}
+
+The column **`n_catch`** writes that number down for you: it is **how many kinds of catch the trip
+recorded**. You don't have to take it on trust — you can count the rows for each trip yourself. Press
+**Run**:
+
+```{webr}
+#| autorun: false
+# Count how many rows carry each trip_id.
+table(example$trip_id)
+```
+
+The result shows `trip_1  3` and `trip_2  2`. Three rows for the first trip, two for the second. That
+matches the `n_catch` column exactly.
+
+Counting how often something appears is already a useful skill, and you will use it again later.
+
+## Two kinds of columns
+
+Now look across the columns. Once you see it, you cannot un-see it: the columns fall into **two groups**.
+(Here the colours mark the **two kinds of columns** — not the trips as before.)
+
+```{=html}
+<div class="col-groups">
+  <div class="about-trip">
+    <strong>About the trip</strong> <span class="text-secondary">(same on every row)</span><br>
+    <code>landing_date</code>, <code>gaul_2_name</code>, <code>gear</code>, <code>n_fishers</code>, <code>tot_catch_kg</code> &#8230;
+  </div>
+  <div class="about-catch">
+    <strong>About each catch</strong> <span class="text-secondary">(changes on each row)</span><br>
+    <code>catch_taxon</code>, <code>catch_kg</code>, <code>length_cm</code>, <code>catch_price</code>
+  </div>
+</div>
+```
+
+Some columns describe the **whole trip**. The trip happened once, so these are the **same on every row of
+that trip**. They include `landing_date`, `gaul_2_name`, `gear`, and `tot_catch_kg`, the **total** weight
+the trip brought in.
+
+Other columns describe **each catch on its own**, so they **change from row to row**. They include
+`catch_taxon` and `catch_kg`, the weight of that **one** kind of fish.
+
+::: {.callout-tip appearance="simple"}
+This difference matters in real work.
+
+- **`tot_catch_kg`** is the whole trip's weight.
+- **`catch_kg`** is one kind of fish's weight.
+
+If you added up `tot_catch_kg` over every row, you would count the same trip several times. The number
+would come out far too big. So use `tot_catch_kg` for a trip total, and `catch_kg` for a single catch.
+:::
+
+You do not need to memorise the columns. The next lessons introduce them one at a time. For now, just hold
+three things in your head:
+
+- **A row is one catch.**
+- **Rows group into trips.**
+- **Every column is either about the trip or about the catch.**
+
+## Looking at your own data
+
+You now know the shape. Now look at **your real landing records** in the same kind of table. They were
+fetched for you when this page opened:
+
+{{< include _landings-panel.qmd >}}
+
+Your records are held under the name **`landings`**. Press **Run** to see them:
+
+```{webr}
+#| autorun: false
+landings
+```
+
+::: {.callout-tip appearance="simple"}
+This is your real data, and it has the **same shape** as the small example. Try typing the name of your
+district, or a kind of fish, into the **search box** — or click a column heading to **sort**. Looking
+around like this is the best way to get a feel for what you actually have.
+:::
+
+## How big is your data
+
+Two simple questions help you get your bearings: **how many records** do you have, and **how many
+columns** describe each one? Press **Run**:
+
+```{webr}
+#| autorun: false
+nrow(landings)   # number of records (rows)
+ncol(landings)   # number of columns
+```
+
+The first number is how many catch records you hold, often many thousands. The second is how many pieces
+of information are kept about each catch.
+
+That is far more than you could read by eye in a spreadsheet. This is exactly why we use R. It can look
+through all of it for you in a moment, which is what the next lessons will do.
+
+## What each column means
+
+Finally, let's see the columns by name. Press **Run** to list them:
+
+```{webr}
+#| autorun: false
+names(landings)
+```
+
+These are the headings in your table. Below is what the main ones mean, grouped the same way we saw
+above. **Keep this nearby. It is the dictionary for your data.**
+
+{{< include _data-dictionary.qmd >}}
+
+::: {.callout-note appearance="simple"}
+## Two things that look different in your real table
+
+The **column headings** are the same as the small example, so what you practised will work here. But two
+of the **values** look different, and it is worth knowing why before you go on.
+
+- **The fish is a code.** In your real data `catch_taxon` holds a short code (for example `SKJ`, which
+  means skipjack tuna), not a plain name. The `scientific_name` column gives its full name. In the small
+  example we simply wrote *species 1*, *species 2* and *species 3*, so that nothing you practised
+  depended on knowing which fish is which.
+- **`gaul_2_name` is the district, not the landing site.** The odd name comes from an international list
+  of areas. Your table records the **district** a record belongs to, not the individual beach or jetty.
+:::
+
+## What you have learned
+
+You can now read the shape of your data:
+
+- a **row** is one catch — one kind of fish from one trip;
+- rows belong together when they share a **`trip_id`**, and **`n_catch`** says how many a trip had;
+- every column is either **about the trip** (the same on every row) or **about each catch** (different on each row);
+- your real data has this same shape — just much bigger.
+
+That is the foundation. In the next lesson you will start to **find the rows you need**. For example,
+only the landings from your district, or only one month.
+
+<!-- Raw HTML so Quarto does NOT rewrite this root-relative link (served at depth 2). -->
+
+```{=html}
+<p class="mt-4">
+  <a href="/data-explorer/lessons/find.html" class="btn btn-primary">Next: Find what you need &#8594;</a>
+  <a href="/data-explorer" class="btn btn-outline-primary ms-2">&#8592; Back to Data Explorer</a>
+</p>
+```

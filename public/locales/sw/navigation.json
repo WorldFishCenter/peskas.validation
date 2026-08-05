@@ -1,8 +1,11 @@
 {
-  "brand": "PESKAS | lango la uthibitishaji",
+  "brand": "PESKAS | jukwaa la usimamizi",
   "validation": "Uthibitishaji",
+  "submissions": "Mawasilisho",
   "enumeratorPerformance": "Utendaji wa Wakusanyaji",
+  "dataTools": "Zana za Data",
   "dataDownload": "Pakua Data",
+  "dataExplorer": "Kichunguzi cha Data",
   "howItWorks": "Jinsi Inavyofanya Kazi",
   "users": "Watumiaji",
   "auditLog": "Kumbukumbu ya Ukaguzi",

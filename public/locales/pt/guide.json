@@ -3,7 +3,7 @@
   "pageSubtitle": "Instruções para monitorizar a qualidade dos dados e o desempenho dos enumeradores",
   "title": "Como Funciona",
   "overview": "Visão Geral",
-  "overviewText": "Este portal ajuda-o a supervisionar a recolha de dados pelos enumeradores. Pode rever submissões por problemas de qualidade, atualizar o estado de validação e acompanhar métricas de desempenho para orientar a melhoria contínua.",
+  "overviewText": "Esta plataforma ajuda-o a gerir a recolha de dados pelos enumeradores. Pode rever submissões por problemas de qualidade, atualizar o estado de validação, acompanhar métricas de desempenho, descarregar dados e explorá-los de forma interativa para orientar a melhoria contínua.",
   "monitorPerformance": "Monitorizar Desempenho",
   "monitorDescription": "Acompanhe a atividade dos enumeradores e métricas de qualidade dos dados",
   "reviewAlerts": "Rever Alertas",
@@ -51,5 +51,5 @@
   "notApprovedDescription": "Dados contêm erros",
   "validationStatusNote": "Nota: Revise os dados cuidadosamente antes de atualizar o estado de validação.",
   "needAssistance": "Precisa de Ajuda?",
-  "assistanceText": "Contacte o administrador do sistema para suporte técnico ou dúvidas sobre o uso deste portal."
+  "assistanceText": "Contacte o administrador do sistema para suporte técnico ou dúvidas sobre o uso desta plataforma."
 }

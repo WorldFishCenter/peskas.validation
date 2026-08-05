@@ -1,0 +1,19 @@
+<!--
+SHARED FIRST-LOAD NOTICE for the Data Explorer lessons — pull it into a lesson with Quarto's include
+shortcode, naming this file (see just above the example-data include in find.qmd for a working example).
+Put it immediately before the first code box on the page.
+
+NOTE: do not write that shortcode literally in this file, not even inside a comment like this one.
+Quarto resolves include shortcodes in a text pass that does not respect HTML comments, so a file naming
+itself includes itself, and the render dies with "Maximum call stack size exceeded".
+
+Every lesson has to set the same expectation: webR downloads R on first use, so the first box can sit
+there doing nothing for up to a minute on a slow connection, and a learner who does not know that reads
+it as a broken page. The guide requires the message on every lesson; keeping the words in one place stops
+the four copies drifting apart, as they already had.
+-->
+
+::: {.callout-note appearance="simple"}
+**If nothing happens at first,** R is still waking up — up to a minute the first time, on a slow
+connection. A small **spinning circle** on a box means it is working. Wait for it to stop.
+:::

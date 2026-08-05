@@ -1,7 +1,7 @@
 {
-  "name": "validation-zanzibar-server",
+  "name": "peskas-management-platform-server",
   "version": "1.0.0",
-  "description": "Backend for Validation Portal",
+  "description": "Backend for Management Platform",
   "main": "index.js",
   "type": "commonjs",
   "scripts": {

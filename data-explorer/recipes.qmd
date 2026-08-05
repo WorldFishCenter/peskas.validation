@@ -1,0 +1,118 @@
+---
+title: "Your recipe card"
+subtitle: "Every command from the course, on one page"
+# Plain `html`, NOT `live-html`: this page has no code boxes, so it must not pull in the webR runtime.
+# That keeps it instant to open and usable on the worst connection — which is the whole point of a
+# reference card. Do not add {webr} cells here; if a page needs to run R, it is a lesson, not a card.
+#
+# `css:` has to be repeated here because `html` and `live-html` are different format names, and Quarto
+# inherits project options per format name — so nothing the project sets under `live-html` reaches this
+# page. No `toc:` though — the card is one screen of tables, and a contents list beside it would only
+# take width from them.
+format:
+  html:
+    css: lesson.css
+---
+
+::: {.callout-note appearance="simple"}
+## How to use this page
+
+This page does not run anything. It is here so you **do not have to remember** the commands.
+
+**Print it, or take a photo of it with your phone.** Then you have it beside you when you open a lesson,
+or when you come back to this in a month.
+:::
+
+## Three steps answer almost every question
+
+Nearly every question you will ask of your records is some combination of these three steps, in this
+order. You do not always need all three.
+
+| | Step | Command | In words |
+|---|------|---------|----------|
+| 1 | **Narrow the rows** | `filter()` | "only my district", "only the big catches" |
+| 2 | **Group them** | `group_by()` | "for each gear", "for each kind of fish" |
+| 3 | **Add them up** | `summarise()` | "the total", "the average", "how many" |
+
+Join the steps with **`|>`**, which you read as the word **"then"**.
+
+```r
+landings |>
+  filter(gaul_2_name == "Kilifi") |>
+  group_by(gear) |>
+  summarise(total_kg = sum(catch_kg, na.rm = TRUE))
+```
+
+*Read it as: take the landings, **then** keep only Kilifi, **then** group by gear, **then** add up the
+weight.*
+
+## The commands
+
+| Command | What it does | Example |
+|---------|--------------|---------|
+| `distinct(landings, gaul_2_name)` | Lists the values in a column, once each | Find how your districts are spelled |
+| `filter(landings, gaul_2_name == "Kilifi")` | Keeps only the rows that match | One district only |
+| `filter(landings, catch_kg > 20)` | Keeps only the rows that match | The catches over 20 kg |
+| `select(landings, landing_date, catch_kg)` | Keeps only the columns you name | A shorter, tidier table |
+| `summarise(total = sum(catch_kg))` | Turns a column into one answer | The total weight |
+| `group_by(gear)` before `summarise()` | One answer **for each group** | A total per gear |
+| `n()` inside `summarise()` | Counts the rows | How many records |
+| `mean()` inside `summarise()` | The average | Average weight per catch |
+| `nrow(landings)` / `names(landings)` | How many rows / what the columns are called | Getting your bearings |
+| `barplot(t$total_kg, names.arg = t$gear)` | Draws the bars | A picture for a report |
+
+Two small settings worth remembering:
+
+- **`na.rm = TRUE`** inside `sum()` or `mean()` skips missing values, so you still get an answer.
+- **`las = 2`** inside `barplot()` turns the labels sideways when the names are long.
+
+## Two rules that catch everybody
+
+- Use **two** equals signs `==` for "is equal to". One `=` will not work.
+- A **word** needs quotes, like `"gillnet"`. A **number** does not, like `20`.
+
+## When the answer comes back red
+
+Red text is not damage. Nothing is broken, and your real data cannot be changed from a lesson page. Read
+the **last line** only.
+
+| The red text says | It means | Do this |
+|-------------------|----------|---------|
+| `object 'xyz' not found` | A name is spelled wrong, **or** a word is missing its quotes | Check the spelling with `names(landings)`. Put quotes around words |
+| `We detected a named input` | You typed one `=` where two are needed | Change `=` to `==` |
+| `need finite 'xlim' values` | You asked `barplot()` to draw an empty table | Run the box that works out the totals first, and check it is not empty |
+| An **empty** table, no error | The value does not exist, usually a spelling difference | Check with `distinct(landings, gaul_2_name)` and copy the name exactly |
+
+Always two ways out: **edit and press Run again**, or press **Start Over** to put the box back as it was.
+
+## What the columns mean
+
+{{< include _data-dictionary.qmd >}}
+
+::: {.callout-important appearance="simple"}
+**The one mistake to avoid.** `tot_catch_kg` is the **whole trip's** weight, repeated on every row of that
+trip. If you add it up across rows you count the same trip several times, and the answer comes out far too
+big.
+
+For a single catch, use **`catch_kg`**.
+:::
+
+```{=html}
+<style>
+/* Print/photograph friendly: tighten the page, drop chrome, keep tables from splitting mid-row. */
+@media print {
+  a[href]::after { content: "" !important; }        /* no printed URLs after links */
+  .callout { border: 1px solid #999 !important; }
+  table { font-size: 9pt; }
+  tr, table, .callout { page-break-inside: avoid; }
+  h2 { page-break-after: avoid; }
+  .no-print { display: none !important; }
+  body { font-size: 10pt; }
+}
+</style>
+
+<p class="mt-4 no-print">
+  <a href="/data-explorer" class="btn btn-outline-primary">← Back to Data Explorer</a>
+  <button type="button" class="btn btn-primary ms-2" onclick="window.print()">🖨 Print this page</button>
+</p>
+```

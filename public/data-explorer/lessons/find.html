@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.56">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Find what you need</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="find_files/libs/clipboard/clipboard.min.js"></script>
+<script src="find_files/libs/quarto-html/quarto.js"></script>
+<script src="find_files/libs/quarto-html/popper.min.js"></script>
+<script src="find_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="find_files/libs/quarto-html/anchor.min.js"></script>
+<link href="find_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="find_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="find_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="find_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="find_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="find_files/libs/quarto-contrib/live-runtime/live-runtime.js" type="module"></script>
+<link href="find_files/libs/quarto-contrib/live-runtime/live-runtime.css" rel="stylesheet">
+<style>html{ scroll-behavior: smooth; }</style>
+<script type="module" src="find_files/libs/quarto-ojs/quarto-ojs-runtime.js"></script>
+<link href="find_files/libs/quarto-ojs/quarto-ojs.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="lesson.css">
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul class="collapse">
+  <li><a href="#first-one-question-from-last-time" id="toc-first-one-question-from-last-time" class="nav-link active" data-scroll-target="#first-one-question-from-last-time">First, one question from last time</a></li>
+  <li><a href="#before-we-start" id="toc-before-we-start" class="nav-link" data-scroll-target="#before-we-start">Before we start</a></li>
+  <li><a href="#what-values-are-in-a-column" id="toc-what-values-are-in-a-column" class="nav-link" data-scroll-target="#what-values-are-in-a-column">What values are in a column?</a></li>
+  <li><a href="#show-only-the-rows-you-want" id="toc-show-only-the-rows-you-want" class="nav-link" data-scroll-target="#show-only-the-rows-you-want">Show only the rows you want</a></li>
+  <li><a href="#when-the-answer-comes-back-red" id="toc-when-the-answer-comes-back-red" class="nav-link" data-scroll-target="#when-the-answer-comes-back-red">When the answer comes back red</a></li>
+  <li><a href="#keep-only-the-columns-you-want" id="toc-keep-only-the-columns-you-want" class="nav-link" data-scroll-target="#keep-only-the-columns-you-want">Keep only the columns you want</a></li>
+  <li><a href="#do-two-steps-at-once-the-pipe" id="toc-do-two-steps-at-once-the-pipe" class="nav-link" data-scroll-target="#do-two-steps-at-once-the-pipe">Do two steps at once: the pipe <code>|&gt;</code></a></li>
+  <li><a href="#what-you-have-learned" id="toc-what-you-have-learned" class="nav-link" data-scroll-target="#what-you-have-learned">What you have learned</a></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Find what you need</h1>
+<p class="subtitle lead">Lesson 3 of 5 · about 20 minutes</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="callout callout-style-simple callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+What this lesson is for
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Until now you have looked at your <strong>whole</strong> table. But usually you want just a part of it — only your own district, only the big catches, or only a few columns.</p>
+<p>This lesson gives you three simple commands to do that: <strong>list the values</strong> in a column, <strong>keep only the rows</strong> you want, and <strong>keep only the columns</strong> you want. At the end you will also learn <strong>what to do when something goes wrong</strong> — because it will, and it is easy to fix.</p>
+<p>Press <strong>Run</strong> on each box. Remember: <strong>you cannot break anything.</strong></p>
+</div>
+</div>
+<section id="first-one-question-from-last-time" class="level2">
+<h2 class="anchored" data-anchor-id="first-one-question-from-last-time">First, one question from last time</h2>
+<p>Before we start, bring back the most important thing from the last lesson. There is no penalty for a wrong answer, and remembering it yourself makes the rest of this lesson easier.</p>
+<div class="cell">
+<div class="sourceCode cell-code hidden" id="cb1" data-startfrom="29" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 28;"><span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>viewof recall_row <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">radio</span>(</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>  [<span class="st">"One fishing trip"</span><span class="op">,</span> <span class="st">"One kind of fish from one trip"</span><span class="op">,</span> <span class="st">"One fisher"</span>]<span class="op">,</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>  { <span class="dt">label</span><span class="op">:</span> <span class="st">"In your table, what is one row?"</span> }</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-1" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code hidden" id="cb2" data-startfrom="37" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 36;"><span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="fu">html</span><span class="vs">`</span><span class="sc">${</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>  <span class="co">// `== null` on purpose: Inputs.radio starts at null, not undefined, when nothing is picked.</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>  recall_row <span class="op">==</span> <span class="kw">null</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>    <span class="op">?</span> <span class="st">'&lt;div class="alert alert-light py-2"&gt;Pick an answer above.&lt;/div&gt;'</span></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>    <span class="op">:</span> recall_row <span class="op">===</span> <span class="st">"One kind of fish from one trip"</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>      <span class="op">?</span> <span class="st">'&lt;div class="alert alert-success py-2"&gt;&lt;strong&gt;Yes.&lt;/strong&gt; One row is one kind of fish from one trip. A trip that landed three kinds of fish fills three rows, and they all share the same &lt;code&gt;trip_id&lt;/code&gt;.&lt;/div&gt;'</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>      <span class="op">:</span> <span class="st">'&lt;div class="alert alert-warning py-2"&gt;&lt;strong&gt;Not quite — and this one matters.&lt;/strong&gt; One row is &lt;strong&gt;one kind of fish from one trip&lt;/strong&gt;, not a whole trip and not one fisher. A trip that landed three kinds of fish fills three rows, sharing one &lt;code&gt;trip_id&lt;/code&gt;.&lt;/div&gt;'</span></span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="sc">}</span><span class="vs">`</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-2" data-nodetype="expression">
+
+</div>
+</div>
+</div>
+</section>
+<section id="before-we-start" class="level2">
+<h2 class="anchored" data-anchor-id="before-we-start">Before we start</h2>
+<p>These commands come from a free toolkit called <strong>dplyr</strong>. It is already switched on for you.</p>
+<!--
+SHARED BODY OF THE "Before we start" SECTION, for every dplyr lesson (find, summarise, chart) — pull it
+into a lesson with Quarto's include shortcode, naming this file (see the "Before we start" section of
+find.qmd for a working example).
+
+NOTE: do not write that shortcode literally in this file, not even inside a comment like this one. Quarto
+resolves include shortcodes in a text pass that does not respect HTML comments, so a file naming itself
+includes itself, and the render dies with "Maximum call stack size exceeded".
+
+Every lesson from 3 onwards opens exactly the same way: same example table, same first-load warning, same
+records panel. Written out per lesson it had already drifted into three versions differing only in wording
+("the same five rows as before" / "as the last lesson" / nothing at all) — three chances to say something
+slightly less clear, and three files to edit whenever the panel changes.
+
+The `## Before we start` heading stays in each LESSON rather than living here, so a lesson can put a line
+of its own between the heading and this body: find.qmd introduces dplyr by name that way, and it has to
+read before the boxes, not after them. Quarto resolves nested includes, so the three inner ones work from
+whichever lesson pulls this file in.
+-->
+<p>The box below loads the small example table, the same five rows as the last lesson. It runs <strong>on its own</strong> when the page opens, so you do not have to do anything with it.</p>
+<!--
+SHARED FIRST-LOAD NOTICE for the Data Explorer lessons — pull it into a lesson with Quarto's include
+shortcode, naming this file (see just above the example-data include in find.qmd for a working example).
+Put it immediately before the first code box on the page.
+
+NOTE: do not write that shortcode literally in this file, not even inside a comment like this one.
+Quarto resolves include shortcodes in a text pass that does not respect HTML comments, so a file naming
+itself includes itself, and the render dies with "Maximum call stack size exceeded".
+
+Every lesson has to set the same expectation: webR downloads R on first use, so the first box can sit
+there doing nothing for up to a minute on a slow connection, and a learner who does not know that reads
+it as a broken page. The guide requires the message on every lesson; keeping the words in one place stops
+the four copies drifting apart, as they already had.
+-->
+<div class="callout callout-style-simple callout-note">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>If nothing happens at first,</strong> R is still waking up — up to a minute the first time, on a slow connection. A small <strong>spinning circle</strong> on a box means it is working. Wait for it to stop.</p>
+</div>
+</div>
+</div>
+<!--
+SHARED EXAMPLE TABLE for the dplyr lessons — pull it into a lesson with Quarto's include shortcode,
+naming this file (see the "Before we start" section of find.qmd for a working example).
+
+NOTE: do not write that shortcode literally in this file, not even inside a comment like this one. Quarto
+resolves include shortcodes in a text pass that does not respect HTML comments, so a file naming itself
+includes itself, and the render dies with "Maximum call stack size exceeded".
+
+Five rows, two trips, using the real column names from the user's data so that what the learner practises
+here transfers unchanged to their own records. Lessons that teach a dplyr verb should share this table
+rather than declaring their own, so the same five rows carry across the course.
+
+Two cells, and the split is deliberate:
+
+ 1. `library(dplyr)`, hidden with `include: false`. It has to run, but nothing in the audience can read
+    `suppressPackageStartupMessages(library(dplyr))`, and the alternative — a bare `library(dplyr)` — dumps
+    a wall of "the following objects are masked from package:stats" at a learner who has been promised the
+    page is simple. Loading a package is plumbing; keep it out of sight. The lessons still *name* dplyr in
+    prose, which is what a learner needs in order to search for more later.
+
+ 2. the table itself, visible and editable, with one plain-English comment. This is the box the lesson
+    talks about, so it must contain only what the lesson explains.
+
+Anything written inside these fences is read by the learner. No authoring notes, no shortcodes, no jargon.
+-->
+<div class="lesson-plumbing">
+<div class="cell">
+<div>
+<div id="webr-1" class="exercise-cell">
+
+</div>
+<script type="webr-1-contents">
+eyJhdHRyIjp7Im91dHB1dCI6ZmFsc2UsImVkaXQiOmZhbHNlLCJldmFsIjp0cnVlLCJlY2hvIjpmYWxzZSwiaW5jbHVkZSI6ZmFsc2V9LCJjb2RlIjoic3VwcHJlc3NQYWNrYWdlU3RhcnR1cE1lc3NhZ2VzKGxpYnJhcnkoZHBseXIpKSJ9
+</script>
+</div>
+</div>
+</div>
+<div class="cell" data-autorun="true">
+<div>
+<div id="webr-2" class="exercise-cell">
+
+</div>
+<script type="webr-2-contents">
+eyJhdHRyIjp7ImV2YWwiOnRydWUsImVkaXQiOnRydWUsImF1dG9ydW4iOnRydWV9LCJjb2RlIjoiIyBBIHNtYWxsIGV4YW1wbGUgdGFibGU6IGZpdmUgY2F0Y2hlcyBmcm9tIHR3byBmaXNoaW5nIHRyaXBzLlxuZXhhbXBsZSA8LSBkYXRhLmZyYW1lKFxuICB0cmlwX2lkICAgICAgPSBjKFwidHJpcF8xXCIsIFwidHJpcF8xXCIsIFwidHJpcF8xXCIsIFwidHJpcF8yXCIsIFwidHJpcF8yXCIpLFxuICBsYW5kaW5nX2RhdGUgPSBjKFwiMjAyNC0wMS0wNVwiLCBcIjIwMjQtMDEtMDVcIiwgXCIyMDI0LTAxLTA1XCIsIFwiMjAyNC0wMS0wNlwiLCBcIjIwMjQtMDEtMDZcIiksXG4gIGdhdWxfMl9uYW1lICA9IGMoXCJTaGltb25pXCIsIFwiU2hpbW9uaVwiLCBcIlNoaW1vbmlcIiwgXCJWYW5nYVwiLCBcIlZhbmdhXCIpLFxuICBnZWFyICAgICAgICAgPSBjKFwiaGFuZCBsaW5lXCIsIFwiaGFuZCBsaW5lXCIsIFwiaGFuZCBsaW5lXCIsIFwiZ2lsbG5ldFwiLCBcImdpbGxuZXRcIiksXG4gIGNhdGNoX3RheG9uICA9IGMoXCJzcGVjaWVzIDFcIiwgXCJzcGVjaWVzIDJcIiwgXCJzcGVjaWVzIDNcIiwgXCJzcGVjaWVzIDFcIiwgXCJzcGVjaWVzIDJcIiksXG4gIGNhdGNoX2tnICAgICA9IGMoMTIsIDUsIDMsIDgsIDYpXG4pXG5cbmV4YW1wbGUifQ==
+</script>
+</div>
+</div>
+<p>Your own landing records are fetched at the same time, under the name <strong><code>landings</code></strong>, so they are ready by the time you need them further down the page.</p>
+<!--
+SHARED "YOUR OWN RECORDS" PANEL for every Data Explorer lesson — pull it into a lesson with Quarto's
+include shortcode, naming this file (see the "Before we start" section of find.qmd for a working example).
+It replaces the earlier pair of includes, _landings-data.qmd and _landings-guard.qmd, which put the fetch
+and the data-frame conversion in front of the learner as two editable code boxes. Nobody in the audience
+can read `tryCatch(as.data.frame(...))`, and nobody needs to: loading their own records is plumbing, not a
+lesson. So all of it is hidden here, and what the learner sees instead is a status line and one button.
+
+NOTE: do not write that shortcode literally in this file, not even inside a comment like this one. Quarto
+resolves include shortcodes in a text pass that does not respect HTML comments, so a file naming itself
+includes itself, and the render dies with "Maximum call stack size exceeded".
+
+Six cells, in this order:
+
+ 1. `landings_state` (OJS, hidden) — fetches GET /api/data-download/explorer-data. This is the ONLY copy
+    of the contract with the app: the localStorage keys `authToken` and `apiBaseUrl` (published by
+    getApiBaseUrl in src/utils/axiosConfig.ts) and the endpoint path. Reading the base URL from
+    localStorage is what lets a static lesson page reach the API exactly like the app does:
+    dev -> http://localhost:3001/api, prod -> same-origin /api.
+    It is a *generator* so the panel can show "getting your records" before the request settles, rather
+    than leaving a blank gap that shifts the page when it fills. quarto-live's own webr-evaluate.ojs
+    template does the same thing (yield a spinner, then yield the awaited result), so async generators in
+    OJS cells are load-bearing in this extension already.
+    Referencing `landings_reload` at the top is what makes the button work: OJS re-runs a cell when
+    anything it reads changes, and Inputs.button counts its clicks, so each press re-fetches.
+    The row cap comes back in the `X-Row-Cap` response header rather than being written here, so the
+    number the panel quotes cannot drift from LESSON_ROW_CAP in api/data-download/explorer-data.js.
+
+ 2. `landings_rows` (OJS mutable) — the last rows that loaded SUCCESSFULLY, and the value the R cell
+    consumes. `landings_state` writes it and nothing else does. It exists so a reload cannot briefly blank
+    the data: read straight off the state, the loading phase would pass an empty array to the guard, the
+    guard would rebuild `landings` as an empty frame, and a learner who pressed Run in that window would
+    get an empty table for no visible reason.
+
+ 3. the status line — the only cell the learner reads. Written as a block with an early return per phase
+    rather than a nested conditional, so each phase is named where it is handled.
+
+ 4. the button. It is deliberately NOT disabled while a fetch is in flight: the cell that did that
+    returned no value, and an OJS cell whose value is undefined renders the word "undefined" on the
+    page. Guarding a stray click was not worth a visible defect, and a repeat press only restarts the
+    same generator.
+
+ 5. `landings_placeholder` / `landings_input` / `landings_empty` — the empty-data bridge. See the note
+    on the placeholder cell: an empty array cannot cross into webR at all.
+
+ 6. the guard (webr, `include: false`) — builds the data frame WITHOUT trusting the incoming shape.
+    quarto-live may hand over a data.frame already, or a list of row-lists. `as.data.frame()` on the
+    latter does not error: it silently returns ONE row with every column repeated per record, so
+    5,000 records become a 1 x 85,000 table that `nrow()` then reports as 1. A lesson built on that
+    would teach the wrong number with total confidence, so the shape is checked rather than assumed.
+    It turns those rows into the data frame every lesson box calls
+    `landings`. `include: false` evaluates the cell but shows no editor, no source and no output
+    (live.lua ~line 121), which is exactly what plumbing wants. `autorun` is deliberately absent: with
+    `edit: false` the block renders from webr-evaluate.ojs, which calls process() unconditionally —
+    `autorun` is read only by the editor template, so setting it here would mislead the next author.
+    When there is no data (not signed in, session expired, no forms assigned) it drops the placeholder
+    row and leaves an EMPTY frame that still HAS the columns the lessons name, so the boxes below return
+    an empty table instead of reporting a missing column — a message the learner would read as their own
+    spelling mistake. If a lesson starts naming another column, add it to `landings_placeholder` too.
+
+The "not signed in" and "could not load" wording lives in the panel, not in R, so a learner who is not
+signed in reads it immediately instead of waiting ~30s for webR to boot before R can print a warning.
+-->
+<div class="lesson-plumbing">
+<div class="cell">
+<div class="sourceCode cell-code hidden" id="cb3" data-startfrom="101" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 100;"><span id="cb3-101"><a href="#cb3-101" aria-hidden="true" tabindex="-1"></a>landings_state <span class="op">=</span> {</span>
+<span id="cb3-102"><a href="#cb3-102" aria-hidden="true" tabindex="-1"></a>  landings_reload<span class="op">;</span></span>
+<span id="cb3-103"><a href="#cb3-103" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-104"><a href="#cb3-104" aria-hidden="true" tabindex="-1"></a>  <span class="kw">yield</span> ({ <span class="dt">phase</span><span class="op">:</span> <span class="st">"loading"</span> })<span class="op">;</span></span>
+<span id="cb3-105"><a href="#cb3-105" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-106"><a href="#cb3-106" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> token <span class="op">=</span> localStorage<span class="op">.</span><span class="fu">getItem</span>(<span class="st">"authToken"</span>)<span class="op">;</span></span>
+<span id="cb3-107"><a href="#cb3-107" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="op">!</span>token) {</span>
+<span id="cb3-108"><a href="#cb3-108" aria-hidden="true" tabindex="-1"></a>    <span class="kw">yield</span> ({ <span class="dt">phase</span><span class="op">:</span> <span class="st">"signed-out"</span> })<span class="op">;</span></span>
+<span id="cb3-109"><a href="#cb3-109" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span><span class="op">;</span></span>
+<span id="cb3-110"><a href="#cb3-110" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-111"><a href="#cb3-111" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-112"><a href="#cb3-112" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> apiBase <span class="op">=</span> localStorage<span class="op">.</span><span class="fu">getItem</span>(<span class="st">"apiBaseUrl"</span>) <span class="op">||</span> <span class="st">"/api"</span><span class="op">;</span></span>
+<span id="cb3-113"><a href="#cb3-113" aria-hidden="true" tabindex="-1"></a>  <span class="cf">try</span> {</span>
+<span id="cb3-114"><a href="#cb3-114" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> res <span class="op">=</span> <span class="cf">await</span> <span class="fu">fetch</span>(<span class="vs">`</span><span class="sc">${</span>apiBase<span class="sc">}</span><span class="vs">/data-download/explorer-data`</span><span class="op">,</span> {</span>
+<span id="cb3-115"><a href="#cb3-115" aria-hidden="true" tabindex="-1"></a>      <span class="dt">headers</span><span class="op">:</span> { <span class="dt">Authorization</span><span class="op">:</span> <span class="vs">`Bearer </span><span class="sc">${</span>token<span class="sc">}</span><span class="vs">`</span><span class="op">,</span> <span class="dt">Accept</span><span class="op">:</span> <span class="st">"application/json"</span> }</span>
+<span id="cb3-116"><a href="#cb3-116" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb3-117"><a href="#cb3-117" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span>res<span class="op">.</span><span class="at">ok</span>) {</span>
+<span id="cb3-118"><a href="#cb3-118" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (res<span class="op">.</span><span class="at">status</span> <span class="op">===</span> <span class="dv">401</span>) {</span>
+<span id="cb3-119"><a href="#cb3-119" aria-hidden="true" tabindex="-1"></a>        <span class="kw">yield</span> ({ <span class="dt">phase</span><span class="op">:</span> <span class="st">"signed-out"</span> })<span class="op">;</span></span>
+<span id="cb3-120"><a href="#cb3-120" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span><span class="op">;</span></span>
+<span id="cb3-121"><a href="#cb3-121" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb3-122"><a href="#cb3-122" aria-hidden="true" tabindex="-1"></a>      <span class="co">// 400/403 mean the account cannot reach this data (no forms assigned, district not</span></span>
+<span id="cb3-123"><a href="#cb3-123" aria-hidden="true" tabindex="-1"></a>      <span class="co">// permitted). Showing "connection problem" there sends the learner hunting a fault that</span></span>
+<span id="cb3-124"><a href="#cb3-124" aria-hidden="true" tabindex="-1"></a>      <span class="co">// does not exist, so the server's own sentence is passed through instead.</span></span>
+<span id="cb3-125"><a href="#cb3-125" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (res<span class="op">.</span><span class="at">status</span> <span class="op">===</span> <span class="dv">400</span> <span class="op">||</span> res<span class="op">.</span><span class="at">status</span> <span class="op">===</span> <span class="dv">403</span>) {</span>
+<span id="cb3-126"><a href="#cb3-126" aria-hidden="true" tabindex="-1"></a>        <span class="kw">let</span> message <span class="op">=</span> <span class="st">""</span><span class="op">;</span></span>
+<span id="cb3-127"><a href="#cb3-127" aria-hidden="true" tabindex="-1"></a>        <span class="cf">try</span> { message <span class="op">=</span> (<span class="cf">await</span> res<span class="op">.</span><span class="fu">json</span>())<span class="op">.</span><span class="at">error</span> <span class="op">||</span> <span class="st">""</span><span class="op">;</span> } <span class="cf">catch</span> { <span class="co">/* body was not JSON */</span> }</span>
+<span id="cb3-128"><a href="#cb3-128" aria-hidden="true" tabindex="-1"></a>        <span class="kw">yield</span> ({ <span class="dt">phase</span><span class="op">:</span> <span class="st">"no-access"</span><span class="op">,</span> message })<span class="op">;</span></span>
+<span id="cb3-129"><a href="#cb3-129" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span><span class="op">;</span></span>
+<span id="cb3-130"><a href="#cb3-130" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb3-131"><a href="#cb3-131" aria-hidden="true" tabindex="-1"></a>      <span class="kw">yield</span> ({ <span class="dt">phase</span><span class="op">:</span> <span class="st">"failed"</span> })<span class="op">;</span></span>
+<span id="cb3-132"><a href="#cb3-132" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span><span class="op">;</span></span>
+<span id="cb3-133"><a href="#cb3-133" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb3-134"><a href="#cb3-134" aria-hidden="true" tabindex="-1"></a>    <span class="co">// The endpoint returns a bare array. Normalising anyway: `rows.length` is read straight into the</span></span>
+<span id="cb3-135"><a href="#cb3-135" aria-hidden="true" tabindex="-1"></a>    <span class="co">// panel text, so anything else here would throw and take the whole panel down with it.</span></span>
+<span id="cb3-136"><a href="#cb3-136" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> rows <span class="op">=</span> <span class="cf">await</span> res<span class="op">.</span><span class="fu">json</span>()<span class="op">;</span></span>
+<span id="cb3-137"><a href="#cb3-137" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> safeRows <span class="op">=</span> <span class="bu">Array</span><span class="op">.</span><span class="fu">isArray</span>(rows) <span class="op">?</span> rows <span class="op">:</span> []<span class="op">;</span></span>
+<span id="cb3-138"><a href="#cb3-138" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Absent on an older deployment; the panel then just omits the sentence about the cap.</span></span>
+<span id="cb3-139"><a href="#cb3-139" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> cap <span class="op">=</span> <span class="bu">Number</span>(res<span class="op">.</span><span class="at">headers</span><span class="op">.</span><span class="fu">get</span>(<span class="st">"X-Row-Cap"</span>))<span class="op">;</span></span>
+<span id="cb3-140"><a href="#cb3-140" aria-hidden="true" tabindex="-1"></a>    mutable landings_rows <span class="op">=</span> safeRows<span class="op">;</span></span>
+<span id="cb3-141"><a href="#cb3-141" aria-hidden="true" tabindex="-1"></a>    <span class="kw">yield</span> ({ <span class="dt">phase</span><span class="op">:</span> <span class="st">"ready"</span><span class="op">,</span> <span class="dt">rows</span><span class="op">:</span> safeRows<span class="op">,</span> <span class="dt">cap</span><span class="op">:</span> <span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(cap) <span class="op">&amp;&amp;</span> cap <span class="op">&gt;</span> <span class="dv">0</span> <span class="op">?</span> cap <span class="op">:</span> <span class="kw">null</span> })<span class="op">;</span></span>
+<span id="cb3-142"><a href="#cb3-142" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">catch</span> {</span>
+<span id="cb3-143"><a href="#cb3-143" aria-hidden="true" tabindex="-1"></a>    <span class="kw">yield</span> ({ <span class="dt">phase</span><span class="op">:</span> <span class="st">"failed"</span> })<span class="op">;</span></span>
+<span id="cb3-144"><a href="#cb3-144" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-145"><a href="#cb3-145" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-3" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code hidden" id="cb4" data-startfrom="109" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 108;"><span id="cb4-109"><a href="#cb4-109" aria-hidden="true" tabindex="-1"></a>mutable landings_rows <span class="op">=</span> []</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-4" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code hidden" id="cb5" data-startfrom="0" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line -1;"><span id="cb5-0"><a href="#cb5-0" aria-hidden="true" tabindex="-1"></a><span class="co">// NEVER pass an empty array to the webr cell below. quarto-live builds the R data.frame from the</span></span>
+<span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">// FIRST row's keys, so an empty array means Object.keys(undefined) and the whole cell dies with</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">// "Cannot convert undefined or null to object" — in JavaScript, before any R runs, which is why an</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">// R-side nrow()==0 guard cannot save it. Sending one placeholder row keeps the column names and</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">// types intact; R drops the row immediately, leaving a genuinely empty frame with real columns.</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>landings_placeholder <span class="op">=</span> ({</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">survey_id</span><span class="op">:</span> <span class="st">""</span><span class="op">,</span> <span class="dt">trip_id</span><span class="op">:</span> <span class="st">""</span><span class="op">,</span> <span class="dt">landing_date</span><span class="op">:</span> <span class="st">""</span><span class="op">,</span> <span class="dt">gaul_2_name</span><span class="op">:</span> <span class="st">""</span><span class="op">,</span> <span class="dt">gear</span><span class="op">:</span> <span class="st">""</span><span class="op">,</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vessel_type</span><span class="op">:</span> <span class="st">""</span><span class="op">,</span> <span class="dt">catch_habitat</span><span class="op">:</span> <span class="st">""</span><span class="op">,</span> <span class="dt">catch_taxon</span><span class="op">:</span> <span class="st">""</span><span class="op">,</span> <span class="dt">scientific_name</span><span class="op">:</span> <span class="st">""</span><span class="op">,</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">n_fishers</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">n_catch</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">trip_duration_hrs</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">length_cm</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">catch_kg</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">catch_price</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">tot_catch_kg</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">tot_catch_price</span><span class="op">:</span> <span class="dv">0</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-5" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code hidden" id="cb6" data-startfrom="0" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line -1;"><span id="cb6-0"><a href="#cb6-0" aria-hidden="true" tabindex="-1"></a>landings_input <span class="op">=</span> landings_rows<span class="op">.</span><span class="at">length</span> <span class="op">&gt;</span> <span class="dv">0</span> <span class="op">?</span> landings_rows <span class="op">:</span> [landings_placeholder]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-6" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code hidden" id="cb7" data-startfrom="0" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line -1;"><span id="cb7-0"><a href="#cb7-0" aria-hidden="true" tabindex="-1"></a>landings_empty <span class="op">=</span> landings_rows<span class="op">.</span><span class="at">length</span> <span class="op">===</span> <span class="dv">0</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-7" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+</div>
+<div class="card lesson-data-panel">
+<div class="card-body">
+<p class="card-title fw-semibold mb-2">Your own records</p>
+<div class="lesson-data-status" role="status" aria-live="polite">
+<div class="cell">
+<div class="sourceCode cell-code hidden" id="cb8" data-startfrom="0" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line -1;"><span id="cb8-0"><a href="#cb8-0" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> s <span class="op">=</span> landings_state<span class="op">;</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (s<span class="op">.</span><span class="at">phase</span> <span class="op">===</span> <span class="st">"loading"</span>) <span class="cf">return</span> <span class="fu">html</span><span class="vs">`&lt;div class="alert alert-light mb-0 d-flex align-items-center"&gt;</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="vs">    &lt;span class="spinner-border spinner-border-sm me-2" aria-hidden="true"&gt;&lt;/span&gt;</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="vs">    Getting your records&amp;#8230;</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="vs">  &lt;/div&gt;`</span><span class="op">;</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (s<span class="op">.</span><span class="at">phase</span> <span class="op">===</span> <span class="st">"signed-out"</span>) <span class="cf">return</span> <span class="fu">html</span><span class="vs">`&lt;div class="alert alert-warning mb-0"&gt;</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="vs">    &lt;strong&gt;You are not signed in, so there are no records to work with.&lt;/strong&gt;</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="vs">    The boxes below will still run, but they will come back empty.</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="vs">    Open this lesson from the &lt;strong&gt;Data Explorer&lt;/strong&gt; tab while signed in.</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="vs">  &lt;/div&gt;`</span><span class="op">;</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (s<span class="op">.</span><span class="at">phase</span> <span class="op">===</span> <span class="st">"no-access"</span>) <span class="cf">return</span> <span class="fu">html</span><span class="vs">`&lt;div class="alert alert-warning mb-0"&gt;</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="vs">    &lt;strong&gt;There are no records available for your account.&lt;/strong&gt;</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="vs">    </span><span class="sc">${</span>s<span class="op">.</span><span class="at">message</span> <span class="op">?</span> <span class="fu">html</span><span class="vs">`&lt;br&gt;</span><span class="sc">${</span>s<span class="op">.</span><span class="at">message</span><span class="sc">}</span><span class="vs">`</span> <span class="op">:</span> <span class="st">""</span><span class="sc">}</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="vs">    The boxes below will still run, but they will come back empty. If that looks wrong, ask an</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="vs">    administrator which surveys your account can see.</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="vs">  &lt;/div&gt;`</span><span class="op">;</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (s<span class="op">.</span><span class="at">phase</span> <span class="op">===</span> <span class="st">"failed"</span>) <span class="cf">return</span> <span class="fu">html</span><span class="vs">`&lt;div class="alert alert-warning mb-0"&gt;</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="vs">    &lt;strong&gt;Your records could not be loaded just now.&lt;/strong&gt;</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a><span class="vs">    This is usually a connection problem, and nothing is wrong with your data.</span></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="vs">    Press the button below to try again.</span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="vs">  &lt;/div&gt;`</span><span class="op">;</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> capped <span class="op">=</span> s<span class="op">.</span><span class="at">cap</span> <span class="op">&amp;&amp;</span> s<span class="op">.</span><span class="at">rows</span><span class="op">.</span><span class="at">length</span> <span class="op">&gt;=</span> s<span class="op">.</span><span class="at">cap</span><span class="op">;</span></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="fu">html</span><span class="vs">`&lt;div class="alert alert-success mb-0"&gt;</span></span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="vs">    &lt;strong&gt;Your records are ready.&lt;/strong&gt;</span></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a><span class="vs">    </span><span class="sc">${</span>s<span class="op">.</span><span class="at">rows</span><span class="op">.</span><span class="at">length</span><span class="op">.</span><span class="fu">toLocaleString</span>()<span class="sc">}</span><span class="vs"> records loaded when you opened this page.</span></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a><span class="vs">    </span><span class="sc">${</span>capped</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>      <span class="op">?</span> <span class="fu">html</span><span class="vs">`That is the most a lesson loads. If you have more records, open the</span></span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a><span class="vs">             &lt;strong&gt;Data Download&lt;/strong&gt; tab to get them all.`</span></span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>      <span class="op">:</span> <span class="fu">html</span><span class="vs">`They are the same records you can open in the &lt;strong&gt;Data Download&lt;/strong&gt; tab.`</span><span class="sc">}</span></span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a><span class="vs">  &lt;/div&gt;`</span><span class="op">;</span></span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-8" data-nodetype="expression">
+
+</div>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code hidden" id="cb9" data-startfrom="0" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line -1;"><span id="cb9-0"><a href="#cb9-0" aria-hidden="true" tabindex="-1"></a>viewof landings_reload <span class="op">=</span> {</span>
+<span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Inputs.button starts at 0 and counts clicks, which is all the trigger `landings_state` needs.</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Its plain &lt;button&gt; is restyled to match the theme; guarded because a null here would break the cell</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">// and the learner would lose the button altogether.</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> view <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">button</span>(<span class="st">"Load my records again"</span>)<span class="op">;</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> button <span class="op">=</span> view<span class="op">.</span><span class="fu">querySelector</span>(<span class="st">"button"</span>)<span class="op">;</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (button) button<span class="op">.</span><span class="at">className</span> <span class="op">=</span> <span class="st">"btn btn-sm btn-outline-primary"</span><span class="op">;</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> view<span class="op">;</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-9" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="lesson-plumbing">
+<div class="cell" data-input="[&quot;landings_input&quot;,&quot;landings_empty&quot;]">
+<div>
+<div id="webr-3" class="exercise-cell">
+
+</div>
+<script type="webr-3-contents">
+eyJhdHRyIjp7Im91dHB1dCI6ZmFsc2UsImVkaXQiOmZhbHNlLCJlY2hvIjpmYWxzZSwiZXZhbCI6dHJ1ZSwiaW5jbHVkZSI6ZmFsc2UsImlucHV0IjpbImxhbmRpbmdzX2lucHV0IiwibGFuZGluZ3NfZW1wdHkiXX0sImNvZGUiOiJsYW5kaW5ncyA8LSB0cnlDYXRjaCh7XG4gIGlmIChpcy5kYXRhLmZyYW1lKGxhbmRpbmdzX2lucHV0KSkge1xuICAgIGxhbmRpbmdzX2lucHV0XG4gIH0gZWxzZSB7XG4gICAgY29scyA8LSB1bmlxdWUodW5saXN0KGxhcHBseShsYW5kaW5nc19pbnB1dCwgbmFtZXMpKSlcbiAgICBhcy5kYXRhLmZyYW1lKFxuICAgICAgbGFwcGx5KHN0YXRzOjpzZXROYW1lcyhjb2xzLCBjb2xzKSwgZnVuY3Rpb24oaylcbiAgICAgICAgdW5saXN0KGxhcHBseShsYW5kaW5nc19pbnB1dCwgZnVuY3Rpb24ocm93KSB7XG4gICAgICAgICAgdmFsdWUgPC0gcm93W1trXV1cbiAgICAgICAgICBpZiAoaXMubnVsbCh2YWx1ZSkgfHwgbGVuZ3RoKHZhbHVlKSA9PSAwKSBOQSBlbHNlIHZhbHVlW1sxXV1cbiAgICAgICAgfSksIHVzZS5uYW1lcyA9IEZBTFNFKSksXG4gICAgICBzdHJpbmdzQXNGYWN0b3JzID0gRkFMU0VcbiAgICApXG4gIH1cbn0sIGVycm9yID0gZnVuY3Rpb24oZSkgTlVMTClcblxuaWYgKCFpcy5kYXRhLmZyYW1lKGxhbmRpbmdzKSB8fCBuY29sKGxhbmRpbmdzKSA9PSAwKSB7XG4gIGxhbmRpbmdzIDwtIGRhdGEuZnJhbWUoXG4gICAgc3VydmV5X2lkID0gY2hhcmFjdGVyKCksIHRyaXBfaWQgPSBjaGFyYWN0ZXIoKSwgbGFuZGluZ19kYXRlID0gY2hhcmFjdGVyKCksXG4gICAgZ2F1bF8yX25hbWUgPSBjaGFyYWN0ZXIoKSwgZ2VhciA9IGNoYXJhY3RlcigpLCBjYXRjaF90YXhvbiA9IGNoYXJhY3RlcigpLFxuICAgIGNhdGNoX2tnID0gbnVtZXJpYygpLCBuX2NhdGNoID0gbnVtZXJpYygpLCB0b3RfY2F0Y2hfa2cgPSBudW1lcmljKCksXG4gICAgc3RyaW5nc0FzRmFjdG9ycyA9IEZBTFNFXG4gIClcbn0gZWxzZSBpZiAoaXNUUlVFKGFzLmxvZ2ljYWwobGFuZGluZ3NfZW1wdHkpKSkge1xuICBsYW5kaW5ncyA8LSBsYW5kaW5nc1swLCAsIGRyb3AgPSBGQUxTRV1cbn0ifQ==
+</script>
+</div>
+</div>
+</div>
+</section>
+<section id="what-values-are-in-a-column" class="level2">
+<h2 class="anchored" data-anchor-id="what-values-are-in-a-column">What values are in a column?</h2>
+<p>Before you can ask for “only one district”, you need to know which districts exist. <strong><code>distinct()</code></strong> lists each value in a column <strong>once</strong>, leaving out the repeats. Press <strong>Run</strong>:</p>
+<div class="cell" data-autorun="false">
+<div>
+<div id="webr-4" class="exercise-cell">
+
+</div>
+<script type="webr-4-contents">
+eyJhdHRyIjp7ImV2YWwiOnRydWUsImVkaXQiOnRydWUsImF1dG9ydW4iOmZhbHNlfSwiY29kZSI6ImRpc3RpbmN0KGV4YW1wbGUsIGdhdWxfMl9uYW1lKSJ9
+</script>
+</div>
+</div>
+<div class="callout callout-style-simple callout-tip">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>What you should see:</strong> just <strong>Shimoni</strong> and <strong>Vanga</strong>. Even though Shimoni is on three rows, it is listed once. This is also how you find the <strong>exact spelling</strong> of a value to use in the next step.</p>
+</div>
+</div>
+</div>
+<p>Now on your own data. These are the real districts in your records. Press <strong>Run</strong>, then try changing <code>gaul_2_name</code> to <code>gear</code> to see your fishing methods:</p>
+<div class="cell" data-autorun="false">
+<div>
+<div id="webr-5" class="exercise-cell">
+
+</div>
+<script type="webr-5-contents">
+eyJhdHRyIjp7ImV2YWwiOnRydWUsImVkaXQiOnRydWUsImF1dG9ydW4iOmZhbHNlfSwiY29kZSI6ImRpc3RpbmN0KGxhbmRpbmdzLCBnYXVsXzJfbmFtZSkifQ==
+</script>
+</div>
+</div>
+<div class="callout callout-style-simple callout-note">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>Keep this list in view.</strong> These are your own names, spelled exactly as your data spells them. You will copy one of them further down the page.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="show-only-the-rows-you-want" class="level2">
+<h2 class="anchored" data-anchor-id="show-only-the-rows-you-want">Show only the rows you want</h2>
+<p><strong><code>filter()</code></strong> keeps only the rows that match a condition you give — for example, only the <code>gillnet</code> trips.</p>
+<div class="callout callout-style-simple callout-important">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>Two small things to get right:</p>
+<ul>
+<li>Use <strong>two</strong> equals signs <code>==</code> for “is equal to” (one <code>=</code> means something else and will not work).</li>
+<li>A word like <code>"gillnet"</code> needs <strong>quotes</strong>. A number, like <code>5</code>, does not.</li>
+</ul>
+</div>
+</div>
+</div>
+<p><strong>First, have a guess.</strong> Look back at the little <code>example</code> table at the top of the page. It has <strong>5 rows</strong>. Now think about what <code>filter(example, gear == "gillnet")</code> will give back.</p>
+<p>Guessing first is not a test. It is the fastest way to understand what a command does, and a wrong guess teaches you more than a right one.</p>
+<div class="cell">
+<div class="sourceCode cell-code hidden" id="cb10" data-startfrom="0" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line -1;"><span id="cb10-0"><a href="#cb10-0" aria-hidden="true" tabindex="-1"></a>viewof predict_filter <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">radio</span>(</span>
+<span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>  [<span class="st">"1 row"</span><span class="op">,</span> <span class="st">"2 rows"</span><span class="op">,</span> <span class="st">"5 rows"</span>]<span class="op">,</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  { <span class="dt">label</span><span class="op">:</span> <span class="st">"How many rows will come back?"</span> }</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-10" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code hidden" id="cb11" data-startfrom="0" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line -1;"><span id="cb11-0"><a href="#cb11-0" aria-hidden="true" tabindex="-1"></a><span class="fu">html</span><span class="vs">`</span><span class="sc">${</span></span>
+<span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>  <span class="co">// `== null` on purpose: Inputs.radio starts at null, not undefined, when nothing is picked.</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  predict_filter <span class="op">==</span> <span class="kw">null</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">?</span> <span class="st">'&lt;div class="alert alert-light py-2"&gt;Pick an answer above, then press Run below to check it.&lt;/div&gt;'</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">:</span> predict_filter <span class="op">===</span> <span class="st">"2 rows"</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>      <span class="op">?</span> <span class="st">'&lt;div class="alert alert-success py-2"&gt;&lt;strong&gt;Yes — 2 rows.&lt;/strong&gt; Only two rows have &lt;code&gt;gillnet&lt;/code&gt; in the &lt;code&gt;gear&lt;/code&gt; column, so only those two are kept. Press &lt;strong&gt;Run&lt;/strong&gt; and see.&lt;/div&gt;'</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>      <span class="op">:</span> <span class="st">'&lt;div class="alert alert-warning py-2"&gt;&lt;strong&gt;Have another look.&lt;/strong&gt; Count the rows in the table above where &lt;code&gt;gear&lt;/code&gt; says &lt;code&gt;gillnet&lt;/code&gt; — that is how many you will get. A wrong guess is useful: it shows you exactly what to look at.&lt;/div&gt;'</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="sc">}</span><span class="vs">`</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-11" data-nodetype="expression">
+
+</div>
+</div>
+</div>
+<p>Now press <strong>Run</strong>:</p>
+<div class="cell" data-autorun="false">
+<div>
+<div id="webr-6" class="exercise-cell">
+
+</div>
+<script type="webr-6-contents">
+eyJhdHRyIjp7ImV2YWwiOnRydWUsImVkaXQiOnRydWUsImF1dG9ydW4iOmZhbHNlfSwiY29kZSI6ImZpbHRlcihleGFtcGxlLCBnZWFyID09IFwiZ2lsbG5ldFwiKSJ9
+</script>
+</div>
+</div>
+<div class="diagram">
+
+<table class="table caption-top" data-quarto-postprocess="true">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">gaul_2_name</th>
+<th data-quarto-table-cell-role="th">gear</th>
+<th data-quarto-table-cell-role="th">catch_taxon</th>
+<th data-quarto-table-cell-role="th">catch_kg</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd drop">
+<td>Shimoni</td>
+<td>hand line</td>
+<td>species 1</td>
+<td>12</td>
+</tr>
+<tr class="even drop">
+<td>Shimoni</td>
+<td>hand line</td>
+<td>species 2</td>
+<td>5</td>
+</tr>
+<tr class="odd drop">
+<td>Shimoni</td>
+<td>hand line</td>
+<td>species 3</td>
+<td>3</td>
+</tr>
+<tr class="even keep">
+<td>Vanga</td>
+<td>gillnet</td>
+<td>species 1</td>
+<td>8</td>
+</tr>
+<tr class="odd keep">
+<td>Vanga</td>
+<td>gillnet</td>
+<td>species 2</td>
+<td>6</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+<p><span class="diagram-caption"><code>filter(gear == "gillnet")</code> keeps the green rows and drops the rest.</span></p>
+<p>You can also filter on a <strong>number</strong> — no quotes needed. This keeps only catches heavier than 5 kg:</p>
+<div class="cell" data-autorun="false">
+<div>
+<div id="webr-7" class="exercise-cell">
+
+</div>
+<script type="webr-7-contents">
+eyJhdHRyIjp7ImV2YWwiOnRydWUsImVkaXQiOnRydWUsImF1dG9ydW4iOmZhbHNlfSwiY29kZSI6ImZpbHRlcihleGFtcGxlLCBjYXRjaF9rZyA+IDUpIn0=
+</script>
+</div>
+</div>
+<p>Now on your real data. This keeps only the catches heavier than 20 kg — the big ones. Press <strong>Run</strong>:</p>
+<div class="cell" data-autorun="false">
+<div>
+<div id="webr-8" class="exercise-cell">
+
+</div>
+<script type="webr-8-contents">
+eyJhdHRyIjp7ImV2YWwiOnRydWUsImVkaXQiOnRydWUsImF1dG9ydW4iOmZhbHNlfSwiY29kZSI6ImZpbHRlcihsYW5kaW5ncywgY2F0Y2hfa2cgPiAyMCkifQ==
+</script>
+</div>
+</div>
+<section id="your-turn-your-own-district" class="level3">
+<h3 class="anchored" data-anchor-id="your-turn-your-own-district">Your turn: your own district</h3>
+<p>Now you do one. In the box below, replace the blanks <code>______</code> with <strong>one district name from your own list</strong> further up the page. Keep the quotes. Then press <strong>Run</strong>.</p>
+<p>If you get stuck, press <strong>Hint</strong>. Nothing here can break.</p>
+<div class="cell" data-exercise="ex_filter_district" data-envir="global" data-caption="Keep only the rows from your own district">
+<div>
+<div id="webr-9" class="exercise-cell">
+
+</div>
+<script type="webr-9-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImNhcHRpb24iOiJLZWVwIG9ubHkgdGhlIHJvd3MgZnJvbSB5b3VyIG93biBkaXN0cmljdCIsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXhfZmlsdGVyX2Rpc3RyaWN0IiwiZW52aXIiOiJnbG9iYWwifSwiY29kZSI6ImZpbHRlcihsYW5kaW5ncywgZ2F1bF8yX25hbWUgPT0gXCJfX19fX19cIikifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex_filter_district">
+<p>Scroll up to the <code>distinct(landings, gaul_2_name)</code> box and copy one name <strong>exactly</strong> as it is spelled there, between the quotes. For example, if your list shows <code>Kilifi</code>, you would write <code>filter(landings, gaul_2_name == "Kilifi")</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex_filter_district">
+<p>Any district from your own list works. With a district called <code>Kilifi</code> it would be:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">filter</span>(landings, gaul_2_name <span class="sc">==</span> <span class="st">"Kilifi"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="callout callout-style-simple callout-tip">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>What you should see:</strong> only the rows for that one district.</p>
+<p>If you get an <strong>empty</strong> table, the name is probably spelled differently in your data. Go back to the <code>distinct()</code> list and copy it again, exactly.</p>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="when-the-answer-comes-back-red" class="level2">
+<h2 class="anchored" data-anchor-id="when-the-answer-comes-back-red">When the answer comes back red</h2>
+<p>Now that you are typing, sooner or later you will press <strong>Run</strong> and get <strong>red text</strong> instead of a table. This happens to everyone, every day, including the people who wrote these lessons.</p>
+<div class="callout callout-style-simple callout-important">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>Red text is not damage.</strong> Nothing is broken, nothing is lost, and your real data cannot be changed from this page. Red text is simply R saying: <em>“I did not understand one word.”</em></p>
+<p>You do not need to read all of it. Look for the <strong>last line</strong> — that is the useful one.</p>
+</div>
+</div>
+</div>
+<p>Almost every red message you will meet is one of just <strong>two</strong>. Here is each one, and what to do.</p>
+<section id="object-not-found" class="level3">
+<h3 class="anchored" data-anchor-id="object-not-found">“object … not found”</h3>
+<p>This means R met a name it does not recognise. There are two common reasons.</p>
+<p><strong>The name is spelled differently from your data.</strong> The box below has a mistake on purpose. Press <strong>Run</strong> to see the red text, then <strong>fix the spelling</strong> and press <strong>Run</strong> again.</p>
+<div class="cell" data-autorun="false">
+<div>
+<div id="webr-10" class="exercise-cell">
+
+</div>
+<script type="webr-10-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImVycm9yIjp0cnVlLCJhdXRvcnVuIjpmYWxzZX0sImNvZGUiOiIjIGBnZWVyYCBpcyBub3QgYSBjb2x1bW4uIEZpeCBpdCwgdGhlbiBwcmVzcyBSdW4gYWdhaW4uXG5maWx0ZXIoZXhhbXBsZSwgZ2VlciA9PSBcImdpbGxuZXRcIikifQ==
+</script>
+</div>
+</div>
+<div class="callout callout-style-simple callout-tip">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>What you should see:</strong> a red line ending in <code>object 'geer' not found</code>. R is telling you the name it could not find — <code>geer</code>. Change it to <code>gear</code> and the table comes back.</p>
+<p>When this happens on your own data, check the real spelling with <code>names(landings)</code>, or with the <code>distinct()</code> list further up the page.</p>
+</div>
+</div>
+</div>
+<p><strong>A word is missing its quotes.</strong> <code>filter(example, gear == gillnet)</code> gives the <em>same</em> message, <code>object 'gillnet' not found</code>. Without quotes, R thinks <code>gillnet</code> is the name of a column.</p>
+<p>Words always need quotes, like <code>"gillnet"</code>. Numbers never do, like <code>5</code>.</p>
+</section>
+<section id="we-detected-a-named-input" class="level3">
+<h3 class="anchored" data-anchor-id="we-detected-a-named-input">“We detected a named input”</h3>
+<p>This one means you typed <strong>one</strong> <code>=</code> where <strong>two</strong> are needed. Press <strong>Run</strong> to see it, then fix it.</p>
+<div class="cell" data-autorun="false">
+<div>
+<div id="webr-11" class="exercise-cell">
+
+</div>
+<script type="webr-11-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImVycm9yIjp0cnVlLCJhdXRvcnVuIjpmYWxzZX0sImNvZGUiOiIjIE9uZSA9IGluc3RlYWQgb2YgdHdvLiBGaXggaXQsIHRoZW4gcHJlc3MgUnVuIGFnYWluLlxuZmlsdGVyKGV4YW1wbGUsIGdlYXIgPSBcImdpbGxuZXRcIikifQ==
+</script>
+</div>
+</div>
+<div class="callout callout-style-simple callout-tip">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>What you should see:</strong> red text saying R detected a <em>named input</em>, and suggesting you meant <code>==</code>. It is right. Change the single <code>=</code> to <code>==</code> and press <strong>Run</strong>.</p>
+</div>
+</div>
+</div>
+<div class="callout callout-style-simple callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Two ways out, always
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li><strong>Edit and press Run again.</strong> You can do this as many times as you like.</li>
+<li><strong>Press “Start Over”</strong> on the box to put the original instruction back, exactly as it was when the page opened.</li>
+</ul>
+<p>You cannot get stuck, and you cannot break anything.</p>
+</div>
+</div>
+</section>
+</section>
+<section id="keep-only-the-columns-you-want" class="level2">
+<h2 class="anchored" data-anchor-id="keep-only-the-columns-you-want">Keep only the columns you want</h2>
+<p>Your table has many columns. Often you want just a few — say the date, the district and the weight. <strong><code>select()</code></strong> keeps only the columns you name:</p>
+<div class="cell" data-autorun="false">
+<div>
+<div id="webr-12" class="exercise-cell">
+
+</div>
+<script type="webr-12-contents">
+eyJhdHRyIjp7ImV2YWwiOnRydWUsImVkaXQiOnRydWUsImF1dG9ydW4iOmZhbHNlfSwiY29kZSI6InNlbGVjdChleGFtcGxlLCBsYW5kaW5nX2RhdGUsIGdhdWxfMl9uYW1lLCBjYXRjaF9rZykifQ==
+</script>
+</div>
+</div>
+<div class="col-chips diagram">
+  Keep: <span class="keep">landing_date</span><span class="keep">gaul_2_name</span><span class="keep">catch_kg</span>
+  &nbsp;&nbsp; Drop: <span class="drop">trip_id</span><span class="drop">gear</span><span class="drop">catch_taxon</span>
+</div>
+<p><span class="diagram-caption"><code>select()</code> keeps the green columns and leaves out the rest.</span></p>
+<p>On your real data, keep just three useful columns. Press <strong>Run</strong>, then try adding another column name:</p>
+<div class="cell" data-autorun="false">
+<div>
+<div id="webr-13" class="exercise-cell">
+
+</div>
+<script type="webr-13-contents">
+eyJhdHRyIjp7ImV2YWwiOnRydWUsImVkaXQiOnRydWUsImF1dG9ydW4iOmZhbHNlfSwiY29kZSI6InNlbGVjdChsYW5kaW5ncywgbGFuZGluZ19kYXRlLCBnYXVsXzJfbmFtZSwgY2F0Y2hfa2cpIn0=
+</script>
+</div>
+</div>
+</section>
+<section id="do-two-steps-at-once-the-pipe" class="level2">
+<h2 class="anchored" data-anchor-id="do-two-steps-at-once-the-pipe">Do two steps at once: the pipe <code>|&gt;</code></h2>
+<p>Most real questions need two steps: keep only <strong>your</strong> district, <strong>and</strong> keep only a few columns. The little symbol <strong><code>|&gt;</code></strong> (called the <em>pipe</em>) lets you do steps <strong>in order</strong>, left to right. Read it as the word <strong>“then”</strong>.</p>
+<p>The box below says: <em>take the landings, <strong>then</strong> keep only the catches over 20 kg, <strong>then</strong> keep these three columns.</em> Press <strong>Run</strong>:</p>
+<div class="cell" data-autorun="false">
+<div>
+<div id="webr-14" class="exercise-cell">
+
+</div>
+<script type="webr-14-contents">
+eyJhdHRyIjp7ImV2YWwiOnRydWUsImVkaXQiOnRydWUsImF1dG9ydW4iOmZhbHNlfSwiY29kZSI6ImxhbmRpbmdzIHw+XG4gIGZpbHRlcihjYXRjaF9rZyA+IDIwKSB8PlxuICBzZWxlY3QobGFuZGluZ19kYXRlLCBnYXVsXzJfbmFtZSwgY2F0Y2hfa2cpIn0=
+</script>
+</div>
+</div>
+<div class="callout callout-style-simple callout-tip">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>This is the kind of question you will ask most often: <strong>narrow the rows, then narrow the columns.</strong></p>
+<p>Try changing the <code>20</code> to a bigger number and pressing <strong>Run</strong> again — fewer rows come back. Or swap the first step for your own district, the way you did in the exercise above.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="what-you-have-learned" class="level2">
+<h2 class="anchored" data-anchor-id="what-you-have-learned">What you have learned</h2>
+<ul>
+<li><strong><code>distinct(table, column)</code></strong> — list the values in a column once (find your districts, gears, …).</li>
+<li><strong><code>filter(table, condition)</code></strong> — keep only the rows that match (use <code>==</code>, and quotes for words).</li>
+<li><strong><code>select(table, columns…)</code></strong> — keep only the columns you name.</li>
+<li><strong><code>|&gt;</code></strong> (“then”) — do several steps in order.</li>
+</ul>
+<p>And when the answer comes back <strong>red</strong>:</p>
+<ul>
+<li><code>object ... not found</code> — a name is spelled wrong, or a word is missing its quotes.</li>
+<li><code>named input</code> — you typed one <code>=</code> where you need two, <code>==</code>.</li>
+<li>Either way: edit and press <strong>Run</strong> again, or press <strong>Start Over</strong>. Nothing is broken.</li>
+</ul>
+<p>Next: <strong>Add it up</strong> — totals and averages by district, gear or month.</p>
+<!-- Raw HTML so Quarto does NOT rewrite this root-relative link (served at depth 2). -->
+<p class="mt-4">
+  <a href="/data-explorer/lessons/summarise.html" class="btn btn-primary">Next: Add it up →</a>
+  <a href="/data-explorer" class="btn btn-outline-primary ms-2">← Back to Data Explorer</a>
+</p>
+<script type="webr-data">
+eyJwYWNrYWdlcyI6eyJwa2dzIjpbImV2YWx1YXRlIiwia25pdHIiLCJodG1sdG9vbHMiLCJkcGx5ciIsInRpZHlyIiwic3RyaW5nciIsImx1YnJpZGF0ZSIsInJlYWN0YWJsZSJdLCJyZXBvcyI6W119LCJyZW5kZXJfZGYiOiJyZWFjdGFibGUiLCJvcHRpb25zIjp7ImJhc2VVcmwiOiJodHRwczovL3dlYnIuci13YXNtLm9yZy92MC42LjAvIn19
+</script>
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W3sibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0IiwiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xNCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTQ7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4iLCJpbmxpbmUiOmZhbHNlfSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6IndlYnItMTQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzE0ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTQtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICBjb25zdCBvcHRpb25zID0gT2JqZWN0LmFzc2lnbih7IGlkOiBgd2Vici0xNC1jb250ZW50c2AgfSwgYmxvY2suYXR0cik7XG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG5cbiAgcmV0dXJuIGVkaXRvci5jb250YWluZXI7XG59XG5fd2Vicl92YWx1ZV8xNCA9IHdlYlJPanMucHJvY2Vzcyhfd2Vicl9lZGl0b3JfMTQsIHt9KTtcbiIsImlubGluZSI6ZmFsc2V9LHsibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0IiwiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xMyIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTM7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4iLCJpbmxpbmUiOmZhbHNlfSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6IndlYnItMTMiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzEzID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTMtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICBjb25zdCBvcHRpb25zID0gT2JqZWN0LmFzc2lnbih7IGlkOiBgd2Vici0xMy1jb250ZW50c2AgfSwgYmxvY2suYXR0cik7XG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG5cbiAgcmV0dXJuIGVkaXRvci5jb250YWluZXI7XG59XG5fd2Vicl92YWx1ZV8xMyA9IHdlYlJPanMucHJvY2Vzcyhfd2Vicl9lZGl0b3JfMTMsIHt9KTtcbiIsImlubGluZSI6ZmFsc2V9LHsibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0IiwiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xMiIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTI7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4iLCJpbmxpbmUiOmZhbHNlfSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6IndlYnItMTIiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzEyID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTItY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICBjb25zdCBvcHRpb25zID0gT2JqZWN0LmFzc2lnbih7IGlkOiBgd2Vici0xMi1jb250ZW50c2AgfSwgYmxvY2suYXR0cik7XG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG5cbiAgcmV0dXJuIGVkaXRvci5jb250YWluZXI7XG59XG5fd2Vicl92YWx1ZV8xMiA9IHdlYlJPanMucHJvY2Vzcyhfd2Vicl9lZGl0b3JfMTIsIHt9KTtcbiIsImlubGluZSI6ZmFsc2V9LHsibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0IiwiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xMSIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTE7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4iLCJpbmxpbmUiOmZhbHNlfSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6IndlYnItMTEiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzExID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTEtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICBjb25zdCBvcHRpb25zID0gT2JqZWN0LmFzc2lnbih7IGlkOiBgd2Vici0xMS1jb250ZW50c2AgfSwgYmxvY2suYXR0cik7XG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG5cbiAgcmV0dXJuIGVkaXRvci5jb250YWluZXI7XG59XG5fd2Vicl92YWx1ZV8xMSA9IHdlYlJPanMucHJvY2Vzcyhfd2Vicl9lZGl0b3JfMTEsIHt9KTtcbiIsImlubGluZSI6ZmFsc2V9LHsibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0IiwiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xMCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTA7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4iLCJpbmxpbmUiOmZhbHNlfSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6IndlYnItMTAiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzEwID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTAtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICBjb25zdCBvcHRpb25zID0gT2JqZWN0LmFzc2lnbih7IGlkOiBgd2Vici0xMC1jb250ZW50c2AgfSwgYmxvY2suYXR0cik7XG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG5cbiAgcmV0dXJuIGVkaXRvci5jb250YWluZXI7XG59XG5fd2Vicl92YWx1ZV8xMCA9IHdlYlJPanMucHJvY2Vzcyhfd2Vicl9lZGl0b3JfMTAsIHt9KTtcbiIsImlubGluZSI6ZmFsc2V9LHsibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0IiwiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC05Iiwic291cmNlIjoie1xuICAvLyBXYWl0IGZvciBvdXRwdXQgdG8gYmUgd3JpdHRlbiB0byB0aGUgRE9NLCB0aGVuIHRyaWdnZXIgd2lkZ2V0IHJlbmRlcmluZ1xuICBhd2FpdCBfd2Vicl92YWx1ZV85O1xuICBpZiAod2luZG93LkhUTUxXaWRnZXRzKSB7XG4gICAgd2luZG93LkhUTUxXaWRnZXRzLnN0YXRpY1JlbmRlcigpO1xuICB9XG4gIGlmICh3aW5kb3cuUGFnZWRUYWJsZURvYykge1xuICAgIHdpbmRvdy5QYWdlZFRhYmxlRG9jLmluaXRBbGwoKTtcbiAgfVxufVxuIiwiaW5saW5lIjpmYWxzZX0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJ3ZWJyLTkiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzkgPSB7XG4gIGNvbnN0IHsgV2ViUkV4ZXJjaXNlRWRpdG9yLCBiNjREZWNvZGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IHNjcmlwdENvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwid2Vici05LWNvbnRlbnRzXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgYmxvY2sgPSBKU09OLnBhcnNlKGI2NERlY29kZShzY3JpcHRDb250ZW50KSk7XG5cbiAgLy8gRGVmYXVsdCBleGVyY2lzZSBjb25maWd1cmF0aW9uXG4gIGNvbnN0IG9wdGlvbnMgPSBPYmplY3QuYXNzaWduKFxuICAgIHtcbiAgICAgIGlkOiBcIndlYnItOS1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzkgPSB3ZWJST2pzLnByb2Nlc3MoX3dlYnJfZWRpdG9yXzksIHt9KTtcbl93ZWJyX2ZlZWRiYWNrXzkgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzkuZXZhbHVhdG9yKTtcbiAgY29uc3QgZmVlZGJhY2sgPSBhd2FpdCBncmFkZXIuZ3JhZGVFeGVyY2lzZSgpO1xuICBpZiAoIWZlZWRiYWNrKSByZXR1cm4gZW1wdHlGZWVkYmFjaztcbiAgcmV0dXJuIGZlZWRiYWNrO1xufVxuIiwiaW5saW5lIjpmYWxzZX0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0UXVpZXQiLCJjZWxsTmFtZSI6IndlYnItd2lkZ2V0LTgiLCJzb3VyY2UiOiJ7XG4gIC8vIFdhaXQgZm9yIG91dHB1dCB0byBiZSB3cml0dGVuIHRvIHRoZSBET00sIHRoZW4gdHJpZ2dlciB3aWRnZXQgcmVuZGVyaW5nXG4gIGF3YWl0IF93ZWJyX3ZhbHVlXzg7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4iLCJpbmxpbmUiOmZhbHNlfSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6IndlYnItOCIsInNvdXJjZSI6InZpZXdvZiBfd2Vicl9lZGl0b3JfOCA9IHtcbiAgY29uc3QgeyBXZWJSRXhlcmNpc2VFZGl0b3IsIGI2NERlY29kZSB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3Qgc2NyaXB0Q29udGVudCA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYHNjcmlwdFt0eXBlPVxcXCJ3ZWJyLTgtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICBjb25zdCBvcHRpb25zID0gT2JqZWN0LmFzc2lnbih7IGlkOiBgd2Vici04LWNvbnRlbnRzYCB9LCBibG9jay5hdHRyKTtcbiAgY29uc3QgZWRpdG9yID0gbmV3IFdlYlJFeGVyY2lzZUVkaXRvcih3ZWJST2pzLndlYlJQcm9taXNlLCBibG9jay5jb2RlLCBvcHRpb25zKTtcblxuICByZXR1cm4gZWRpdG9yLmNvbnRhaW5lcjtcbn1cbl93ZWJyX3ZhbHVlXzggPSB3ZWJST2pzLnByb2Nlc3MoX3dlYnJfZWRpdG9yXzgsIHt9KTtcbiIsImlubGluZSI6ZmFsc2V9LHsibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0IiwiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC03Iiwic291cmNlIjoie1xuICAvLyBXYWl0IGZvciBvdXRwdXQgdG8gYmUgd3JpdHRlbiB0byB0aGUgRE9NLCB0aGVuIHRyaWdnZXIgd2lkZ2V0IHJlbmRlcmluZ1xuICBhd2FpdCBfd2Vicl92YWx1ZV83O1xuICBpZiAod2luZG93LkhUTUxXaWRnZXRzKSB7XG4gICAgd2luZG93LkhUTUxXaWRnZXRzLnN0YXRpY1JlbmRlcigpO1xuICB9XG4gIGlmICh3aW5kb3cuUGFnZWRUYWJsZURvYykge1xuICAgIHdpbmRvdy5QYWdlZFRhYmxlRG9jLmluaXRBbGwoKTtcbiAgfVxufVxuIiwiaW5saW5lIjpmYWxzZX0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJ3ZWJyLTciLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzcgPSB7XG4gIGNvbnN0IHsgV2ViUkV4ZXJjaXNlRWRpdG9yLCBiNjREZWNvZGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IHNjcmlwdENvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwid2Vici03LWNvbnRlbnRzXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgYmxvY2sgPSBKU09OLnBhcnNlKGI2NERlY29kZShzY3JpcHRDb250ZW50KSk7XG5cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oeyBpZDogYHdlYnItNy1jb250ZW50c2AgfSwgYmxvY2suYXR0cik7XG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG5cbiAgcmV0dXJuIGVkaXRvci5jb250YWluZXI7XG59XG5fd2Vicl92YWx1ZV83ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl83LCB7fSk7XG4iLCJpbmxpbmUiOmZhbHNlfSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsImNlbGxOYW1lIjoid2Vici13aWRnZXQtNiIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfNjtcbiAgaWYgKHdpbmRvdy5IVE1MV2lkZ2V0cykge1xuICAgIHdpbmRvdy5IVE1MV2lkZ2V0cy5zdGF0aWNSZW5kZXIoKTtcbiAgfVxuICBpZiAod2luZG93LlBhZ2VkVGFibGVEb2MpIHtcbiAgICB3aW5kb3cuUGFnZWRUYWJsZURvYy5pbml0QWxsKCk7XG4gIH1cbn1cbiIsImlubGluZSI6ZmFsc2V9LHsibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoid2Vici02Iiwic291cmNlIjoidmlld29mIF93ZWJyX2VkaXRvcl82ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItNi1jb250ZW50c1xcXCJdYCkudGV4dENvbnRlbnQ7XG4gIGNvbnN0IGJsb2NrID0gSlNPTi5wYXJzZShiNjREZWNvZGUoc2NyaXB0Q29udGVudCkpO1xuXG4gIGNvbnN0IG9wdGlvbnMgPSBPYmplY3QuYXNzaWduKHsgaWQ6IGB3ZWJyLTYtY29udGVudHNgIH0sIGJsb2NrLmF0dHIpO1xuICBjb25zdCBlZGl0b3IgPSBuZXcgV2ViUkV4ZXJjaXNlRWRpdG9yKHdlYlJPanMud2ViUlByb21pc2UsIGJsb2NrLmNvZGUsIG9wdGlvbnMpO1xuXG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxuX3dlYnJfdmFsdWVfNiA9IHdlYlJPanMucHJvY2Vzcyhfd2Vicl9lZGl0b3JfNiwge30pO1xuIiwiaW5saW5lIjpmYWxzZX0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0UXVpZXQiLCJjZWxsTmFtZSI6IndlYnItd2lkZ2V0LTUiLCJzb3VyY2UiOiJ7XG4gIC8vIFdhaXQgZm9yIG91dHB1dCB0byBiZSB3cml0dGVuIHRvIHRoZSBET00sIHRoZW4gdHJpZ2dlciB3aWRnZXQgcmVuZGVyaW5nXG4gIGF3YWl0IF93ZWJyX3ZhbHVlXzU7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4iLCJpbmxpbmUiOmZhbHNlfSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6IndlYnItNSIsInNvdXJjZSI6InZpZXdvZiBfd2Vicl9lZGl0b3JfNSA9IHtcbiAgY29uc3QgeyBXZWJSRXhlcmNpc2VFZGl0b3IsIGI2NERlY29kZSB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3Qgc2NyaXB0Q29udGVudCA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYHNjcmlwdFt0eXBlPVxcXCJ3ZWJyLTUtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICBjb25zdCBvcHRpb25zID0gT2JqZWN0LmFzc2lnbih7IGlkOiBgd2Vici01LWNvbnRlbnRzYCB9LCBibG9jay5hdHRyKTtcbiAgY29uc3QgZWRpdG9yID0gbmV3IFdlYlJFeGVyY2lzZUVkaXRvcih3ZWJST2pzLndlYlJQcm9taXNlLCBibG9jay5jb2RlLCBvcHRpb25zKTtcblxuICByZXR1cm4gZWRpdG9yLmNvbnRhaW5lcjtcbn1cbl93ZWJyX3ZhbHVlXzUgPSB3ZWJST2pzLnByb2Nlc3MoX3dlYnJfZWRpdG9yXzUsIHt9KTtcbiIsImlubGluZSI6ZmFsc2V9LHsibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0IiwiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC00Iiwic291cmNlIjoie1xuICAvLyBXYWl0IGZvciBvdXRwdXQgdG8gYmUgd3JpdHRlbiB0byB0aGUgRE9NLCB0aGVuIHRyaWdnZXIgd2lkZ2V0IHJlbmRlcmluZ1xuICBhd2FpdCBfd2Vicl92YWx1ZV80O1xuICBpZiAod2luZG93LkhUTUxXaWRnZXRzKSB7XG4gICAgd2luZG93LkhUTUxXaWRnZXRzLnN0YXRpY1JlbmRlcigpO1xuICB9XG4gIGlmICh3aW5kb3cuUGFnZWRUYWJsZURvYykge1xuICAgIHdpbmRvdy5QYWdlZFRhYmxlRG9jLmluaXRBbGwoKTtcbiAgfVxufVxuIiwiaW5saW5lIjpmYWxzZX0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJ3ZWJyLTQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzQgPSB7XG4gIGNvbnN0IHsgV2ViUkV4ZXJjaXNlRWRpdG9yLCBiNjREZWNvZGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IHNjcmlwdENvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwid2Vici00LWNvbnRlbnRzXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgYmxvY2sgPSBKU09OLnBhcnNlKGI2NERlY29kZShzY3JpcHRDb250ZW50KSk7XG5cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oeyBpZDogYHdlYnItNC1jb250ZW50c2AgfSwgYmxvY2suYXR0cik7XG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG5cbiAgcmV0dXJuIGVkaXRvci5jb250YWluZXI7XG59XG5fd2Vicl92YWx1ZV80ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl80LCB7fSk7XG4iLCJpbmxpbmUiOmZhbHNlfSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsImNlbGxOYW1lIjoid2Vici13aWRnZXQtMyIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMztcbiAgaWYgKHdpbmRvdy5IVE1MV2lkZ2V0cykge1xuICAgIHdpbmRvdy5IVE1MV2lkZ2V0cy5zdGF0aWNSZW5kZXIoKTtcbiAgfVxuICBpZiAod2luZG93LlBhZ2VkVGFibGVEb2MpIHtcbiAgICB3aW5kb3cuUGFnZWRUYWJsZURvYy5pbml0QWxsKCk7XG4gIH1cbn1cbiIsImlubGluZSI6ZmFsc2V9LHsibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoid2Vici0zIiwic291cmNlIjoiX3dlYnJfdmFsdWVfMyA9IHtcbiAgY29uc3QgeyBoaWdobGlnaHRSLCBiNjREZWNvZGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IHNjcmlwdENvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwid2Vici0zLWNvbnRlbnRzXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgYmxvY2sgPSBKU09OLnBhcnNlKGI2NERlY29kZShzY3JpcHRDb250ZW50KSk7XG5cbiAgLy8gRGVmYXVsdCBldmFsdWF0aW9uIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oe1xuICAgIGlkOiBcIndlYnItMy1jb250ZW50c1wiLFxuICAgIGVjaG86IHRydWUsXG4gICAgb3V0cHV0OiB0cnVlXG4gIH0sIGJsb2NrLmF0dHIpO1xuXG4gIC8vIEV2YWx1YXRlIHRoZSBwcm92aWRlZCBSIGNvZGVcbiAgY29uc3QgcmVzdWx0ID0gd2ViUk9qcy5wcm9jZXNzKHtjb2RlOiBibG9jay5jb2RlLCBvcHRpb25zfSwge2xhbmRpbmdzX2lucHV0LCBsYW5kaW5nc19lbXB0eX0pO1xuXG4gIC8vIEVhcmx5IHlpZWxkIHdoaWxlIHdlIHdhaXQgZm9yIHRoZSBmaXJzdCBldmFsdWF0aW9uIGFuZCByZW5kZXJcbiAgaWYgKG9wdGlvbnMub3V0cHV0ICYmICEoXCIzXCIgaW4gd2ViUk9qcy5yZW5kZXJlZE9qcykpIHtcbiAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KFwiZGl2XCIpO1xuICAgIGNvbnN0IHNwaW5uZXIgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KFwiZGl2XCIpO1xuXG4gICAgaWYgKG9wdGlvbnMuZWNobykge1xuICAgICAgLy8gU2hvdyBvdXRwdXQgYXMgaGlnaGxpZ2h0ZWQgc291cmNlXG4gICAgICBjb25zdCBwcmVFbGVtID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudChcInByZVwiKTtcbiAgICAgIGNvbnRhaW5lci5jbGFzc05hbWUgPSBcInNvdXJjZUNvZGVcIjtcbiAgICAgIHByZUVsZW0uY2xhc3NOYW1lID0gXCJzb3VyY2VDb2RlIHJcIjtcbiAgICAgIHByZUVsZW0uYXBwZW5kQ2hpbGQoaGlnaGxpZ2h0UihibG9jay5jb2RlKSk7XG4gICAgICBzcGlubmVyLmNsYXNzTmFtZSA9IFwic3Bpbm5lci1ncm93IHNwaW5uZXItZ3Jvdy1zbSBtLTIgcG9zaXRpb24tYWJzb2x1dGUgdG9wLTAgZW5kLTBcIjtcbiAgICAgIHByZUVsZW0uYXBwZW5kQ2hpbGQoc3Bpbm5lcik7XG4gICAgICBjb250YWluZXIuYXBwZW5kQ2hpbGQocHJlRWxlbSk7XG4gICAgfSBlbHNlIHtcbiAgICAgIHNwaW5uZXIuY2xhc3NOYW1lID0gXCJzcGlubmVyLWJvcmRlciBzcGlubmVyLWJvcmRlci1zbVwiO1xuICAgICAgY29udGFpbmVyLmFwcGVuZENoaWxkKHNwaW5uZXIpO1xuICAgIH1cblxuICAgIHlpZWxkIGNvbnRhaW5lcjtcbiAgfVxuXG4gIHdlYlJPanMucmVuZGVyZWRPanNbXCIzXCJdID0gdHJ1ZTtcbiAgeWllbGQgYXdhaXQgcmVzdWx0O1xufVxuIiwiaW5saW5lIjpmYWxzZX0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0UXVpZXQiLCJjZWxsTmFtZSI6IndlYnItd2lkZ2V0LTIiLCJzb3VyY2UiOiJ7XG4gIC8vIFdhaXQgZm9yIG91dHB1dCB0byBiZSB3cml0dGVuIHRvIHRoZSBET00sIHRoZW4gdHJpZ2dlciB3aWRnZXQgcmVuZGVyaW5nXG4gIGF3YWl0IF93ZWJyX3ZhbHVlXzI7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4iLCJpbmxpbmUiOmZhbHNlfSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6IndlYnItMiIsInNvdXJjZSI6InZpZXdvZiBfd2Vicl9lZGl0b3JfMiA9IHtcbiAgY29uc3QgeyBXZWJSRXhlcmNpc2VFZGl0b3IsIGI2NERlY29kZSB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3Qgc2NyaXB0Q29udGVudCA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYHNjcmlwdFt0eXBlPVxcXCJ3ZWJyLTItY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICBjb25zdCBvcHRpb25zID0gT2JqZWN0LmFzc2lnbih7IGlkOiBgd2Vici0yLWNvbnRlbnRzYCB9LCBibG9jay5hdHRyKTtcbiAgY29uc3QgZWRpdG9yID0gbmV3IFdlYlJFeGVyY2lzZUVkaXRvcih3ZWJST2pzLndlYlJQcm9taXNlLCBibG9jay5jb2RlLCBvcHRpb25zKTtcblxuICByZXR1cm4gZWRpdG9yLmNvbnRhaW5lcjtcbn1cbl93ZWJyX3ZhbHVlXzIgPSB3ZWJST2pzLnByb2Nlc3MoX3dlYnJfZWRpdG9yXzIsIHt9KTtcbiIsImlubGluZSI6ZmFsc2V9LHsibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0IiwiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xIiwic291cmNlIjoie1xuICAvLyBXYWl0IGZvciBvdXRwdXQgdG8gYmUgd3JpdHRlbiB0byB0aGUgRE9NLCB0aGVuIHRyaWdnZXIgd2lkZ2V0IHJlbmRlcmluZ1xuICBhd2FpdCBfd2Vicl92YWx1ZV8xO1xuICBpZiAod2luZG93LkhUTUxXaWRnZXRzKSB7XG4gICAgd2luZG93LkhUTUxXaWRnZXRzLnN0YXRpY1JlbmRlcigpO1xuICB9XG4gIGlmICh3aW5kb3cuUGFnZWRUYWJsZURvYykge1xuICAgIHdpbmRvdy5QYWdlZFRhYmxlRG9jLmluaXRBbGwoKTtcbiAgfVxufVxuIiwiaW5saW5lIjpmYWxzZX0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJ3ZWJyLTEiLCJzb3VyY2UiOiJfd2Vicl92YWx1ZV8xID0ge1xuICBjb25zdCB7IGhpZ2hsaWdodFIsIGI2NERlY29kZSB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3Qgc2NyaXB0Q29udGVudCA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYHNjcmlwdFt0eXBlPVxcXCJ3ZWJyLTEtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV2YWx1YXRpb24gY29uZmlndXJhdGlvblxuICBjb25zdCBvcHRpb25zID0gT2JqZWN0LmFzc2lnbih7XG4gICAgaWQ6IFwid2Vici0xLWNvbnRlbnRzXCIsXG4gICAgZWNobzogdHJ1ZSxcbiAgICBvdXRwdXQ6IHRydWVcbiAgfSwgYmxvY2suYXR0cik7XG5cbiAgLy8gRXZhbHVhdGUgdGhlIHByb3ZpZGVkIFIgY29kZVxuICBjb25zdCByZXN1bHQgPSB3ZWJST2pzLnByb2Nlc3Moe2NvZGU6IGJsb2NrLmNvZGUsIG9wdGlvbnN9LCB7fSk7XG5cbiAgLy8gRWFybHkgeWllbGQgd2hpbGUgd2Ugd2FpdCBmb3IgdGhlIGZpcnN0IGV2YWx1YXRpb24gYW5kIHJlbmRlclxuICBpZiAob3B0aW9ucy5vdXRwdXQgJiYgIShcIjFcIiBpbiB3ZWJST2pzLnJlbmRlcmVkT2pzKSkge1xuICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJkaXZcIik7XG4gICAgY29uc3Qgc3Bpbm5lciA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJkaXZcIik7XG5cbiAgICBpZiAob3B0aW9ucy5lY2hvKSB7XG4gICAgICAvLyBTaG93IG91dHB1dCBhcyBoaWdobGlnaHRlZCBzb3VyY2VcbiAgICAgIGNvbnN0IHByZUVsZW0gPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KFwicHJlXCIpO1xuICAgICAgY29udGFpbmVyLmNsYXNzTmFtZSA9IFwic291cmNlQ29kZVwiO1xuICAgICAgcHJlRWxlbS5jbGFzc05hbWUgPSBcInNvdXJjZUNvZGUgclwiO1xuICAgICAgcHJlRWxlbS5hcHBlbmRDaGlsZChoaWdobGlnaHRSKGJsb2NrLmNvZGUpKTtcbiAgICAgIHNwaW5uZXIuY2xhc3NOYW1lID0gXCJzcGlubmVyLWdyb3cgc3Bpbm5lci1ncm93LXNtIG0tMiBwb3NpdGlvbi1hYnNvbHV0ZSB0b3AtMCBlbmQtMFwiO1xuICAgICAgcHJlRWxlbS5hcHBlbmRDaGlsZChzcGlubmVyKTtcbiAgICAgIGNvbnRhaW5lci5hcHBlbmRDaGlsZChwcmVFbGVtKTtcbiAgICB9IGVsc2Uge1xuICAgICAgc3Bpbm5lci5jbGFzc05hbWUgPSBcInNwaW5uZXItYm9yZGVyIHNwaW5uZXItYm9yZGVyLXNtXCI7XG4gICAgICBjb250YWluZXIuYXBwZW5kQ2hpbGQoc3Bpbm5lcik7XG4gICAgfVxuXG4gICAgeWllbGQgY29udGFpbmVyO1xuICB9XG5cbiAgd2ViUk9qcy5yZW5kZXJlZE9qc1tcIjFcIl0gPSB0cnVlO1xuICB5aWVsZCBhd2FpdCByZXN1bHQ7XG59XG4iLCJpbmxpbmUiOmZhbHNlfSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsImNlbGxOYW1lIjoid2Vici1wcmVsdWRlIiwic291cmNlIjoid2ViUk9qcyA9IHtcbiAgY29uc3QgeyBXZWJSLCBDaGFubmVsVHlwZSB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZS5XZWJSO1xuICBjb25zdCB7XG4gICAgV2ViUkV2YWx1YXRvcixcbiAgICBXZWJSRW52aXJvbm1lbnRNYW5hZ2VyLFxuICAgIHNldHVwUixcbiAgICBiNjREZWNvZGUsXG4gICAgY29sbGFwc2VQYXRoXG4gIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuXG4gIGNvbnN0IHN0YXR1c0NvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKFwiZXhlcmNpc2UtbG9hZGluZy1zdGF0dXNcIik7XG4gIGNvbnN0IGluZGljYXRvckNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKFwiZXhlcmNpc2UtbG9hZGluZy1pbmRpY2F0b3JcIik7XG4gIGluZGljYXRvckNvbnRhaW5lci5jbGFzc0xpc3QucmVtb3ZlKFwiZC1ub25lXCIpO1xuXG4gIGxldCBzdGF0dXNUZXh0ID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudChcImRpdlwiKVxuICBzdGF0dXNUZXh0LmNsYXNzTGlzdCA9IFwiZXhlcmNpc2UtbG9hZGluZy1kZXRhaWxzXCI7XG4gIHN0YXR1c1RleHQgPSBzdGF0dXNDb250YWluZXIuYXBwZW5kQ2hpbGQoc3RhdHVzVGV4dCk7XG4gIHN0YXR1c1RleHQudGV4dENvbnRlbnQgPSBgSW5pdGlhbGlzZWA7XG5cbiAgLy8gSG9pc3QgaW5kaWNhdG9yIG91dCBmcm9tIGZpbmFsIHNsaWRlIHdoZW4gcnVubmluZyB1bmRlciByZXZlYWxcbiAgY29uc3QgcmV2ZWFsU3RhdHVzID0gZG9jdW1lbnQucXVlcnlTZWxlY3RvcihcIi5yZXZlYWwgLmV4ZXJjaXNlLWxvYWRpbmctaW5kaWNhdG9yXCIpO1xuICBpZiAocmV2ZWFsU3RhdHVzKSB7XG4gICAgcmV2ZWFsU3RhdHVzLnJlbW92ZSgpO1xuICAgIGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoXCIucmV2ZWFsID4gLnNsaWRlc1wiKS5hcHBlbmRDaGlsZChyZXZlYWxTdGF0dXMpO1xuICB9XG5cbiAgLy8gTWFrZSBhbnkgcmV2ZWFsIHNsaWRlcyB3aXRoIGxpdmUgY2VsbHMgc2Nyb2xsYWJsZVxuICBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKFwiLnJldmVhbCAuZXhlcmNpc2UtY2VsbFwiKS5mb3JFYWNoKChlbCkgPT4ge1xuICAgIGVsLmNsb3Nlc3QoJ3NlY3Rpb24uc2xpZGUnKS5jbGFzc0xpc3QuYWRkKFwic2Nyb2xsYWJsZVwiKTtcbiAgfSlcblxuICAvLyB3ZWJSIHN1cHBsZW1lbnRhbCBkYXRhIGFuZCBvcHRpb25zXG4gIGNvbnN0IGRhdGFDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItZGF0YVxcXCJdYCkudGV4dENvbnRlbnQ7XG4gIGNvbnN0IGRhdGEgPSBKU09OLnBhcnNlKGI2NERlY29kZShkYXRhQ29udGVudCkpO1xuXG4gIC8vIEdyYWIgbGlzdCBvZiByZXNvdXJjZXMgdG8gYmUgZG93bmxvYWRlZFxuICBjb25zdCBmaWxlc0NvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwidmZzLWZpbGVcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBmaWxlcyA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKGZpbGVzQ29udGVudCkpO1xuXG4gIC8vIEluaXRpYWxpc2Ugd2ViUiBhbmQgc2V0dXAgZm9yIFIgY29kZSBldmFsdWF0aW9uXG4gIGxldCB3ZWJSUHJvbWlzZSA9IChhc3luYyAod2ViUikgPT4ge1xuICAgIHN0YXR1c1RleHQudGV4dENvbnRlbnQgPSBgRG93bmxvYWRpbmcgd2ViUmA7XG4gICAgYXdhaXQgd2ViUi5pbml0KCk7XG5cbiAgICAvLyBJbnN0YWxsIHByb3ZpZGVkIGxpc3Qgb2YgcGFja2FnZXNcbiAgICAvLyBFbnN1cmUgd2ViUiBkZWZhdWx0IHJlcG8gaXMgaW5jbHVkZWRcbiAgICBkYXRhLnBhY2thZ2VzLnJlcG9zLnB1c2goXCJodHRwczovL3JlcG8uci13YXNtLm9yZ1wiKVxuICAgIGF3YWl0IGRhdGEucGFja2FnZXMucGtncy5tYXAoKHBrZykgPT4gKCkgPT4ge1xuICAgICAgc3RhdHVzVGV4dC50ZXh0Q29udGVudCA9IGBEb3dubG9hZGluZyBwYWNrYWdlOiAke3BrZ31gO1xuICAgICAgcmV0dXJuIHdlYlIuZXZhbFJWb2lkKGBcbiAgICAgICAgd2Vicjo6aW5zdGFsbChwa2csIHJlcG9zID0gcmVwb3MpXG4gICAgICAgIGxpYnJhcnkocGtnLCBjaGFyYWN0ZXIub25seSA9IFRSVUUpXG4gICAgICBgLCB7IGVudjoge1xuICAgICAgICBwa2c6IHBrZyxcbiAgICAgICAgcmVwb3M6IGRhdGEucGFja2FnZXMucmVwb3MsXG4gICAgICB9fSk7XG4gICAgfSkucmVkdWNlKChjdXIsIG5leHQpID0+IGN1ci50aGVuKG5leHQpLCBQcm9taXNlLnJlc29sdmUoKSk7XG5cbiAgICAvLyBEb3dubG9hZCBhbmQgaW5zdGFsbCByZXNvdXJjZXNcbiAgICBhd2FpdCBmaWxlcy5tYXAoKGZpbGUpID0+IGFzeW5jICgpID0+IHtcbiAgICAgIGNvbnN0IG5hbWUgPSBmaWxlLnN1YnN0cmluZyhmaWxlLmxhc3RJbmRleE9mKCcvJykgKyAxKTtcbiAgICAgIHN0YXR1c1RleHQudGV4dENvbnRlbnQgPSBgRG93bmxvYWRpbmcgcmVzb3VyY2U6ICR7bmFtZX1gO1xuICAgICAgY29uc3QgcmVzcG9uc2UgPSBhd2FpdCBmZXRjaChmaWxlKTtcbiAgICAgIGlmICghcmVzcG9uc2Uub2spIHtcbiAgICAgICAgdGhyb3cgbmV3IEVycm9yKGBDYW4ndCBkb3dubG9hZCBcXGAke2ZpbGV9XFxgLiBFcnJvciAke3Jlc3BvbnNlLnN0YXR1c306IFwiJHtyZXNwb25zZS5zdGF0dXNUZXh0fVwiLmApO1xuICAgICAgfVxuICAgICAgY29uc3QgZGF0YSA9IGF3YWl0IHJlc3BvbnNlLmFycmF5QnVmZmVyKCk7XG5cbiAgICAgIC8vIFN0b3JlIFVSTHMgaW4gdGhlIGN3ZCB3aXRob3V0IGFueSBzdWJkaXJlY3Rvcnkgc3RydWN0dXJlXG4gICAgICBpZiAoZmlsZS5pbmNsdWRlcyhcIjovL1wiKSkge1xuICAgICAgICBmaWxlID0gbmFtZTtcbiAgICAgIH1cblxuICAgICAgLy8gQ29sbGFwc2UgaGlnaGVyIGRpcmVjdG9yeSBzdHJ1Y3R1cmVcbiAgICAgIGZpbGUgPSBjb2xsYXBzZVBhdGgoZmlsZSk7XG5cbiAgICAgIC8vIENyZWF0ZSBkaXJlY3RvcnkgdHJlZSwgaWdub3JpbmcgXCJkaXJlY3RvcnkgZXhpc3RzXCIgVkZTIGVycm9yc1xuICAgICAgY29uc3QgcGFydHMgPSBmaWxlLnNwbGl0KCcvJykuc2xpY2UoMCwgLTEpO1xuICAgICAgbGV0IHBhdGggPSAnJztcbiAgICAgIHdoaWxlIChwYXJ0cy5sZW5ndGggPiAwKSB7XG4gICAgICAgIHBhdGggKz0gcGFydHMuc2hpZnQoKSArICcvJztcbiAgICAgICAgY29uc3QgYW5hbHlzaXMgPSBhd2FpdCB3ZWJSLkZTLmFuYWx5emVQYXRoKHBhdGgpO1xuICAgICAgICBpZiAoIWFuYWx5c2lzLmV4aXN0cykge1xuICAgICAgICAgIHRyeSB7XG4gICAgICAgICAgICBhd2FpdCB3ZWJSLkZTLm1rZGlyKHBhdGgpO1xuICAgICAgICAgIH0gY2F0Y2ggKGUpIHtcbiAgICAgICAgICAgIHRocm93IG5ldyBFcnJvcihgRmlsZXN5c3RlbSBFcnJvcjogXCIke2UubWVzc2FnZX1cIi5gKTtcbiAgICAgICAgICB9XG4gICAgICAgIH1cbiAgICAgIH1cblxuICAgICAgLy8gV3JpdGUgdGhpcyBmaWxlIHRvIHRoZSBWRlNcbiAgICAgIHJldHVybiBhd2FpdCB3ZWJSLkZTLndyaXRlRmlsZShmaWxlLCBuZXcgVWludDhBcnJheShkYXRhKSk7XG4gICAgfSkucmVkdWNlKChjdXIsIG5leHQpID0+IGN1ci50aGVuKG5leHQpLCBQcm9taXNlLnJlc29sdmUoKSk7XG5cbiAgICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYEluc3RhbGxpbmcgd2ViUiBzaGltc2A7XG4gICAgYXdhaXQgd2ViUi5ldmFsUlZvaWQoYHdlYnI6OnNoaW1faW5zdGFsbCgpYCk7XG5cbiAgICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYFdlYlIgZW52aXJvbm1lbnQgc2V0dXBgO1xuICAgIGF3YWl0IHNldHVwUih3ZWJSLCBkYXRhKTtcblxuICAgIHN0YXR1c1RleHQucmVtb3ZlKCk7XG4gICAgaWYgKHN0YXR1c0NvbnRhaW5lci5jaGlsZHJlbi5sZW5ndGggPT0gMCkge1xuICAgICAgc3RhdHVzQ29udGFpbmVyLnBhcmVudE5vZGUucmVtb3ZlKCk7XG4gICAgfVxuICAgIHJldHVybiB3ZWJSO1xuICB9KShuZXcgV2ViUihkYXRhLm9wdGlvbnMpKTtcblxuICAvLyBLZWVwIHRyYWNrIG9mIGluaXRpYWwgT0pTIGJsb2NrIHJlbmRlclxuICBjb25zdCByZW5kZXJlZE9qcyA9IHt9O1xuXG4gIGNvbnN0IHByb2Nlc3MgPSBhc3luYyAoY29udGV4dCwgaW5wdXRzKSA9PiB7XG4gICAgY29uc3Qgd2ViUiA9IGF3YWl0IHdlYlJQcm9taXNlO1xuICAgIGNvbnN0IGV2YWx1YXRvciA9IG5ldyBXZWJSRXZhbHVhdG9yKHdlYlIsIGNvbnRleHQpXG4gICAgYXdhaXQgZXZhbHVhdG9yLnByb2Nlc3MoaW5wdXRzKTtcbiAgICByZXR1cm4gZXZhbHVhdG9yLmNvbnRhaW5lcjtcbiAgfVxuXG4gIHJldHVybiB7XG4gICAgcHJvY2VzcyxcbiAgICB3ZWJSUHJvbWlzZSxcbiAgICByZW5kZXJlZE9qcyxcbiAgfTtcbn1cbiIsImlubGluZSI6ZmFsc2V9XX0=
+</script>
+<div id="exercise-loading-indicator" class="exercise-loading-indicator d-none d-flex align-items-center gap-2">
+<div id="exercise-loading-status" class="d-flex gap-2">
+
+</div>
+<div class="spinner-grow spinner-grow-sm">
+
+</div>
+</div>
+<script type="vfs-file">
+W10=
+</script>
+</section>
+
+</main>
+<!-- /main column -->
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W3sibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMSIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6InZpZXdvZiByZWNhbGxfcm93ID0gSW5wdXRzLnJhZGlvKFxuICBbXCJPbmUgZmlzaGluZyB0cmlwXCIsIFwiT25lIGtpbmQgb2YgZmlzaCBmcm9tIG9uZSB0cmlwXCIsIFwiT25lIGZpc2hlclwiXSxcbiAgeyBsYWJlbDogXCJJbiB5b3VyIHRhYmxlLCB3aGF0IGlzIG9uZSByb3c/XCIgfVxuKVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC0yIiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoiaHRtbGAke1xuICAvLyBgPT0gbnVsbGAgb24gcHVycG9zZTogSW5wdXRzLnJhZGlvIHN0YXJ0cyBhdCBudWxsLCBub3QgdW5kZWZpbmVkLCB3aGVuIG5vdGhpbmcgaXMgcGlja2VkLlxuICByZWNhbGxfcm93ID09IG51bGxcbiAgICA/ICc8ZGl2IGNsYXNzPVwiYWxlcnQgYWxlcnQtbGlnaHQgcHktMlwiPlBpY2sgYW4gYW5zd2VyIGFib3ZlLjwvZGl2PidcbiAgICA6IHJlY2FsbF9yb3cgPT09IFwiT25lIGtpbmQgb2YgZmlzaCBmcm9tIG9uZSB0cmlwXCJcbiAgICAgID8gJzxkaXYgY2xhc3M9XCJhbGVydCBhbGVydC1zdWNjZXNzIHB5LTJcIj48c3Ryb25nPlllcy48L3N0cm9uZz4gT25lIHJvdyBpcyBvbmUga2luZCBvZiBmaXNoIGZyb20gb25lIHRyaXAuIEEgdHJpcCB0aGF0IGxhbmRlZCB0aHJlZSBraW5kcyBvZiBmaXNoIGZpbGxzIHRocmVlIHJvd3MsIGFuZCB0aGV5IGFsbCBzaGFyZSB0aGUgc2FtZSA8Y29kZT50cmlwX2lkPC9jb2RlPi48L2Rpdj4nXG4gICAgICA6ICc8ZGl2IGNsYXNzPVwiYWxlcnQgYWxlcnQtd2FybmluZyBweS0yXCI+PHN0cm9uZz5Ob3QgcXVpdGUg4oCUIGFuZCB0aGlzIG9uZSBtYXR0ZXJzLjwvc3Ryb25nPiBPbmUgcm93IGlzIDxzdHJvbmc+b25lIGtpbmQgb2YgZmlzaCBmcm9tIG9uZSB0cmlwPC9zdHJvbmc+LCBub3QgYSB3aG9sZSB0cmlwIGFuZCBub3Qgb25lIGZpc2hlci4gQSB0cmlwIHRoYXQgbGFuZGVkIHRocmVlIGtpbmRzIG9mIGZpc2ggZmlsbHMgdGhyZWUgcm93cywgc2hhcmluZyBvbmUgPGNvZGU+dHJpcF9pZDwvY29kZT4uPC9kaXY+J1xufWBcbiJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMyIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6ImxhbmRpbmdzX3N0YXRlID0ge1xuICBsYW5kaW5nc19yZWxvYWQ7XG5cbiAgeWllbGQgKHsgcGhhc2U6IFwibG9hZGluZ1wiIH0pO1xuXG4gIGNvbnN0IHRva2VuID0gbG9jYWxTdG9yYWdlLmdldEl0ZW0oXCJhdXRoVG9rZW5cIik7XG4gIGlmICghdG9rZW4pIHtcbiAgICB5aWVsZCAoeyBwaGFzZTogXCJzaWduZWQtb3V0XCIgfSk7XG4gICAgcmV0dXJuO1xuICB9XG5cbiAgY29uc3QgYXBpQmFzZSA9IGxvY2FsU3RvcmFnZS5nZXRJdGVtKFwiYXBpQmFzZVVybFwiKSB8fCBcIi9hcGlcIjtcbiAgdHJ5IHtcbiAgICBjb25zdCByZXMgPSBhd2FpdCBmZXRjaChgJHthcGlCYXNlfS9kYXRhLWRvd25sb2FkL2V4cGxvcmVyLWRhdGFgLCB7XG4gICAgICBoZWFkZXJzOiB7IEF1dGhvcml6YXRpb246IGBCZWFyZXIgJHt0b2tlbn1gLCBBY2NlcHQ6IFwiYXBwbGljYXRpb24vanNvblwiIH1cbiAgICB9KTtcbiAgICBpZiAoIXJlcy5vaykge1xuICAgICAgaWYgKHJlcy5zdGF0dXMgPT09IDQwMSkge1xuICAgICAgICB5aWVsZCAoeyBwaGFzZTogXCJzaWduZWQtb3V0XCIgfSk7XG4gICAgICAgIHJldHVybjtcbiAgICAgIH1cbiAgICAgIC8vIDQwMC80MDMgbWVhbiB0aGUgYWNjb3VudCBjYW5ub3QgcmVhY2ggdGhpcyBkYXRhIChubyBmb3JtcyBhc3NpZ25lZCwgZGlzdHJpY3Qgbm90XG4gICAgICAvLyBwZXJtaXR0ZWQpLiBTaG93aW5nIFwiY29ubmVjdGlvbiBwcm9ibGVtXCIgdGhlcmUgc2VuZHMgdGhlIGxlYXJuZXIgaHVudGluZyBhIGZhdWx0IHRoYXRcbiAgICAgIC8vIGRvZXMgbm90IGV4aXN0LCBzbyB0aGUgc2VydmVyJ3Mgb3duIHNlbnRlbmNlIGlzIHBhc3NlZCB0aHJvdWdoIGluc3RlYWQuXG4gICAgICBpZiAocmVzLnN0YXR1cyA9PT0gNDAwIHx8IHJlcy5zdGF0dXMgPT09IDQwMykge1xuICAgICAgICBsZXQgbWVzc2FnZSA9IFwiXCI7XG4gICAgICAgIHRyeSB7IG1lc3NhZ2UgPSAoYXdhaXQgcmVzLmpzb24oKSkuZXJyb3IgfHwgXCJcIjsgfSBjYXRjaCB7IC8qIGJvZHkgd2FzIG5vdCBKU09OICovIH1cbiAgICAgICAgeWllbGQgKHsgcGhhc2U6IFwibm8tYWNjZXNzXCIsIG1lc3NhZ2UgfSk7XG4gICAgICAgIHJldHVybjtcbiAgICAgIH1cbiAgICAgIHlpZWxkICh7IHBoYXNlOiBcImZhaWxlZFwiIH0pO1xuICAgICAgcmV0dXJuO1xuICAgIH1cbiAgICAvLyBUaGUgZW5kcG9pbnQgcmV0dXJucyBhIGJhcmUgYXJyYXkuIE5vcm1hbGlzaW5nIGFueXdheTogYHJvd3MubGVuZ3RoYCBpcyByZWFkIHN0cmFpZ2h0IGludG8gdGhlXG4gICAgLy8gcGFuZWwgdGV4dCwgc28gYW55dGhpbmcgZWxzZSBoZXJlIHdvdWxkIHRocm93IGFuZCB0YWtlIHRoZSB3aG9sZSBwYW5lbCBkb3duIHdpdGggaXQuXG4gICAgY29uc3Qgcm93cyA9IGF3YWl0IHJlcy5qc29uKCk7XG4gICAgY29uc3Qgc2FmZVJvd3MgPSBBcnJheS5pc0FycmF5KHJvd3MpID8gcm93cyA6IFtdO1xuICAgIC8vIEFic2VudCBvbiBhbiBvbGRlciBkZXBsb3ltZW50OyB0aGUgcGFuZWwgdGhlbiBqdXN0IG9taXRzIHRoZSBzZW50ZW5jZSBhYm91dCB0aGUgY2FwLlxuICAgIGNvbnN0IGNhcCA9IE51bWJlcihyZXMuaGVhZGVycy5nZXQoXCJYLVJvdy1DYXBcIikpO1xuICAgIG11dGFibGUgbGFuZGluZ3Nfcm93cyA9IHNhZmVSb3dzO1xuICAgIHlpZWxkICh7IHBoYXNlOiBcInJlYWR5XCIsIHJvd3M6IHNhZmVSb3dzLCBjYXA6IE51bWJlci5pc0Zpbml0ZShjYXApICYmIGNhcCA+IDAgPyBjYXAgOiBudWxsIH0pO1xuICB9IGNhdGNoIHtcbiAgICB5aWVsZCAoeyBwaGFzZTogXCJmYWlsZWRcIiB9KTtcbiAgfVxufVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC00IiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoibXV0YWJsZSBsYW5kaW5nc19yb3dzID0gW11cbiJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtNSIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6Ii8vIE5FVkVSIHBhc3MgYW4gZW1wdHkgYXJyYXkgdG8gdGhlIHdlYnIgY2VsbCBiZWxvdy4gcXVhcnRvLWxpdmUgYnVpbGRzIHRoZSBSIGRhdGEuZnJhbWUgZnJvbSB0aGVcbi8vIEZJUlNUIHJvdydzIGtleXMsIHNvIGFuIGVtcHR5IGFycmF5IG1lYW5zIE9iamVjdC5rZXlzKHVuZGVmaW5lZCkgYW5kIHRoZSB3aG9sZSBjZWxsIGRpZXMgd2l0aFxuLy8gXCJDYW5ub3QgY29udmVydCB1bmRlZmluZWQgb3IgbnVsbCB0byBvYmplY3RcIiDigJQgaW4gSmF2YVNjcmlwdCwgYmVmb3JlIGFueSBSIHJ1bnMsIHdoaWNoIGlzIHdoeSBhblxuLy8gUi1zaWRlIG5yb3coKT09MCBndWFyZCBjYW5ub3Qgc2F2ZSBpdC4gU2VuZGluZyBvbmUgcGxhY2Vob2xkZXIgcm93IGtlZXBzIHRoZSBjb2x1bW4gbmFtZXMgYW5kXG4vLyB0eXBlcyBpbnRhY3Q7IFIgZHJvcHMgdGhlIHJvdyBpbW1lZGlhdGVseSwgbGVhdmluZyBhIGdlbnVpbmVseSBlbXB0eSBmcmFtZSB3aXRoIHJlYWwgY29sdW1ucy5cbmxhbmRpbmdzX3BsYWNlaG9sZGVyID0gKHtcbiAgc3VydmV5X2lkOiBcIlwiLCB0cmlwX2lkOiBcIlwiLCBsYW5kaW5nX2RhdGU6IFwiXCIsIGdhdWxfMl9uYW1lOiBcIlwiLCBnZWFyOiBcIlwiLFxuICB2ZXNzZWxfdHlwZTogXCJcIiwgY2F0Y2hfaGFiaXRhdDogXCJcIiwgY2F0Y2hfdGF4b246IFwiXCIsIHNjaWVudGlmaWNfbmFtZTogXCJcIixcbiAgbl9maXNoZXJzOiAwLCBuX2NhdGNoOiAwLCB0cmlwX2R1cmF0aW9uX2hyczogMCwgbGVuZ3RoX2NtOiAwLFxuICBjYXRjaF9rZzogMCwgY2F0Y2hfcHJpY2U6IDAsIHRvdF9jYXRjaF9rZzogMCwgdG90X2NhdGNoX3ByaWNlOiAwXG59KVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC02IiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoibGFuZGluZ3NfaW5wdXQgPSBsYW5kaW5nc19yb3dzLmxlbmd0aCA+IDAgPyBsYW5kaW5nc19yb3dzIDogW2xhbmRpbmdzX3BsYWNlaG9sZGVyXVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC03IiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoibGFuZGluZ3NfZW1wdHkgPSBsYW5kaW5nc19yb3dzLmxlbmd0aCA9PT0gMFxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC04IiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoie1xuICBjb25zdCBzID0gbGFuZGluZ3Nfc3RhdGU7XG5cbiAgaWYgKHMucGhhc2UgPT09IFwibG9hZGluZ1wiKSByZXR1cm4gaHRtbGA8ZGl2IGNsYXNzPVwiYWxlcnQgYWxlcnQtbGlnaHQgbWItMCBkLWZsZXggYWxpZ24taXRlbXMtY2VudGVyXCI+XG4gICAgPHNwYW4gY2xhc3M9XCJzcGlubmVyLWJvcmRlciBzcGlubmVyLWJvcmRlci1zbSBtZS0yXCIgYXJpYS1oaWRkZW49XCJ0cnVlXCI+PC9zcGFuPlxuICAgIEdldHRpbmcgeW91ciByZWNvcmRzJiM4MjMwO1xuICA8L2Rpdj5gO1xuXG4gIGlmIChzLnBoYXNlID09PSBcInNpZ25lZC1vdXRcIikgcmV0dXJuIGh0bWxgPGRpdiBjbGFzcz1cImFsZXJ0IGFsZXJ0LXdhcm5pbmcgbWItMFwiPlxuICAgIDxzdHJvbmc+WW91IGFyZSBub3Qgc2lnbmVkIGluLCBzbyB0aGVyZSBhcmUgbm8gcmVjb3JkcyB0byB3b3JrIHdpdGguPC9zdHJvbmc+XG4gICAgVGhlIGJveGVzIGJlbG93IHdpbGwgc3RpbGwgcnVuLCBidXQgdGhleSB3aWxsIGNvbWUgYmFjayBlbXB0eS5cbiAgICBPcGVuIHRoaXMgbGVzc29uIGZyb20gdGhlIDxzdHJvbmc+RGF0YSBFeHBsb3Jlcjwvc3Ryb25nPiB0YWIgd2hpbGUgc2lnbmVkIGluLlxuICA8L2Rpdj5gO1xuXG4gIGlmIChzLnBoYXNlID09PSBcIm5vLWFjY2Vzc1wiKSByZXR1cm4gaHRtbGA8ZGl2IGNsYXNzPVwiYWxlcnQgYWxlcnQtd2FybmluZyBtYi0wXCI+XG4gICAgPHN0cm9uZz5UaGVyZSBhcmUgbm8gcmVjb3JkcyBhdmFpbGFibGUgZm9yIHlvdXIgYWNjb3VudC48L3N0cm9uZz5cbiAgICAke3MubWVzc2FnZSA/IGh0bWxgPGJyPiR7cy5tZXNzYWdlfWAgOiBcIlwifVxuICAgIFRoZSBib3hlcyBiZWxvdyB3aWxsIHN0aWxsIHJ1biwgYnV0IHRoZXkgd2lsbCBjb21lIGJhY2sgZW1wdHkuIElmIHRoYXQgbG9va3Mgd3JvbmcsIGFzayBhblxuICAgIGFkbWluaXN0cmF0b3Igd2hpY2ggc3VydmV5cyB5b3VyIGFjY291bnQgY2FuIHNlZS5cbiAgPC9kaXY+YDtcblxuICBpZiAocy5waGFzZSA9PT0gXCJmYWlsZWRcIikgcmV0dXJuIGh0bWxgPGRpdiBjbGFzcz1cImFsZXJ0IGFsZXJ0LXdhcm5pbmcgbWItMFwiPlxuICAgIDxzdHJvbmc+WW91ciByZWNvcmRzIGNvdWxkIG5vdCBiZSBsb2FkZWQganVzdCBub3cuPC9zdHJvbmc+XG4gICAgVGhpcyBpcyB1c3VhbGx5IGEgY29ubmVjdGlvbiBwcm9ibGVtLCBhbmQgbm90aGluZyBpcyB3cm9uZyB3aXRoIHlvdXIgZGF0YS5cbiAgICBQcmVzcyB0aGUgYnV0dG9uIGJlbG93IHRvIHRyeSBhZ2Fpbi5cbiAgPC9kaXY+YDtcblxuICBjb25zdCBjYXBwZWQgPSBzLmNhcCAmJiBzLnJvd3MubGVuZ3RoID49IHMuY2FwO1xuICByZXR1cm4gaHRtbGA8ZGl2IGNsYXNzPVwiYWxlcnQgYWxlcnQtc3VjY2VzcyBtYi0wXCI+XG4gICAgPHN0cm9uZz5Zb3VyIHJlY29yZHMgYXJlIHJlYWR5Ljwvc3Ryb25nPlxuICAgICR7cy5yb3dzLmxlbmd0aC50b0xvY2FsZVN0cmluZygpfSByZWNvcmRzIGxvYWRlZCB3aGVuIHlvdSBvcGVuZWQgdGhpcyBwYWdlLlxuICAgICR7Y2FwcGVkXG4gICAgICA/IGh0bWxgVGhhdCBpcyB0aGUgbW9zdCBhIGxlc3NvbiBsb2Fkcy4gSWYgeW91IGhhdmUgbW9yZSByZWNvcmRzLCBvcGVuIHRoZVxuICAgICAgICAgICAgIDxzdHJvbmc+RGF0YSBEb3dubG9hZDwvc3Ryb25nPiB0YWIgdG8gZ2V0IHRoZW0gYWxsLmBcbiAgICAgIDogaHRtbGBUaGV5IGFyZSB0aGUgc2FtZSByZWNvcmRzIHlvdSBjYW4gb3BlbiBpbiB0aGUgPHN0cm9uZz5EYXRhIERvd25sb2FkPC9zdHJvbmc+IHRhYi5gfVxuICA8L2Rpdj5gO1xufVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC05IiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoidmlld29mIGxhbmRpbmdzX3JlbG9hZCA9IHtcbiAgLy8gSW5wdXRzLmJ1dHRvbiBzdGFydHMgYXQgMCBhbmQgY291bnRzIGNsaWNrcywgd2hpY2ggaXMgYWxsIHRoZSB0cmlnZ2VyIGBsYW5kaW5nc19zdGF0ZWAgbmVlZHMuXG4gIC8vIEl0cyBwbGFpbiA8YnV0dG9uPiBpcyByZXN0eWxlZCB0byBtYXRjaCB0aGUgdGhlbWU7IGd1YXJkZWQgYmVjYXVzZSBhIG51bGwgaGVyZSB3b3VsZCBicmVhayB0aGUgY2VsbFxuICAvLyBhbmQgdGhlIGxlYXJuZXIgd291bGQgbG9zZSB0aGUgYnV0dG9uIGFsdG9nZXRoZXIuXG4gIGNvbnN0IHZpZXcgPSBJbnB1dHMuYnV0dG9uKFwiTG9hZCBteSByZWNvcmRzIGFnYWluXCIpO1xuICBjb25zdCBidXR0b24gPSB2aWV3LnF1ZXJ5U2VsZWN0b3IoXCJidXR0b25cIik7XG4gIGlmIChidXR0b24pIGJ1dHRvbi5jbGFzc05hbWUgPSBcImJ0biBidG4tc20gYnRuLW91dGxpbmUtcHJpbWFyeVwiO1xuICByZXR1cm4gdmlldztcbn1cbiJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMTAiLCJpbmxpbmUiOmZhbHNlLCJzb3VyY2UiOiJ2aWV3b2YgcHJlZGljdF9maWx0ZXIgPSBJbnB1dHMucmFkaW8oXG4gIFtcIjEgcm93XCIsIFwiMiByb3dzXCIsIFwiNSByb3dzXCJdLFxuICB7IGxhYmVsOiBcIkhvdyBtYW55IHJvd3Mgd2lsbCBjb21lIGJhY2s/XCIgfVxuKVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC0xMSIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6Imh0bWxgJHtcbiAgLy8gYD09IG51bGxgIG9uIHB1cnBvc2U6IElucHV0cy5yYWRpbyBzdGFydHMgYXQgbnVsbCwgbm90IHVuZGVmaW5lZCwgd2hlbiBub3RoaW5nIGlzIHBpY2tlZC5cbiAgcHJlZGljdF9maWx0ZXIgPT0gbnVsbFxuICAgID8gJzxkaXYgY2xhc3M9XCJhbGVydCBhbGVydC1saWdodCBweS0yXCI+UGljayBhbiBhbnN3ZXIgYWJvdmUsIHRoZW4gcHJlc3MgUnVuIGJlbG93IHRvIGNoZWNrIGl0LjwvZGl2PidcbiAgICA6IHByZWRpY3RfZmlsdGVyID09PSBcIjIgcm93c1wiXG4gICAgICA/ICc8ZGl2IGNsYXNzPVwiYWxlcnQgYWxlcnQtc3VjY2VzcyBweS0yXCI+PHN0cm9uZz5ZZXMg4oCUIDIgcm93cy48L3N0cm9uZz4gT25seSB0d28gcm93cyBoYXZlIDxjb2RlPmdpbGxuZXQ8L2NvZGU+IGluIHRoZSA8Y29kZT5nZWFyPC9jb2RlPiBjb2x1bW4sIHNvIG9ubHkgdGhvc2UgdHdvIGFyZSBrZXB0LiBQcmVzcyA8c3Ryb25nPlJ1bjwvc3Ryb25nPiBhbmQgc2VlLjwvZGl2PidcbiAgICAgIDogJzxkaXYgY2xhc3M9XCJhbGVydCBhbGVydC13YXJuaW5nIHB5LTJcIj48c3Ryb25nPkhhdmUgYW5vdGhlciBsb29rLjwvc3Ryb25nPiBDb3VudCB0aGUgcm93cyBpbiB0aGUgdGFibGUgYWJvdmUgd2hlcmUgPGNvZGU+Z2VhcjwvY29kZT4gc2F5cyA8Y29kZT5naWxsbmV0PC9jb2RlPiDigJQgdGhhdCBpcyBob3cgbWFueSB5b3Ugd2lsbCBnZXQuIEEgd3JvbmcgZ3Vlc3MgaXMgdXNlZnVsOiBpdCBzaG93cyB5b3UgZXhhY3RseSB3aGF0IHRvIGxvb2sgYXQuPC9kaXY+J1xufWBcbiJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoic2hpbnlJbnB1dCgncmVjYWxsX3JvdycpIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0UXVpZXQiLCJzb3VyY2UiOiJzaGlueUlucHV0KCdsYW5kaW5nc19yZWxvYWQnKSJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoic2hpbnlJbnB1dCgncHJlZGljdF9maWx0ZXInKSJ9XX0=
+</script>
+<script type="module">
+if (window.location.protocol === "file:") { alert("The OJS runtime does not work with file:// URLs. Please use a web server to view this document."); }
+window._ojs.paths.runtimeToDoc = "../../..";
+window._ojs.paths.runtimeToRoot = "../../..";
+window._ojs.paths.docToRoot = "";
+window._ojs.selfContained = false;
+window._ojs.runtime.interpretFromScriptTags();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+<script src="find_files/libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

@@ -1,0 +1,279 @@
+---
+title: "See it as a picture"
+subtitle: "Lesson 5 of 5 · about 15 minutes"
+webr:
+  render-df: reactable
+---
+
+{{< include _extensions/r-wasm/live/_knitr.qmd >}}
+
+::: {.callout-note appearance="simple"}
+## What this lesson is for
+
+A table of numbers is hard to talk about in a meeting. A **picture** is not.
+
+In this lesson you turn one of your own totals into a simple **bar chart**. It is the kind of picture you
+can put in a report, or show to a supervisor. It takes one new command.
+
+Press **Run** on each box. Remember: **you cannot break anything.**
+:::
+
+## First, one question from last time
+
+Bring back one thing from the last lesson. A wrong answer costs nothing.
+
+```{ojs}
+//| echo: false
+viewof recall_group = Inputs.radio(
+  ["One row for each group", "One row altogether", "The same rows as before"],
+  { label: "When you group_by() and then summarise(), what do you get back?" }
+)
+```
+
+```{ojs}
+//| echo: false
+html`${
+  // `== null` on purpose: Inputs.radio starts at null, not undefined, when nothing is picked.
+  recall_group == null
+    ? '<div class="alert alert-light py-2">Pick an answer above.</div>'
+    : recall_group === "One row for each group"
+      ? '<div class="alert alert-success py-2"><strong>Yes.</strong> One row of answer for each group. Two districts give two rows. That is exactly what a bar chart needs: <strong>one bar for each row</strong>.</div>'
+      : '<div class="alert alert-warning py-2"><strong>Have another look.</strong> Grouping gives you <strong>one row for each group</strong>. Two districts give two rows, not one and not five. Hold on to that, because each of those rows becomes one bar.</div>'
+}`
+```
+
+## Before we start
+
+{{< include _before-we-start.qmd >}}
+
+## A chart is just a table, drawn
+
+The last lesson ended with a table of totals. A chart shows **the same numbers**, drawn as bars. Nothing
+new is calculated. So a chart is always **two steps**.
+
+**Step one: work out the totals**, exactly as you did last lesson, and give them a name. Here that name is
+`totals`. Press **Run**:
+
+```{webr}
+#| autorun: false
+totals <- example |>
+  group_by(gaul_2_name) |>
+  summarise(total_kg = sum(catch_kg))
+
+totals
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** two rows. Shimoni **20** kg and Vanga **14** kg. Nothing has been drawn yet. You
+have only given the answer a name, so you can use it again in the next box.
+:::
+
+**Step two: draw it.** Every box from here on uses the `totals` table you just made, so run the box above
+first. If you ever see `object 'totals' not found`, that is all it means.
+
+The command is **`barplot()`**, and it needs two things:
+
+- the **heights** of the bars, `totals$total_kg`
+- the **labels** under them, `totals$gaul_2_name`
+
+Remember the `$` sign from the first lesson. It means "this column of that table".
+
+**Before you run it, have a guess.**
+
+```{ojs}
+//| echo: false
+viewof predict_bar = Inputs.radio(
+  ["3 kg — the smallest catch", "12 kg — the biggest single catch", "20 kg — the total for Shimoni"],
+  { label: "How tall will the Shimoni bar be?" }
+)
+```
+
+```{ojs}
+//| echo: false
+html`${
+  // `== null` on purpose: Inputs.radio starts at null, not undefined, when nothing is picked.
+  predict_bar == null
+    ? '<div class="alert alert-light py-2">Pick an answer above, then press Run below to check it.</div>'
+    : predict_bar === "20 kg — the total for Shimoni"
+      ? '<div class="alert alert-success py-2"><strong>Yes — 20 kg.</strong> The chart draws the <code>totals</code> table, not the original rows. So each bar is that district\'s <strong>total</strong>.</div>'
+      : '<div class="alert alert-warning py-2"><strong>Have another look.</strong> The chart draws the <code>totals</code> table from the box above, not the five original rows. Shimoni\'s row in <code>totals</code> says <strong>20</strong>, so that is the height of its bar.</div>'
+}`
+```
+
+Now press **Run**:
+
+```{webr}
+#| autorun: false
+barplot(totals$total_kg, names.arg = totals$gaul_2_name)
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** two grey bars. The Shimoni bar is taller, because 20 is more than 14.
+
+That is a real chart, made from your own kind of data, in one line.
+:::
+
+## Make it fit to show someone
+
+The bars are right, but a chart nobody can read is no use in a report. Three settings fix that. Each one
+is just a word and a value:
+
+- `main =` puts a **title** on top
+- `ylab =` labels the **side**, so the reader knows the numbers are kilograms
+- `col =` sets the **colour**
+
+Press **Run**, then try changing the title, or the colour to `"darkgreen"`:
+
+```{webr}
+#| autorun: false
+barplot(
+  totals$total_kg,
+  names.arg = totals$gaul_2_name,
+  main      = "Total catch by district",
+  ylab      = "Kilograms",
+  col       = "steelblue"
+)
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** the same two bars, now blue, with a title above and "Kilograms" down the side.
+
+This is the version you would paste into a report. Nothing about the numbers changed. You only made them
+easier to read.
+:::
+
+## Now your own data
+
+Time to draw your own records. A useful first question: **which gear brings in the most?**
+
+It is the same two steps. Work out the totals, then draw them.
+
+::: {.callout-note appearance="simple"}
+**One thing to know first.** A chart needs numbers to draw. If there is nothing to draw — because you are
+**not signed in**, or your records came back empty — these last boxes show **red text** instead of a
+picture.
+
+The last line will read `need finite 'xlim' values`. It looks alarming, but it is only `barplot` saying
+*"you gave me an empty table, so I cannot tell how wide to make the picture."* A few warnings about `min`
+and `max` may appear above it. Ignore those and read the **last line**, as always.
+
+Nothing is broken. Open this lesson from the **Data Explorer** tab while signed in, and the charts will
+appear.
+:::
+
+**Step one, the totals.** Press **Run**:
+
+```{webr}
+#| autorun: false
+gear_totals <- landings |>
+  group_by(gear) |>
+  summarise(total_kg = sum(catch_kg, na.rm = TRUE))
+
+gear_totals
+```
+
+**Step two, the picture.** Gear names are long, so this one adds `las = 2`, which turns the labels
+sideways to make room for them. Press **Run**:
+
+```{webr}
+#| autorun: false
+barplot(
+  gear_totals$total_kg,
+  names.arg = gear_totals$gear,
+  main      = "Total catch by gear",
+  ylab      = "Kilograms",
+  col       = "steelblue",
+  las       = 2
+)
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** one bar for each fishing method in your records, with the tallest bar showing the
+gear that brings in the most weight.
+
+If the labels look cramped, that is normal on a small screen. Try removing `las = 2` and pressing **Run**
+again to see the difference it makes.
+:::
+
+### Your turn: chart something else
+
+Now you choose what to draw. The box below is the same two steps, with the **column blanked out**. Replace
+both `______` with the **same column name**, then press **Run**.
+
+Press **Hint** if you would like a suggestion.
+
+```{webr}
+#| exercise: ex_chart_column
+#| envir: global
+#| caption: "Chart your catch, grouped by a column you choose"
+my_totals <- landings |>
+  group_by(______) |>
+  summarise(total_kg = sum(catch_kg, na.rm = TRUE))
+
+barplot(
+  my_totals$total_kg,
+  names.arg = my_totals$______,
+  main      = "My chart",
+  ylab      = "Kilograms",
+  col       = "steelblue",
+  las       = 2
+)
+```
+
+::: { .hint exercise="ex_chart_column" }
+Any column that holds **words** rather than numbers will work. Good ones to try:
+
+- `gaul_2_name` — one bar for each district
+- `catch_taxon` — one bar for each kind of fish
+
+Put the **same** name in both blanks.
+:::
+
+::: { .hint exercise="ex_chart_column" }
+If you choose `catch_taxon` you may get a great many bars, because there are many kinds of fish. That is
+not a mistake. It is a sign that a chart with fewer groups, like `gaul_2_name`, is easier to read.
+:::
+
+::: { .solution exercise="ex_chart_column" }
+```r
+my_totals <- landings |>
+  group_by(gaul_2_name) |>
+  summarise(total_kg = sum(catch_kg, na.rm = TRUE))
+
+barplot(
+  my_totals$total_kg,
+  names.arg = my_totals$gaul_2_name,
+  main      = "Total catch by district",
+  ylab      = "Kilograms",
+  col       = "steelblue",
+  las       = 2
+)
+```
+:::
+
+## What you have learned
+
+- A chart is a **table, drawn**. Always two steps: work out the totals, then draw them.
+- **`barplot(heights, names.arg = labels)`** draws the bars.
+- **`main =`**, **`ylab =`** and **`col =`** make it fit to show someone.
+- **`las = 2`** turns the labels sideways when the names are long.
+
+And one idea worth keeping: a chart never calculates anything. It only shows the numbers you already
+worked out, so if a bar looks wrong, check the **totals** table above it.
+
+## That is the whole course
+
+You can now read your data, narrow it down, add it up, and draw it. That is enough to answer most of the
+everyday questions your work asks of your records.
+
+Keep the **recipe card** nearby. It has every command from the course on one page, so you do not have to
+remember any of it.
+
+<!-- Raw HTML so Quarto does NOT rewrite these root-relative links (served at depth 2). -->
+
+```{=html}
+<p class="mt-4">
+  <a href="/data-explorer/lessons/recipes.html" class="btn btn-primary">📋 Open the recipe card</a>
+  <a href="/data-explorer" class="btn btn-outline-primary ms-2">← Back to Data Explorer</a>
+</p>
+```

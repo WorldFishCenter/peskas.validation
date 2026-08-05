@@ -1,0 +1,36 @@
+# Quarto SOURCE project for the Data Explorer lessons.
+#
+# Lessons are authored here as .qmd files using the quarto-live extension
+# (in-browser R via webR). They are rendered to static HTML that is committed
+# under public/data-explorer/lessons/ and served by Vercel inside the portal.
+#
+# Render with:  npm run render:lessons   (== quarto render data-explorer)
+#
+# NOTE: rendered output must be committed because Vercel's build image does not
+# have Quarto/R installed.
+project:
+  output-dir: ../public/data-explorer/lessons
+
+# House defaults for every lesson, so a new .qmd only declares what differs (its title, and
+# `webr: render-df:` if it shows tables). `live-html` is the quarto-live format; `knitr` is the
+# engine quarto-live requires.
+#
+# Only ONE html-producing format may be listed here: two would both want to write <slug>.html.
+# recipes.qmd therefore sets `format: html` in its own YAML and repeats `css:` there. Note WHY it has to
+# repeat it: `html` and `live-html` are different format names (live-html comes from the quarto-live
+# extension), and options are inherited per format name, so nothing set under `live-html` reaches a
+# document that asks for `html`. A lesson that overrides options under `live-html` DOES still inherit
+# everything below, so it must not restate `css:`.
+format:
+  live-html:
+    # Shared look for all lessons; see the header of lesson.css for what it is doing and why.
+    css: lesson.css
+    # A lesson runs to 20 minutes and a dozen code boxes. Without a contents list there is no way to
+    # see how much is left, jump back to the command you have forgotten, or find your place again after
+    # closing the tab — all of which this audience does constantly. Depth 2 keeps it to one screen.
+    toc: true
+    toc-title: On this page
+    toc-depth: 2
+    smooth-scroll: true
+
+engine: knitr

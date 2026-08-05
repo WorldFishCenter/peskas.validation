@@ -1,0 +1,56 @@
+<!--
+SHARED FIELD DICTIONARY for the Data Explorer lessons — pull it into a lesson with Quarto's include
+shortcode, naming this file (see the top of the "What each column means" section in dataset.qmd for a
+working example).
+
+NOTE: do not write that shortcode literally in this file, not even inside a comment like this one.
+Quarto resolves include shortcodes in a text pass that does not respect HTML comments, so a file naming
+itself includes itself, and the render dies with "Maximum call stack size exceeded".
+
+This is the ONE learner-facing copy of what each column means. It is included by dataset.qmd (where the
+columns are taught) and by recipes.qmd (the printable card), so a field description can never say one
+thing in a lesson and another on the card.
+
+Keep it in step with §9 of docs/LESSON_AUTHORING_GUIDE.md, which is the source of truth for the field
+list itself (names and definitions come from WorldFishCenter/peskas-api, schema/field_metadata.py +
+scopes.py). If a field is added or renamed upstream, change it in both places.
+
+Plain-language rules that apply here: no Latin abbreviations ("such as", not "e.g."), and keep the
+concrete example in the description — on the printed card the example is often the only thing that makes
+a bare column name usable.
+
+Tables only, deliberately: no headings and no callouts. Each lesson frames the dictionary its own way and
+places its own warnings around it, so anything but the tables would fight with the page including it.
+-->
+
+**Which trip a row belongs to**
+
+| Column | Meaning |
+|--------|---------|
+| `survey_id` | The survey this record came from |
+| `trip_id` | The fishing trip. Rows sharing a `trip_id` are from the same trip |
+| `n_catch` | How many kinds of catch that trip recorded |
+
+**About the trip** — the same on every row of that trip
+
+| Column | Meaning |
+|--------|---------|
+| `landing_date` | The day the catch came to shore |
+| `gaul_2_name` | The district, or area |
+| `gear` | The fishing method, such as hand line or gillnet |
+| `vessel_type` | The boat used, such as a dhow |
+| `n_fishers` | How many people were fishing |
+| `trip_duration_hrs` | How many hours the trip lasted |
+| `catch_habitat` | Where they fished, such as reef |
+| `tot_catch_kg` | Total weight of the **whole trip**, in kg |
+| `tot_catch_price` | Total value of the whole trip |
+
+**About each catch** — one row each
+
+| Column | Meaning |
+|--------|---------|
+| `catch_taxon` | The kind of fish, as a short code such as `SKJ`, which means skipjack tuna |
+| `scientific_name` | The fish's scientific, or Latin, name |
+| `length_cm` | The fish length, in centimetres |
+| `catch_kg` | The weight of **that one catch**, in kg |
+| `catch_price` | The value of that catch |

@@ -1,0 +1,47 @@
+{
+  "title": "Data Explorer",
+  "description": "Learn to analyse small-scale fisheries data with interactive R lessons that run in your browser.",
+  "intro": {
+    "title": "Interactive R, right in your browser",
+    "body": "Each lesson runs real R code against your own landings data — the same data and access permissions as the Data Download tab. Nothing to install. Pick a lesson to get started. Take them in order — each one builds on the last.",
+    "deeper": "Want to learn R more deeply? See WorldFish's full course:"
+  },
+  "startLesson": "Start lesson",
+  "comingSoon": "Coming soon",
+  "lessonsHeading": "Lessons",
+  "categories": {
+    "gettingStarted": "Getting started",
+    "exploring": "Exploring your data",
+    "presenting": "Showing your results",
+    "reference": "Reference"
+  },
+  "lessons": {
+    "intro": {
+      "title": "Welcome — your first look at the data",
+      "description": "Start here. What R is, how this page works, and your first results — no experience needed."
+    },
+    "dataset": {
+      "title": "Getting to know your data",
+      "description": "What's inside your data — what each row is, what the columns mean, and how trips and catches fit together. Browse your own records."
+    },
+    "find": {
+      "title": "Find what you need",
+      "description": "Three simple commands to narrow your data: list the values in a column, keep only the rows you want, and keep only the columns you want."
+    },
+    "summarise": {
+      "title": "Add it up",
+      "description": "Total, average and count your catch by district, gear or kind of fish to answer everyday questions."
+    },
+    "chart": {
+      "title": "See it as a picture",
+      "description": "Turn one of your own totals into a simple bar chart — the kind you can put in a report or show to a supervisor."
+    },
+    "recipes": {
+      "title": "Your recipe card",
+      "description": "Every command from the course on one page. Print it or photograph it, and keep it beside you."
+    }
+  },
+  "lessonNumber": "Lesson {{number}} of {{total}}",
+  "minutes": "about {{count}} min",
+  "openCard": "Open the card"
+}

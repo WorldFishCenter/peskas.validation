@@ -1,0 +1,174 @@
+---
+title: "Welcome — your first look at the data"
+subtitle: "Lesson 1 of 5 · about 10 minutes"
+---
+
+{{< include _extensions/r-wasm/live/_knitr.qmd >}}
+
+## What is R?
+
+When you collect fisheries data, you need a way to make sense of it: to add up catches,
+compare districts, or spot a month when something looks wrong. **R is a free tool made
+for exactly this.**
+
+Think of R as a careful, very fast assistant. You give it a short written instruction, such as
+*"add up the weight"* or *"show me only the landings from Vanga"*. It does the work exactly, and straight
+away. Ten records or one hundred thousand, it makes no difference. It is the same tool used by the
+scientists who prepare your data.
+
+A spreadsheet like Excel is fine for a small table. R goes further in three ways. It does not slow down
+with large amounts of data. It does not make copy-and-paste mistakes. And it remembers every step, so the
+same work can be repeated next month without starting over.
+
+::: {.callout-note appearance="simple"}
+## What is this page, then?
+
+This page runs R **right inside your web browser**. There is nothing to download or install —
+it just works, and it is free.
+
+You do **not** need to be a programmer. In these lessons you will mostly **press a button** and
+change a few small things. And **you cannot break anything**: if something looks wrong, just
+press **Run** again.
+:::
+
+## How it works: press Run
+
+Below is a small table of fish landings — just six rows, so it is easy to read.
+
+The first box runs **on its own** when the page opens. Look for the green **▶ Run** button on the box:
+you can press it to run the box again.
+
+::: {.callout-note appearance="simple"}
+## The first time, R has to wake up
+
+When you open a lesson, your browser quietly downloads R. **This can take a minute on a slow
+connection** — and only the first time.
+
+While it is waiting you will see a small **spinning circle** on the box, and pressing **Run** will seem
+to do nothing. That is not a fault. Wait for the spinner to stop, and the answer will appear.
+:::
+
+::: {.lesson-plumbing}
+```{webr}
+#| include: false
+suppressPackageStartupMessages(library(dplyr))
+```
+:::
+
+```{webr}
+#| autorun: true
+# A small example table: six catches from two districts.
+landings_example <- data.frame(
+  landing_date = c("2024-01-05", "2024-01-05", "2024-01-06", "2024-01-06", "2024-01-07", "2024-01-07"),
+  gaul_2_name  = c("Shimoni", "Shimoni", "Vanga", "Shimoni", "Vanga", "Vanga"),
+  catch_taxon  = c("species 1", "species 2", "species 1", "species 3", "species 2", "species 1"),
+  catch_kg     = c(12, 5, 8, 3, 6, 10)
+)
+
+landings_example
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** a table with **6 rows** and **4 columns**.
+
+The headings look odd, so let's name them now. They are the **real headings from your own data**, and
+you will meet them again in every lesson:
+
+- `landing_date` — the day the catch came to shore
+- `gaul_2_name` — the **district**, or area
+- `catch_taxon` — the **kind of fish**
+- `catch_kg` — the **weight**, in kilograms
+
+The fish here are simply numbered — **species 1**, **species 2**, **species 3** — so that nothing depends
+on knowing one fish from another. Your own records name real species instead, and everything you practise
+here works on them unchanged.
+:::
+
+## Now you try: press Run yourself
+
+This box adds up all the weights. **Press the ▶ Run button** to see the answer.
+
+The `$` sign just means "this column of that table". So `landings_example$catch_kg` is the `catch_kg`
+column of the `landings_example` table, and `sum()` adds it up.
+
+```{webr}
+#| autorun: false
+sum(landings_example$catch_kg)
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** `44`. That is the total weight of all six catches, in kilograms.
+:::
+
+## Change one thing, then run again
+
+You do **not** need to understand the instruction below yet. That comes in the next lessons. For now, just
+see how easy it is to change an answer.
+
+The word `filter` means "keep only the rows I ask for". This box keeps only the catches **heavier than
+5 kg**. **Change the `5` to `9`**, then press **Run** again.
+
+```{webr}
+#| autorun: false
+filter(landings_example, catch_kg > 5)
+```
+
+::: {.callout-tip appearance="simple"}
+**Try it:** with `5` you see **four** rows. Change it to `9` and press Run. Now you see only the **two**
+catches above 9 kg.
+
+That is all "coding" is here. Small instructions you can change, with the answer right away.
+:::
+
+## This works on YOUR data too
+
+The table above was made up. In the next lessons the table will be **your real landing records**. It is
+the same data you can open in **Data Download**, from your own district.
+
+Your records are fetched for you as soon as you open a lesson. You do not have to do anything:
+
+{{< include _landings-panel.qmd >}}
+
+From here on, **`landings`** is the name of your own records.
+
+Your own table has many more columns than the little example, so this box picks out the same four you have
+just met. As with `filter` above, you do not need to understand it yet: `select` means "keep only the
+columns I ask for", and `head` means "just the first few rows". Press **Run**:
+
+```{webr}
+#| autorun: false
+four_columns <- select(landings, landing_date, gaul_2_name, catch_taxon, catch_kg)
+head(four_columns)
+```
+
+::: {.callout-tip appearance="simple"}
+**What you should see:** the first few rows of **your** data, under the same four headings as the example
+above.
+
+That is the point of these lessons. What you practise on the small example works, unchanged, on your own
+records.
+
+If the box comes back **empty**, look at the panel above: you are most likely not signed in, and there are
+no records to show yet.
+:::
+
+## What you will learn next
+
+Each lesson is short and uses your own data. You will learn to answer everyday questions:
+
+- 🔎 **Find the rows you need** — *"Show me only the landings from Vanga."* — *"Only last month."*
+- 📋 **Pick the columns you need** — *"I only want the date, the district and the weight."*
+- ➕ **Add it up** — *"What is the total catch at each district?"* — *"Which gear catches the most?"*
+
+You will only ever **press Run** and **change small things**. Take the lessons in order.
+
+<!-- Raw HTML so Quarto does NOT rewrite this root-relative link. The lesson is served at
+     /data-explorer/lessons/<slug>.html but Quarto bases relative links on the doc's position in
+     the source project (root), so a markdown link to /data-explorer would be rewritten and break. -->
+
+```{=html}
+<p class="mt-4">
+  <a href="/data-explorer/lessons/dataset.html" class="btn btn-primary">Next: Getting to know your data &#8594;</a>
+  <a href="/data-explorer" class="btn btn-outline-primary ms-2">&#8592; Back to Data Explorer</a>
+</p>
+```
