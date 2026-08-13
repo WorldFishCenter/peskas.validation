@@ -19,7 +19,7 @@ export const formatDate = (dateStr: string | null): string => {
       hour: '2-digit',
       minute: '2-digit'
     });
-  } catch (e) {
+  } catch {
     return 'Invalid Date';
   }
 };
@@ -29,7 +29,7 @@ export const formatDateShort = (dateStr: string | null): string => {
   try {
     // For submission date, we only want YYYY-MM-DD
     return dateStr.split('T')[0];
-  } catch (e) {
+  } catch {
     return 'Invalid Date';
   }
 }; 

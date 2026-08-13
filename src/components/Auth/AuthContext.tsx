@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
         setIsAuthenticated(true);
-      } catch (error) {
+      } catch {
         // Invalid stored user, clear everything
         localStorage.removeItem('user');
         localStorage.removeItem('authToken');

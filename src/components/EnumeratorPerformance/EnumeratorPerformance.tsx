@@ -154,7 +154,7 @@ const EnumeratorPerformance: React.FC = () => {
       if (result.success) {
         await refetch();
       }
-    } catch (error) {
+    } catch {
       setRefreshMessage(t('refreshError'));
     } finally {
       setIsRefreshing(false);

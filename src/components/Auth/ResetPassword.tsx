@@ -31,7 +31,7 @@ const ResetPassword: React.FC = () => {
         if (result.valid && result.username) {
           setUsername(result.username);
         }
-      } catch (err) {
+      } catch {
         setTokenValid(false);
       }
     };

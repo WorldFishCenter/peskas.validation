@@ -53,7 +53,7 @@ const formatDateWithDefault = (dateStr: string | null, defaultText: string, inva
       hour: '2-digit',
       minute: '2-digit'
     });
-  } catch (e) {
+  } catch {
     return invalidText;
   }
 };
@@ -104,7 +104,7 @@ const ValidationTable: React.FC = () => {
         hour: '2-digit',
         minute: '2-digit'
       });
-    } catch (e) {
+    } catch {
       return t('table.invalidDate');
     }
   };
@@ -206,7 +206,7 @@ const ValidationTable: React.FC = () => {
           try {
             // For submission date, we only want YYYY-MM-DD
             return date.split('T')[0];
-          } catch (e) {
+          } catch {
             return t('table.invalidDate');
           }
         },

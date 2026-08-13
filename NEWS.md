@@ -127,6 +127,14 @@ them.
   text and produced "[object Object]" for a whole class of gateway error. They all now use one
   shared helper.
 
+- **The portal starts faster, especially on a slow connection.** Every visitor used to download all
+  seven screens before anything appeared — including the charting library behind Enumerator
+  Performance and the whole Data Explorer, even to reach the sign-in page. Each screen is now
+  fetched the first time it is opened, cutting what loads up front by roughly a third. The charting
+  library alone, the single largest piece, no longer loads at all for anyone who does not open
+  Enumerator Performance. If a screen is requested moments after a new version is deployed, the
+  page refreshes itself once to pick up the current files rather than showing an error.
+
 ## Infrastructure
 
 - **Tabler is now bundled with the application instead of loaded from a public CDN.** The portal is
@@ -158,6 +166,15 @@ them.
 
 - **Audit log indexes are created in one place.** They were declared twice with different retention
   rules, so how long events were kept depended on which path ran first.
+
+- **Every known vulnerable dependency has been updated.** The project's third-party libraries had
+  accumulated 127 published security advisories, three of them rated critical. Most were resolved
+  simply by taking the current release of libraries the project already depended on — the HTTP
+  client, the router, the web server and the email client. Two build tools, Vite and the TypeScript
+  linter, had to move up a major version because their affected releases were never patched on the
+  older line; neither ships in the product, both are used only to build and check it. A further
+  forty advisories came from a leftover dependency list for the old development server, which this
+  release removes. No known advisories remain.
 
 ## Code Quality
 
