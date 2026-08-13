@@ -5,6 +5,7 @@ import HighchartsReact from 'highcharts-react-official';
 import { IconMoodSmile } from '@tabler/icons-react';
 import { EnumeratorData } from '../types';
 import { baseTooltipConfig, wrapTooltip, formatTooltipHeader } from '../utils/chartConfig';
+import { tallyAlertFlags } from '../utils/dataUtils';
 
 interface AlertDistributionChartProps {
   enumerators: EnumeratorData[];
@@ -17,28 +18,8 @@ const AlertDistributionChart: React.FC<AlertDistributionChartProps> = React.memo
   const { t } = useTranslation('enumerators');
 
   const { alertData, totalAlerts } = useMemo(() => {
-    const alertDistribution = enumerators.reduce((counts: Record<string, number>, enumerator) => {
-      const submissions = enumerator.filteredSubmissions || enumerator.submissions;
-
-      submissions.forEach(submission => {
-        if (submission.alert_flag && submission.alert_flag !== "NA") {
-          counts[submission.alert_flag] = (counts[submission.alert_flag] || 0) + 1;
-        }
-      });
-
-      return counts;
-    }, {});
-
-    const data = Object.entries(alertDistribution)
-      .map(([label, count]) => ({
-        name: label,
-        y: count
-      }))
-      .sort((a, b) => b.y - a.y);
-
-    const total = data.reduce((sum, item) => sum + item.y, 0);
-
-    return { alertData: data, totalAlerts: total };
+    const data = tallyAlertFlags(enumerators);
+    return { alertData: data, totalAlerts: data.reduce((sum, item) => sum + item.y, 0) };
   }, [enumerators]);
 
   const chartOptions: Highcharts.Options = useMemo(() => ({
@@ -54,17 +35,16 @@ const AlertDistributionChart: React.FC<AlertDistributionChartProps> = React.memo
     },
     tooltip: {
       ...baseTooltipConfig,
-      formatter: function(this: any) {
-        const point = this.point;
+      formatter: function(this: Highcharts.Point) {
         return wrapTooltip(
-          formatTooltipHeader(`${t('charts.alert')}${point.name}`) +
+          formatTooltipHeader(`${t('charts.alert')}${this.name}`) +
           `<div style="display: flex; justify-content: space-between; margin: 4px 0;">
             <span style="color: #666;">${t('charts.count')}</span>
-            <span style="font-weight: 600;">${point.y}</span>
+            <span style="font-weight: 600;">${this.y}</span>
           </div>
           <div style="display: flex; justify-content: space-between; margin: 4px 0;">
             <span style="color: #666;">${t('charts.share')}</span>
-            <span style="font-weight: 600;">${point.percentage.toFixed(1)}%</span>
+            <span style="font-weight: 600;">${(this.percentage ?? 0).toFixed(1)}%</span>
           </div>`
         );
       }

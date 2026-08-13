@@ -14,6 +14,7 @@ const CATEGORY_BADGE: Record<string, string> = {
   auth: 'bg-blue-lt',
   validation: 'bg-green-lt',
   download: 'bg-orange-lt',
+  admin: 'bg-purple-lt',
 };
 
 const STATUS_BADGE: Record<string, string> = {
@@ -25,13 +26,19 @@ function str(val: unknown): string | null {
   return typeof val === 'string' && val ? val : null;
 }
 
+function list(val: unknown): string | null {
+  return Array.isArray(val) && val.length > 0 ? val.join(', ') : null;
+}
+
 function formatIp(ip: string | null): string {
   if (!ip) return '—';
   if (ip === '::1' || ip === '127.0.0.1') return 'localhost';
   return ip;
 }
 
-function renderDetails(entry: AuditLogEntry): React.ReactNode {
+type Translate = (key: string, opts?: Record<string, unknown>) => string;
+
+function renderDetails(entry: AuditLogEntry, t: Translate): React.ReactNode {
   const d = entry.details;
   switch (entry.action) {
     case 'login_failure': {
@@ -52,7 +59,8 @@ function renderDetails(entry: AuditLogEntry): React.ReactNode {
       );
     }
     case 'data_preview':
-    case 'data_export': {
+    case 'data_export':
+    case 'data_explorer_load': {
       const country = str(d['country_id']);
       const dataStatus = str(d['data_status']);
       const scope = str(d['scope']);
@@ -69,6 +77,43 @@ function renderDetails(entry: AuditLogEntry): React.ReactNode {
           {catchTaxon && <span className="badge bg-secondary-lt">{catchTaxon}</span>}
           {district   && <span className="badge bg-secondary-lt">district: {district}</span>}
           {surveyId   && <span className="badge bg-secondary-lt font-monospace" title="Survey asset ID">{surveyId}</span>}
+        </div>
+      );
+    }
+    // Admin actions all name the thing they acted on, plus either the fields that changed
+    // or the role/permissions involved. Never the values themselves — passwords included.
+    case 'user_created':
+    case 'user_updated':
+    case 'user_deleted':
+    case 'user_permissions_changed':
+    case 'user_password_reset': {
+      const username = str(d['target_username']);
+      const userId = str(d['target_user_id']);
+      const role = str(d['role']);
+      const fields = list(d['fields']);
+      const surveys = Array.isArray(d['surveys']) ? d['surveys'].length : null;
+      return (
+        <div className="d-flex flex-wrap gap-1">
+          {username
+            ? <span className="badge bg-purple-lt">{t('auditLog.details.targetUser')}: {username}</span>
+            : userId && <span className="badge bg-purple-lt font-monospace">{userId}</span>}
+          {role    && <span className="badge bg-secondary-lt">{t('auditLog.details.role')}: {role}</span>}
+          {fields  && <span className="badge bg-secondary-lt">{t('auditLog.details.fields')}: {fields}</span>}
+          {surveys !== null && <span className="badge bg-secondary-lt">{surveys} {t('auditLog.details.surveys')}</span>}
+        </div>
+      );
+    }
+    case 'country_created':
+    case 'country_updated':
+    case 'country_deleted': {
+      const code = str(d['country_code']);
+      const name = str(d['country_name']);
+      const fields = list(d['fields']);
+      if (!code && !name && !fields) return <span className="text-secondary">—</span>;
+      return (
+        <div className="d-flex flex-wrap gap-1">
+          <span className="badge bg-purple-lt">{t('auditLog.details.country')}: {name || code}</span>
+          {fields && <span className="badge bg-secondary-lt">{t('auditLog.details.fields')}: {fields}</span>}
         </div>
       );
     }
@@ -177,7 +222,7 @@ const AuditLog: React.FC = () => {
         id: 'details',
         header: () => t('auditLog.columns.details'),
         enableSorting: false,
-        cell: ({ row }) => renderDetails(row.original),
+        cell: ({ row }) => renderDetails(row.original, t),
       },
       {
         accessorKey: 'status',
@@ -271,6 +316,7 @@ const AuditLog: React.FC = () => {
                     <option value="auth">{t('auditLog.categories.auth')}</option>
                     <option value="validation">{t('auditLog.categories.validation')}</option>
                     <option value="download">{t('auditLog.categories.download')}</option>
+                    <option value="admin">{t('auditLog.categories.admin')}</option>
                   </select>
                 </div>
                 <div className="col-12 col-sm-4 col-md-2">

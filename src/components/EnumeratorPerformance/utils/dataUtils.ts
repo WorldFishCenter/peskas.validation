@@ -1,14 +1,23 @@
 import { EnumeratorData, SubmissionData } from '../types';
 
 /**
+ * Accumulator used while grouping rows by enumerator. It differs from `EnumeratorData` in
+ * two ways: `errorRate` is not known until the group is complete, and `submissionTrend` is
+ * a date → count map here, flattened to a sorted array on the way out.
+ */
+type EnumeratorAccumulator = Omit<EnumeratorData, 'errorRate' | 'submissionTrend'> & {
+  submissionTrend: Record<string, number>;
+};
+
+/**
  * Process raw data into EnumeratorData format
  */
 export const processEnumeratorData = (rawData: SubmissionData[]): EnumeratorData[] => {
   if (!rawData || rawData.length === 0) return [];
-  
+
   // Format data from the raw submissions
-  const processedData: Record<string, any> = {};
-  
+  const processedData: Record<string, EnumeratorAccumulator> = {};
+
   // Group by enumerator
   rawData.forEach((item: SubmissionData) => {
     // Skip items with missing or "Unknown" enumerator name
@@ -56,26 +65,61 @@ export const processEnumeratorData = (rawData: SubmissionData[]): EnumeratorData
   });
   
   // Calculate error rates and format the data for charts
-  const formattedData = Object.values(processedData).map((enumerator: any) => {
+  const formattedData = Object.values(processedData).map((enumerator): EnumeratorData => {
     // Calculate error rate
-    const errorRate = enumerator.totalSubmissions > 0 
-      ? (enumerator.submissionsWithAlerts / enumerator.totalSubmissions) * 100 
+    const errorRate = enumerator.totalSubmissions > 0
+      ? (enumerator.submissionsWithAlerts / enumerator.totalSubmissions) * 100
       : 0;
-    
+
     // Format submission trend for the chart
     const submissionTrend = Object.entries(enumerator.submissionTrend).map(
-      ([date, count]: [string, any]) => ({ date, count })
+      ([date, count]) => ({ date, count })
     ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    
+
     return {
       ...enumerator,
       errorRate,
       submissionTrend
-    } as EnumeratorData;
+    };
   });
   
   // Sort by total submissions (descending)
   return formattedData.sort((a, b) => b.totalSubmissions - a.totalSubmissions);
+};
+
+/**
+ * Quality score for an enumerator: 100 minus their error rate.
+ *
+ * Prefers `filteredErrorRate`, which is set whenever a date filter is active, and falls back
+ * to the all-time rate otherwise. Every quality figure in the UI comes from here so the
+ * filtered/unfiltered fallback cannot be applied inconsistently.
+ */
+export const qualityScore = (
+  enumerator: Pick<EnumeratorData, 'errorRate' | 'filteredErrorRate'> | undefined
+): number => 100 - (enumerator?.filteredErrorRate ?? enumerator?.errorRate ?? 0);
+
+/**
+ * Tally alert flags across one or more enumerators, most frequent first.
+ *
+ * Shared by the aggregate alert chart and the single-enumerator one — the former passes the
+ * whole list, the latter an array of one. "NA" is the pipeline's marker for no alert.
+ */
+export const tallyAlertFlags = (
+  enumerators: EnumeratorData[]
+): { name: string; y: number }[] => {
+  const counts: Record<string, number> = {};
+
+  enumerators.forEach(enumerator => {
+    (enumerator.filteredSubmissions || enumerator.submissions).forEach(submission => {
+      if (submission.alert_flag && submission.alert_flag !== 'NA') {
+        counts[submission.alert_flag] = (counts[submission.alert_flag] || 0) + 1;
+      }
+    });
+  });
+
+  return Object.entries(counts)
+    .map(([name, y]) => ({ name, y }))
+    .sort((a, b) => b.y - a.y);
 };
 
 /**

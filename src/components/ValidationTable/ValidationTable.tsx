@@ -183,8 +183,8 @@ const ValidationTable: React.FC = () => {
           if (!displayValue && row) {
             if (typeof row.submitted_by === 'string' && row.submitted_by.trim() !== '') {
               displayValue = row.submitted_by;
-            } else if (typeof (row as any).submittedBy === 'string' && (row as any).submittedBy.trim() !== '') {
-              displayValue = (row as any).submittedBy;
+            } else if (typeof row.submittedBy === 'string' && row.submittedBy.trim() !== '') {
+              displayValue = row.submittedBy;
             }
           }
           
@@ -264,7 +264,7 @@ const ValidationTable: React.FC = () => {
 
   const table = useReactTable({
     data: submissions || [],
-    columns: columns as any,
+    columns,
     state: {
       sorting,
       pagination: { pageIndex, pageSize },
@@ -285,10 +285,10 @@ const ValidationTable: React.FC = () => {
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    globalFilterFn: fuzzyFilter as any,
+    globalFilterFn: fuzzyFilter,
     filterFns: {
-      fuzzy: fuzzyFilter as any,
-      dateRange: dateRangeFilter as any,
+      fuzzy: fuzzyFilter,
+      dateRange: dateRangeFilter,
     },
     initialState: {
       pagination: { pageSize: 10 },

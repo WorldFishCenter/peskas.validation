@@ -63,8 +63,8 @@ const ResetPassword: React.FC = () => {
       setTimeout(() => {
         navigate('/');
       }, 3000);
-    } catch (err: any) {
-      setError(err.message || t('errors.resetFailed'));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t('errors.resetFailed'));
     } finally {
       setLoading(false);
     }

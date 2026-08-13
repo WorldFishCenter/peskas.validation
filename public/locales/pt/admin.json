@@ -112,7 +112,8 @@
     "categories": {
       "auth": "Autenticação",
       "validation": "Validação",
-      "download": "Transferência"
+      "download": "Transferência",
+      "admin": "Administração"
     },
     "actions": {
       "login_success": "Login",
@@ -121,7 +122,16 @@
       "password_reset_completed": "Redefinição de senha concluída",
       "validation_status_changed": "Estado alterado",
       "data_preview": "Pré-visualização de dados",
-      "data_export": "Exportação de dados"
+      "data_export": "Exportação de dados",
+      "user_created": "Utilizador criado",
+      "user_updated": "Utilizador atualizado",
+      "user_deleted": "Utilizador eliminado",
+      "user_permissions_changed": "Permissões alteradas",
+      "user_password_reset": "Palavra-passe reposta pelo administrador",
+      "country_created": "País criado",
+      "country_updated": "País atualizado",
+      "country_deleted": "País eliminado",
+      "data_explorer_load": "Carregamento do Data Explorer"
     },
     "columns": {
       "timestamp": "Data/Hora",
@@ -139,6 +149,13 @@
       "to": "Até",
       "apply": "Aplicar",
       "reset": "Repor"
+    },
+    "details": {
+      "targetUser": "utilizador",
+      "role": "perfil",
+      "fields": "campos",
+      "surveys": "inquéritos",
+      "country": "país"
     }
   }
 }

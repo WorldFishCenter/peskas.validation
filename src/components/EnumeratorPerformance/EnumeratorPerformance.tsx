@@ -51,12 +51,12 @@ const EnumeratorPerformance: React.FC = () => {
   // For single-survey users, selectedSurvey may be null on first render — fall back to the only accessible survey.
   const surveyCountry = useMemo(() => {
     const survey = selectedSurvey
-      ? accessibleSurveys.find((s: any) => s.asset_id === selectedSurvey)
+      ? accessibleSurveys.find(s => s.asset_id === selectedSurvey)
       : accessibleSurveys[0];
     return survey?.country_id || '';
   }, [selectedSurvey, accessibleSurveys]);
 
-  const { surveyAlertCodes } = useContextualAlertCodes(rawData as any);
+  const { surveyAlertCodes } = useContextualAlertCodes(rawData);
 
   // Process raw data from the hook (already filtered to selected survey by backend)
   const processedData = useMemo<EnumeratorData[]>(() => {

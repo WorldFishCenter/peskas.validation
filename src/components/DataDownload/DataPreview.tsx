@@ -7,13 +7,13 @@ import {
   ColumnDef
 } from '@tanstack/react-table';
 import { IconDownload, IconAlertCircle, IconBook } from '@tabler/icons-react';
-import { DownloadFilters } from '../../types/download';
+import { DownloadFilters, DataRow } from '../../types/download';
 import { useFetchFieldMetadata } from '../../api/api';
 import FieldInfoIcon from './FieldInfoIcon';
 import FieldMetadataModal from './FieldMetadataModal';
 
 interface DataPreviewProps {
-  data: Record<string, any>[];
+  data: DataRow[];
   totalCount: number;
   appliedFilters: DownloadFilters | null;
   isLoading: boolean;
@@ -62,7 +62,7 @@ const DataPreview: React.FC<DataPreviewProps> = ({
   };
 
   // Generate columns dynamically from data with info icons
-  const columns = useMemo<ColumnDef<Record<string, any>>[]>(() => {
+  const columns = useMemo<ColumnDef<DataRow>[]>(() => {
     if (!data || data.length === 0) return [];
 
     const firstRow = data[0];

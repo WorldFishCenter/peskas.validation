@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Guidance for Claude Code working in this repository. **Version 2.5.0.**
+Guidance for Claude Code working in this repository. **Version 2.6.0.**
 
 <!-- Keep this file under ~200 lines: it loads into every session, and length costs adherence.
      Detail belongs in .claude/rules/ (path-scoped, loads only for matching files), in docs/, or in

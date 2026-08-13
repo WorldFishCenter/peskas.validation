@@ -2,8 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { getApiBaseUrl } from '../utils/apiConfig';
 import { extractErrorMessage } from '../utils/errors';
+import { Survey } from '../types/download';
 
 const API_BASE_URL = getApiBaseUrl();
+
+export type { Survey };
 
 export interface User {
   _id: string;
@@ -16,18 +19,6 @@ export interface User {
     enumerators?: string[];
   };
   created_at?: string;
-}
-
-export interface Survey {
-  _id: string;
-  asset_id: string;
-  name: string;
-  country_id: string;
-  active: boolean;
-  kobo_config?: {
-    api_url: string;
-    token: string;
-  };
 }
 
 export interface CreateUserPayload {
@@ -194,7 +185,7 @@ export interface AuditLog {
   timestamp: string;
   username: string | null;
   user_id: string | null;
-  category: 'auth' | 'validation' | 'download';
+  category: 'auth' | 'validation' | 'download' | 'admin';
   action: string;
   status: 'success' | 'failure';
   details: Record<string, unknown>;

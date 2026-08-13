@@ -7,37 +7,61 @@ import { useSurveyContext } from '../contexts/SurveyContext';
 // Get the appropriate API base URL based on environment
 const API_BASE_URL = getApiBaseUrl();
 
-import { Submission } from '../types/validation';
-import { DownloadFilters, PreviewResponse, FieldMetadata } from '../types/download';
-
-// Extract a user-readable error message from an axios error response.
-// Vercel gateway errors return { error: { code, message } } rather than a string.
-
+import { Submission, SubmissionData, AccessibleSurvey } from '../types/validation';
+import {
+  DownloadFilters,
+  PreviewResponse,
+  FieldMetadata,
+  DataRow,
+  CountryOption,
+  District,
+  Survey
+} from '../types/download';
 
 // Normalize field names for consistent access
-const normalizeSubmissionData = (item: any): any => {
+const normalizeSubmissionData = (item: Record<string, unknown>): Submission => {
   // Create a new object with all keys from the original
-  const normalized = { ...item };
-  
-  
+  const normalized = { ...item } as unknown as Submission & { _submitted_by?: unknown };
+
+
   // Handle common field name transformations
   if (!normalized.submitted_by && normalized._submitted_by) {
-    normalized.submitted_by = normalized._submitted_by;
+    normalized.submitted_by = String(normalized._submitted_by);
   }
-  
+
   // Ensure submitted_by is always a string, even if empty
   normalized.submitted_by = normalized.submitted_by ? String(normalized.submitted_by) : '';
-  
-  
+
+
   return normalized;
+};
+
+/**
+ * Serialize download filters into a query string.
+ *
+ * Empty values are dropped and arrays are joined with commas, which is what the
+ * data-download endpoints expect. Shared by the preview hook and the CSV export so the
+ * two cannot drift apart.
+ */
+const buildDownloadQuery = (filters: DownloadFilters): string => {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return;
+    if (Array.isArray(value)) {
+      if (value.length > 0) params.append(key, value.join(','));
+    } else {
+      params.append(key, String(value));
+    }
+  });
+  return params.toString();
 };
 
 // Hook to fetch submissions
 export const useFetchSubmissions = () => {
   const { selectedSurveyId, setSelectedSurveyId } = useSurveyContext();
   const [data, setData] = useState<Submission[]>([]);
-  const [accessibleSurveys, setAccessibleSurveys] = useState<any[]>([]);
-  const [alertCodes, setAlertCodes] = useState<Record<string, any>>({});
+  const [accessibleSurveys, setAccessibleSurveys] = useState<AccessibleSurvey[]>([]);
+  const [alertCodes, setAlertCodes] = useState<Record<string, Record<string, string>>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,7 +86,7 @@ export const useFetchSubmissions = () => {
 
       const surveyToFetch = forcedSurveyId !== undefined ? forcedSurveyId : selectedSurveyRef.current;
 
-      const params: any = {};
+      const params: Record<string, string> = {};
       if (surveyToFetch) {
         params.survey_id = surveyToFetch;
       }
@@ -103,8 +127,8 @@ export const useFetchSubmissions = () => {
         const surveys = response.data.metadata.accessible_surveys;
         setAccessibleSurveys(surveys);
 
-        const codesMap: Record<string, any> = {};
-        surveys.forEach((survey: any) => {
+        const codesMap: Record<string, Record<string, string>> = {};
+        surveys.forEach((survey: AccessibleSurvey) => {
           if (survey.alert_codes) {
             codesMap[survey.asset_id] = survey.alert_codes;
           }
@@ -119,7 +143,7 @@ export const useFetchSubmissions = () => {
           setSelectedSurveyId(surveys[0].asset_id);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (controller.signal.aborted) return;
       setError(extractErrorMessage(err, 'Failed to load submissions'));
       setData([]);
@@ -150,8 +174,8 @@ export const useFetchSubmissions = () => {
 // Hook to fetch enumerator statistics from the new MongoDB collection
 export const useFetchEnumeratorStats = () => {
   const { selectedSurveyId, setSelectedSurveyId } = useSurveyContext();
-  const [data, setData] = useState<any[]>([]);
-  const [accessibleSurveys, setAccessibleSurveys] = useState<any[]>([]);
+  const [data, setData] = useState<SubmissionData[]>([]);
+  const [accessibleSurveys, setAccessibleSurveys] = useState<AccessibleSurvey[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -171,7 +195,7 @@ export const useFetchEnumeratorStats = () => {
 
       const surveyToFetch = forcedSurveyId !== undefined ? forcedSurveyId : selectedSurveyRef.current;
 
-      const params: any = {};
+      const params: Record<string, string> = {};
       if (surveyToFetch) {
         params.survey_id = surveyToFetch;
       }
@@ -211,7 +235,7 @@ export const useFetchEnumeratorStats = () => {
           setSelectedSurveyId(surveys[0].asset_id);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (controller.signal.aborted) return;
       setError(extractErrorMessage(err, 'Failed to load enumerator statistics'));
       setData([]);
@@ -238,48 +262,6 @@ export const useFetchEnumeratorStats = () => {
   };
 };
 
-// Hook to fetch survey-specific alert codes
-export const useFetchAlertCodes = (assetId: string | null) => {
-  const [alertCodes, setAlertCodes] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!assetId) return;
-
-    const fetchAlertCodes = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await axios.get(`${API_BASE_URL}/surveys/${assetId}/alert-codes`);
-        setAlertCodes(response.data.alert_codes);
-      } catch (err) {
-        console.error('Error fetching alert codes:', err);
-        setError('Failed to fetch alert codes');
-        // Set default alert codes on error
-        setAlertCodes({
-          "1": "A catch was reported, but no taxon was specified",
-          "2": "A taxon was specified, but no information was provided",
-          "3": "Length is smaller than minimum length threshold",
-          "4": "Length exceeds maximum length threshold",
-          "5": "Bucket weight exceeds maximum (50kg)",
-          "6": "Number of buckets exceeds maximum (300)",
-          "7": "Number of individuals exceeds maximum (100)",
-          "8": "Price per kg exceeds threshold",
-          "9": "Catch per unit effort exceeds maximum",
-          "10": "Revenue per unit effort exceeds threshold"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAlertCodes();
-  }, [assetId]);
-
-  return { alertCodes, isLoading, error };
-};
-
 // ========================================
 // DATA DOWNLOAD HOOKS
 // ========================================
@@ -291,7 +273,7 @@ export const useFetchAlertCodes = (assetId: string | null) => {
  * to preview before downloading the full dataset.
  */
 export const useFetchDownloadPreview = () => {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<DataRow[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [appliedFilters, setAppliedFilters] = useState<DownloadFilters | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -302,29 +284,14 @@ export const useFetchDownloadPreview = () => {
     setError(null);
 
     try {
-      // Build query string
-      const params = new URLSearchParams();
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          if (Array.isArray(value)) {
-            // Only append if array has items
-            if (value.length > 0) {
-              params.append(key, value.join(','));
-            }
-          } else {
-            params.append(key, String(value));
-          }
-        }
-      });
-
       const response = await axios.get<PreviewResponse>(
-        `${API_BASE_URL}/data-download/preview?${params.toString()}`
+        `${API_BASE_URL}/data-download/preview?${buildDownloadQuery(filters)}`
       );
 
       setData(response.data.data);
       setTotalCount(response.data.total_count);
       setAppliedFilters(response.data.filters_applied);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching preview:', err);
       setError(extractErrorMessage(err, 'Failed to fetch preview'));
       setData([]);
@@ -348,23 +315,8 @@ export const useFetchDownloadPreview = () => {
  */
 export const downloadCSV = async (filters: DownloadFilters): Promise<boolean> => {
   try {
-    // Build query string
-    const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        if (Array.isArray(value)) {
-          // Only append if array has items
-          if (value.length > 0) {
-            params.append(key, value.join(','));
-          }
-        } else {
-          params.append(key, String(value));
-        }
-      }
-    });
-
     const response = await axios.get(
-      `${API_BASE_URL}/data-download/export?${params.toString()}`,
+      `${API_BASE_URL}/data-download/export?${buildDownloadQuery(filters)}`,
       {
         responseType: 'blob' // Important for file download
       }
@@ -409,15 +361,13 @@ export const downloadCSV = async (filters: DownloadFilters): Promise<boolean> =>
  */
 export const useFetchDownloadMetadata = (countryId?: string, surveyId?: string) => {
   const [metadata, setMetadata] = useState<{
-    countries: any[];
-    districts: any[];
-    surveys: any[];
-    userContext: any;
+    countries: CountryOption[];
+    districts: District[];
+    surveys: Survey[];
   }>({
     countries: [],
     districts: [],
-    surveys: [],
-    userContext: null
+    surveys: []
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -438,10 +388,9 @@ export const useFetchDownloadMetadata = (countryId?: string, surveyId?: string) 
       setMetadata({
         countries: response.data.countries || [],
         districts: response.data.districts || [],
-        surveys: response.data.surveys || [],
-        userContext: response.data.user_context || null
+        surveys: response.data.surveys || []
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching download metadata:', err);
       setError(extractErrorMessage(err, 'Failed to load filter metadata'));
     } finally {
@@ -518,7 +467,7 @@ export const useFetchFieldMetadata = (scope?: string) => {
         console.warn('Failed to cache metadata:', err);
         // Continue even if caching fails
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching field metadata:', err);
       setError(extractErrorMessage(err, 'Failed to load field descriptions'));
       setMetadata(null);
@@ -529,96 +478,3 @@ export const useFetchFieldMetadata = (scope?: string) => {
 
   return { metadata, isLoading, error, fetchMetadata };
 };
-
-/**
- * Fetch countries for data download filters
- * @deprecated Use useFetchDownloadMetadata instead for better performance
- */
-export const useFetchCountries = () => {
-  const [countries, setCountries] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchCountries = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await axios.get(`${API_BASE_URL}/countries`);
-      setCountries(response.data?.countries || []);
-    } catch (err: any) {
-      console.error('Error fetching countries:', err);
-      setError(extractErrorMessage(err, 'Failed to load countries'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchCountries();
-  }, [fetchCountries]);
-
-  return { countries, isLoading, error, refetch: fetchCountries };
-};
-
-/**
- * Fetch districts (GAUL codes) for data download filters
- * @deprecated Use useFetchDownloadMetadata instead for better performance
- */
-export const useFetchDistricts = () => {
-  const [districts, setDistricts] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchDistricts = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await axios.get(`${API_BASE_URL}/districts`);
-      setDistricts(response.data?.data || []);
-    } catch (err: any) {
-      console.error('Error fetching districts:', err);
-      setError(extractErrorMessage(err, 'Failed to load districts'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchDistricts();
-  }, [fetchDistricts]);
-
-  return { districts, isLoading, error, refetch: fetchDistricts };
-};
-
-/**
- * Fetch surveys for data download filters
- * @deprecated Use useFetchDownloadMetadata instead for better performance
- */
-export const useFetchSurveys = () => {
-  const [surveys, setSurveys] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchSurveys = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await axios.get(`${API_BASE_URL}/surveys`);
-      setSurveys(response.data?.surveys || []);
-    } catch (err: any) {
-      console.error('Error fetching surveys:', err);
-      setError(extractErrorMessage(err, 'Failed to load surveys'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSurveys();
-  }, [fetchSurveys]);
-
-  return { surveys, isLoading, error, refetch: fetchSurveys };
-}; 

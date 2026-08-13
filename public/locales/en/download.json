@@ -89,8 +89,5 @@
     "invalidDateRange": "Invalid date range. 'Date From' must be before 'Date To'.",
     "noCountrySelected": "Please select a country.",
     "previewFailed": "Failed to load preview. Please check your filters and try again."
-  },
-  "common": {
-    "learnMore": "Learn more"
   }
 }

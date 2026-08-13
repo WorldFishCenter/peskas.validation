@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { login as apiLogin } from '../../api/auth';
 
-interface User {
+export interface AuthUser {
   username: string;
   role: 'admin' | 'user';
   name?: string;
@@ -12,7 +12,7 @@ interface User {
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: User | null;
+  user: AuthUser | null;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   loading: boolean;
@@ -31,7 +31,7 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { i18n } = useTranslation();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -68,7 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('authToken', result.token);
 
         // Store user data
-        const userData: User = {
+        const userData: AuthUser = {
           username: result.user.username,
           role: result.user.role as 'admin' | 'user',
           name: result.user.name,

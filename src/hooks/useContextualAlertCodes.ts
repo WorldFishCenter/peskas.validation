@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { getApiBaseUrl } from '../utils/apiConfig';
-import { Submission } from '../types/validation';
+import { SurveyScopedRow } from '../types/validation';
 
 const API_BASE_URL = getApiBaseUrl();
 
@@ -22,8 +22,11 @@ interface AlertCodesResult {
  * Returns only surveys present in the current data with their full alert code definitions
  *
  * This allows users to select which survey's alert codes they want to view
+ *
+ * Takes only the survey-identifying fields, so both submission rows and enumerator-stats
+ * rows can be passed without a cast.
  */
-export const useContextualAlertCodes = (submissions: Submission[]): AlertCodesResult => {
+export const useContextualAlertCodes = (submissions: SurveyScopedRow[]): AlertCodesResult => {
   const [surveyAlertCodes, setSurveyAlertCodes] = useState<Record<string, Record<string, string>>>({});
   const [isLoading, setIsLoading] = useState(false);
 

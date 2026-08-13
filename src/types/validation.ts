@@ -15,6 +15,40 @@ export interface Submission {
   survey_country?: string;
 }
 
+/**
+ * A row from `/enumerators-stats`. Written by the external R pipeline, then decorated
+ * server-side with the owning survey's `asset_id` / name / country.
+ */
+export interface SubmissionData {
+  submission_id: string;
+  submitted_by: string;
+  submission_date: string;
+  /**
+   * Optional: the pipeline only writes this field on rows that actually carry an alert
+   * (verified against production — 12,797 of 52,102 rows in the largest collection).
+   * "NA" also occurs and means no alert.
+   */
+  alert_flag?: string | null;
+  asset_id?: string;
+  survey_name?: string;
+  survey_country?: string;
+}
+
+/**
+ * A survey the signed-in user may read, as returned in `metadata.accessible_surveys`
+ * by the submissions and enumerator-stats endpoints.
+ */
+export interface AccessibleSurvey {
+  asset_id: string;
+  name: string;
+  country_id: string;
+  /** Alert code → description. Only the submissions endpoint sends these. */
+  alert_codes?: Record<string, string>;
+}
+
+/** The subset of a submission that identifies which survey it came from. */
+export type SurveyScopedRow = Pick<Submission, 'asset_id' | 'survey_name' | 'survey_country'>;
+
 export type ValidationStatus =
   | 'validation_status_approved'
   | 'validation_status_not_approved'

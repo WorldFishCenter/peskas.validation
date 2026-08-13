@@ -7,6 +7,7 @@ import {
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { EnumeratorData } from '../types';
+import { qualityScore } from '../utils/dataUtils';
 
 interface SummaryCardsProps {
   totalSubmissions: number;
@@ -31,7 +32,7 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
   };
 
   const errorRateColor = getErrorRateColor(avgErrorRate);
-  const bestEnumeratorErrorRate = bestEnumerator.filteredErrorRate ?? bestEnumerator.errorRate;
+  const bestEnumeratorQuality = qualityScore(bestEnumerator);
 
   return (
     <div className="row row-deck row-cards mb-4">
@@ -99,7 +100,7 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({
               {bestEnumerator.name}
             </div>
             <div className="text-muted small">
-              {(100 - bestEnumeratorErrorRate).toFixed(0)}% {t('quality.qualityScore', { ns: 'common' })}
+              {bestEnumeratorQuality.toFixed(0)}% {t('quality.qualityScore', { ns: 'common' })}
             </div>
           </div>
         </div>

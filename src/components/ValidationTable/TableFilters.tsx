@@ -1,6 +1,6 @@
 import { Table } from '@tanstack/react-table';
 import { IconSearch, IconInfoCircle } from '@tabler/icons-react';
-import { VALIDATION_STATUS_OPTIONS } from '../../types/validation';
+import { VALIDATION_STATUS_OPTIONS, AccessibleSurvey } from '../../types/validation';
 import { useTranslation } from 'react-i18next';
 
 interface TableFiltersProps<T> {
@@ -14,7 +14,7 @@ interface TableFiltersProps<T> {
   setToDate: (date: string) => void;
   minDate: string;
   maxDate: string;
-  accessibleSurveys: any[];
+  accessibleSurveys: AccessibleSurvey[];
   selectedSurvey: string | null;
   onSurveyChange: (assetId: string | null) => void;
   onShowAlertGuide?: () => void;

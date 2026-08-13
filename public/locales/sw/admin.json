@@ -112,7 +112,8 @@
     "categories": {
       "auth": "Uthibitisho",
       "validation": "Uthibitishaji",
-      "download": "Upakuaji"
+      "download": "Upakuaji",
+      "admin": "Utawala"
     },
     "actions": {
       "login_success": "Kuingia",
@@ -121,7 +122,16 @@
       "password_reset_completed": "Kuweka upya nenosiri kumekamilika",
       "validation_status_changed": "Hali imebadilishwa",
       "data_preview": "Hakiki ya data",
-      "data_export": "Usafirishaji wa data"
+      "data_export": "Usafirishaji wa data",
+      "user_created": "Mtumiaji ameundwa",
+      "user_updated": "Mtumiaji amesasishwa",
+      "user_deleted": "Mtumiaji amefutwa",
+      "user_permissions_changed": "Ruhusa zimebadilishwa",
+      "user_password_reset": "Nenosiri limewekwa upya na msimamizi",
+      "country_created": "Nchi imeundwa",
+      "country_updated": "Nchi imesasishwa",
+      "country_deleted": "Nchi imefutwa",
+      "data_explorer_load": "Upakiaji wa Data Explorer"
     },
     "columns": {
       "timestamp": "Muda",
@@ -139,6 +149,13 @@
       "to": "Hadi",
       "apply": "Tumia",
       "reset": "Weka upya"
+    },
+    "details": {
+      "targetUser": "mtumiaji",
+      "role": "jukumu",
+      "fields": "sehemu",
+      "surveys": "tafiti",
+      "country": "nchi"
     }
   }
 }
