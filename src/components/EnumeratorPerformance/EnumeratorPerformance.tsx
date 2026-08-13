@@ -5,6 +5,7 @@ import { ChartTabType, DetailTabType, EnumeratorData } from './types';
 import { processEnumeratorData, findBestEnumerator } from './utils/dataUtils';
 import { refreshEnumeratorStats } from './utils/apiUtils';
 import { useContextualAlertCodes } from '../../hooks/useContextualAlertCodes';
+import { useAuth } from '../Auth/AuthContext';
 
 // Components
 import PageHeader from './components/PageHeader';
@@ -27,9 +28,11 @@ declare module 'highcharts' {
 const EnumeratorPerformance: React.FC = () => {
   const { t } = useTranslation('enumerators');
   const { data: rawData = [], accessibleSurveys, selectedSurvey, setSelectedSurvey, isLoading, error, refetch } = useFetchEnumeratorStats();
+  const { user } = useAuth();
+  // Admin status comes from the authenticated session, the same source Navbar gates on — not
+  // from the presence of a locally-stored token.
+  const isAdmin = user?.role === 'admin';
   const [selectedEnumerator, setSelectedEnumerator] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [adminToken, setAdminToken] = useState<string>('');
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [refreshMessage, setRefreshMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ChartTabType>('volume');
@@ -140,38 +143,16 @@ const EnumeratorPerformance: React.FC = () => {
   }, [enumerators, fromDate, toDate]);
 
   // Check for admin token
-  useEffect(() => {
-    const storedToken = localStorage.getItem('admin_token');
-    if (storedToken) {
-      setAdminToken(storedToken);
-      setIsAdmin(true);
-    }
-  }, []);
-
   // Handle admin refresh
   const handleAdminRefresh = async () => {
-    if (!adminToken) {
-      const token = prompt(t('adminTokenPrompt'));
-      if (!token) return;
-      setAdminToken(token);
-      localStorage.setItem('admin_token', token);
-      setIsAdmin(true);
-    }
-
     setIsRefreshing(true);
     setRefreshMessage(null);
 
     try {
-      const result = await refreshEnumeratorStats(adminToken);
+      const result = await refreshEnumeratorStats();
+      setRefreshMessage(result.success ? result.message : `Error: ${result.message}`);
       if (result.success) {
-        setRefreshMessage(result.message);
         await refetch();
-      } else {
-        setRefreshMessage(`Error: ${result.message}`);
-        if (result.message.includes('Unauthorized')) {
-          setIsAdmin(false);
-          localStorage.removeItem('admin_token');
-        }
       }
     } catch (error) {
       setRefreshMessage(t('refreshError'));

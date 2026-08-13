@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import { User } from '../../api/admin';
 import { getApiBaseUrl } from '../../utils/apiConfig';
+import axios from '../../utils/axiosConfig';
+import { extractErrorMessage, errorStatus } from '../../utils/errors';
 
 interface ResetPasswordModalProps {
   user: User;
@@ -35,38 +37,14 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ user, onClose, 
     setIsSubmitting(true);
 
     try {
-      // Get JWT token from localStorage
-      const token = localStorage.getItem('authToken');
+      // Goes through the shared axios instance so the Authorization header and the 401
+      // session-expiry handling come from the interceptor rather than being re-implemented.
+      const response = await axios.patch(
+        `${getApiBaseUrl()}/users/${user._id}/reset-password`,
+        { newPassword }
+      );
 
-      if (!token) {
-        setError(t('messages.tokenNotFound'));
-        setIsSubmitting(false);
-        return;
-      }
-
-      const API_BASE_URL = getApiBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/users/${user._id}/reset-password`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ newPassword }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: t('form.resetPasswordFailed') }));
-        if (response.status === 401) {
-          setError(t('form.authFailed'));
-        } else if (response.status === 403) {
-          setError(t('form.permissionDenied'));
-        } else {
-          setError(errorData.message || errorData.error || t('form.resetPasswordFailed'));
-        }
-        return;
-      }
-
-      const result = await response.json();
+      const result = response.data;
 
       if (result.success) {
         alert(`${t('form.passwordResetSuccess')}${user.username}`);
@@ -77,7 +55,14 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ user, onClose, 
       }
     } catch (err) {
       console.error('Reset password error:', err);
-      setError(t('form.unexpectedError'));
+      const status = errorStatus(err);
+      if (status === 401) {
+        setError(t('form.authFailed'));
+      } else if (status === 403) {
+        setError(t('form.permissionDenied'));
+      } else {
+        setError(extractErrorMessage(err, t('form.resetPasswordFailed')));
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -38,6 +38,10 @@ export const useContextualAlertCodes = (submissions: Submission[]): AlertCodesRe
     return Array.from(assetIds);
   }, [submissions]);
 
+  // Stable identity for the *set* of surveys: the array is rebuilt every render, so depending
+  // on it directly would refetch continuously.
+  const assetIdsKey = uniqueAssetIds.join(',');
+
   // Fetch alert codes for all unique surveys in the data
   useEffect(() => {
     if (uniqueAssetIds.length === 0) {
@@ -82,7 +86,8 @@ export const useContextualAlertCodes = (submissions: Submission[]): AlertCodesRe
     };
 
     fetchAlertCodes();
-  }, [uniqueAssetIds.join(',')]); // Only refetch when the set of surveys changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on assetIdsKey by design
+  }, [assetIdsKey]); // Only refetch when the set of surveys changes
 
   // Group alert codes by survey (only include surveys present in current data)
   const groupedAlertCodes = useMemo(() => {

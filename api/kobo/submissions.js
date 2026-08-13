@@ -9,6 +9,7 @@
 const { withMiddleware, authenticateUser } = require('../../lib/middleware');
 const { getDb } = require('../../lib/db');
 const { getSurveyFlagsCollection } = require('../../lib/helpers');
+const { getAccessibleSurveys } = require('../../lib/filter-permissions');
 const { sendSuccess, sendServerError, sendMethodNotAllowed, setCorsHeaders } = require('../../lib/response');
 
 async function handler(req, res) {
@@ -30,18 +31,7 @@ async function handler(req, res) {
 
     const user = req.user;
 
-    // Determine which surveys the user has access to
-    let accessibleSurveys;
-
-    if (user.role === 'admin' && (!user.permissions?.surveys || user.permissions.surveys.length === 0)) {
-      accessibleSurveys = await database.collection('surveys')
-        .find({ active: true })
-        .toArray();
-    } else {
-      accessibleSurveys = await database.collection('surveys')
-        .find({ asset_id: { $in: user.permissions?.surveys || [] }, active: true })
-        .toArray();
-    }
+    let accessibleSurveys = await getAccessibleSurveys(user);
 
     if (accessibleSurveys.length === 0) {
       return sendSuccess(res, {

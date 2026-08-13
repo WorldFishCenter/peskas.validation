@@ -14,9 +14,10 @@ name: Sync Airtable to MongoDB
 # - Platform-agnostic (works with any hosting provider)
 #
 # Dependency Order:
-# 1. Districts (GAUL codes) - No dependencies
-# 2. Surveys (forms) - No dependencies
-# 3. Users - Depends on districts + surveys for permissions
+# 1. Countries - No dependencies
+# 2. Districts (GAUL codes) - No dependencies
+# 3. Surveys (forms) - No dependencies
+# 4. Users - Depends on districts + surveys for permissions
 #
 # =============================================================================
 
@@ -35,6 +36,7 @@ on:
         default: 'all'
         options:
           - all
+          - countries
           - districts
           - surveys
           - users
@@ -47,7 +49,7 @@ concurrency:
 jobs:
   # ===========================================================================
   # Job: Sync All Entities from Airtable
-  # SLACK_WEBHOOK_URL===========================================================================
+  # ===========================================================================
   sync:
     name: Sync from Airtable
     runs-on: ubuntu-latest
@@ -126,7 +128,45 @@ jobs:
           echo "📊 Using database: $MONGODB_VALIDATION_DB"
 
       # -----------------------------------------------------------------------
-      # Step 5: Sync Districts (GAUL Codes)
+      # Step 5: Sync Countries
+      # -----------------------------------------------------------------------
+      # Runs first: `countries` is what gates a country appearing in the portal at all. It was
+      # previously missing from this workflow, so the collection stayed frozen while surveys,
+      # districts and users all tracked Airtable — which is why a newly added country never
+      # showed up.
+      - name: Sync Countries
+        if: inputs.sync_type == 'all' || inputs.sync_type == 'countries' || inputs.sync_type == ''
+        id: sync_countries
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 30
+          retry_on: error
+          warning_on_retry: true
+          command: |
+            echo "🌍 Starting countries sync..."
+            echo "⏰ Started at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+            echo ""
+
+            node scripts/sync_countries_from_airtable.cjs
+
+            SYNC_EXIT_CODE=$?
+            echo ""
+            echo "⏰ Completed at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+
+            if [ $SYNC_EXIT_CODE -eq 0 ]; then
+              echo "✅ Countries sync completed successfully"
+            else
+              echo "❌ Countries sync failed with exit code: $SYNC_EXIT_CODE"
+              exit $SYNC_EXIT_CODE
+            fi
+          on_retry_command: |
+            echo "⚠️  Retry attempt for countries sync..."
+            echo "⏳ Waiting 30 seconds before retry..."
+
+      # -----------------------------------------------------------------------
+      # Step 6: Sync Districts (GAUL Codes)
       # -----------------------------------------------------------------------
       - name: Sync Districts
         if: inputs.sync_type == 'all' || inputs.sync_type == 'districts' || inputs.sync_type == ''
@@ -160,7 +200,7 @@ jobs:
             echo "⏳ Waiting 30 seconds before retry..."
 
       # -----------------------------------------------------------------------
-      # Step 6: Sync Surveys (Forms)
+      # Step 7: Sync Surveys (Forms)
       # -----------------------------------------------------------------------
       - name: Sync Surveys
         if: inputs.sync_type == 'all' || inputs.sync_type == 'surveys' || inputs.sync_type == ''
@@ -194,7 +234,7 @@ jobs:
             echo "⏳ Waiting 30 seconds before retry..."
 
       # -----------------------------------------------------------------------
-      # Step 7: Sync Users (depends on districts + surveys)
+      # Step 8: Sync Users (depends on districts + surveys)
       # -----------------------------------------------------------------------
       - name: Sync Users
         if: inputs.sync_type == 'all' || inputs.sync_type == 'users' || inputs.sync_type == ''
@@ -228,7 +268,7 @@ jobs:
             echo "⏳ Waiting 30 seconds before retry..."
 
       # -----------------------------------------------------------------------
-      # Step 8: Generate Sync Summary
+      # Step 9: Generate Sync Summary
       # -----------------------------------------------------------------------
       - name: Generate sync summary
         if: success()
@@ -241,6 +281,7 @@ jobs:
           echo "🔄 Sync Type: ${{ inputs.sync_type || 'all (scheduled)' }}"
           echo "🏃 Triggered by: ${{ github.event_name }}"
           echo ""
+          echo "✅ Countries: Synced"
           echo "✅ Districts: Synced"
           echo "✅ Surveys: Synced"
           echo "✅ Users: Synced"
@@ -248,7 +289,7 @@ jobs:
           echo "════════════════════════════════════════════════════════════════════"
 
       # -----------------------------------------------------------------------
-      # Step 9: Store Logs as Artifacts (for debugging)
+      # Step 10: Store Logs as Artifacts (for debugging)
       # -----------------------------------------------------------------------
       - name: Upload sync logs
         if: always()  # Run even if previous steps failed

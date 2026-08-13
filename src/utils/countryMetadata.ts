@@ -8,31 +8,33 @@ export interface CountryMetadata {
   currencySymbol: string;
 }
 
-// Country metadata mapping
+// Country metadata mapping, keyed by the lowercase country slug used across the
+// platform (`countries.code`, `districts.country_id`). `surveys.country_id` is the
+// Airtable display name ("Zanzibar"), which normalizes onto these keys.
 export const COUNTRY_METADATA: Record<string, CountryMetadata> = {
-  'tz': {
-    code: 'tz',
-    name: 'Tanzania',
+  'zanzibar': {
+    code: 'zanzibar',
+    name: 'Zanzibar',
     flag: '🇹🇿',
     currency: 'TZS',
     currencySymbol: 'TSh',
   },
-  'zm': {
-    code: 'zm',
-    name: 'Zambia',
-    flag: '🇿🇲',
-    currency: 'ZMW',
-    currencySymbol: 'ZK',
+  'mozambique': {
+    code: 'mozambique',
+    name: 'Mozambique',
+    flag: '🇲🇿',
+    currency: 'MZN',
+    currencySymbol: 'MT',
   },
-  'mw': {
-    code: 'mw',
-    name: 'Malawi',
-    flag: '🇲🇼',
-    currency: 'MWK',
-    currencySymbol: 'MK',
+  'timor': {
+    code: 'timor',
+    name: 'Timor-Leste',
+    flag: '🇹🇱',
+    currency: 'USD',
+    currencySymbol: '$',
   },
-  'ke': {
-    code: 'ke',
+  'kenya': {
+    code: 'kenya',
     name: 'Kenya',
     flag: '🇰🇪',
     currency: 'KES',
@@ -41,11 +43,42 @@ export const COUNTRY_METADATA: Record<string, CountryMetadata> = {
 };
 
 /**
+ * Alternative Airtable spellings → canonical COUNTRY_METADATA key.
+ *
+ * Mirrors `lib/country-codes.js`, which the browser bundle cannot import. Keep the two in sync.
+ *
+ * This exists because the identifier is free text in Airtable and has already been renamed
+ * once: Airtable now says "Timor-Leste" where `surveys.country_id` still says "Timor". Without
+ * the alias, the next survey sync would leave Timor with no flag and its name rendered as the
+ * uppercased slug "TIMOR-LESTE".
+ */
+const COUNTRY_ALIASES: Record<string, string> = {
+  'timor-leste': 'timor',
+  'timor leste': 'timor',
+  'timorleste': 'timor',
+  'east timor': 'timor',
+  'tls': 'timor',
+};
+
+/**
+ * Normalize a country identifier onto a COUNTRY_METADATA key.
+ * `surveys.country_id` comes from Airtable verbatim, so it may be a capitalized
+ * display name or a single-element array.
+ */
+const normalizeCountryCode = (countryCode: string | string[] | undefined): string => {
+  const raw = Array.isArray(countryCode) ? countryCode[0] : countryCode;
+  if (typeof raw !== 'string') return '';
+  const key = raw.trim().toLowerCase();
+  return COUNTRY_ALIASES[key] || key;
+};
+
+/**
  * Get country metadata by country code
  */
 export const getCountryMetadata = (countryCode: string | undefined): CountryMetadata | null => {
-  if (!countryCode) return null;
-  return COUNTRY_METADATA[countryCode.toLowerCase()] || null;
+  const key = normalizeCountryCode(countryCode);
+  if (!key) return null;
+  return COUNTRY_METADATA[key] || null;
 };
 
 /**
@@ -61,7 +94,7 @@ export const getCountryFlag = (countryCode: string | undefined): string => {
  */
 export const getCountryName = (countryCode: string | undefined): string => {
   const metadata = getCountryMetadata(countryCode);
-  return metadata?.name || countryCode?.toUpperCase() || '';
+  return metadata?.name || normalizeCountryCode(countryCode).toUpperCase();
 };
 
 /**

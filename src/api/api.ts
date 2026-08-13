@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { getApiBaseUrl } from '../utils/apiConfig';
+import { extractErrorMessage } from '../utils/errors';
 import { useSurveyContext } from '../contexts/SurveyContext';
 
 // Get the appropriate API base URL based on environment
@@ -11,10 +12,7 @@ import { DownloadFilters, PreviewResponse, FieldMetadata } from '../types/downlo
 
 // Extract a user-readable error message from an axios error response.
 // Vercel gateway errors return { error: { code, message } } rather than a string.
-const extractErrorMessage = (err: any, fallback: string): string => {
-  const raw = err.response?.data?.error;
-  return typeof raw === 'string' ? raw : raw?.message || fallback;
-};
+
 
 // Normalize field names for consistent access
 const normalizeSubmissionData = (item: any): any => {
@@ -130,7 +128,6 @@ export const useFetchSubmissions = () => {
       if (!controller.signal.aborted) setIsLoading(false);
     }
   // setSelectedSurveyId from useState is always stable — no other deps needed.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setSelectedSurveyId]);
 
   useEffect(() => {
@@ -148,46 +145,6 @@ export const useFetchSubmissions = () => {
     error,
     refetch: fetchData
   };
-};
-
-// PERFORMANCE OPTIMIZATION: Enhanced hook with optimistic updates support
-export const useUpdateValidationStatus = () => {
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [updateMessage, setUpdateMessage] = useState<string | null>(null);
-
-  const updateStatus = async (
-    submissionId: string,
-    status: string,
-    assetId?: string,
-    onOptimisticUpdate?: (updatedSubmission: any) => void
-  ) => {
-    try {
-      setIsUpdating(true);
-      setUpdateMessage(null);
-
-      const response = await axios.patch(`${API_BASE_URL}/submissions/${submissionId}/validation_status`, {
-        validation_status: status,
-        asset_id: assetId
-      });
-
-      setUpdateMessage(response.data.message || `Validation status correctly updated for submission ${submissionId}`);
-
-      // PERFORMANCE FIX: If backend returns updated document, trigger optimistic update
-      if (response.data.data && onOptimisticUpdate) {
-        onOptimisticUpdate(response.data.data);
-      }
-
-      return { success: true, data: response.data.data };
-    } catch (err) {
-      console.error('Error updating validation status:', err);
-      setUpdateMessage('Error updating validation status. Please try again.');
-      return { success: false, data: null };
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  return { updateStatus, isUpdating, updateMessage };
 };
 
 // Hook to fetch enumerator statistics from the new MongoDB collection
@@ -262,7 +219,7 @@ export const useFetchEnumeratorStats = () => {
     } finally {
       if (!controller.signal.aborted) setIsLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // setSelectedSurveyId from useState is always stable — no other deps needed.
   }, [setSelectedSurveyId]);
 
   useEffect(() => {
@@ -279,31 +236,6 @@ export const useFetchEnumeratorStats = () => {
     error,
     refetch: fetchData
   };
-};
-
-// Function to trigger a manual refresh of enumerator stats (admin only)
-export const refreshEnumeratorStats = async (adminToken: string) => {
-  try {
-    const response = await axios.post(
-      `${API_BASE_URL}/admin/refresh-enumerator-stats`,
-      {},
-      {
-        headers: {
-          'Admin-Token': adminToken
-        }
-      }
-    );
-    return {
-      success: true,
-      message: response.data.message
-    };
-  } catch (error) {
-    console.error('Error refreshing enumerator stats:', error);
-    return {
-      success: false,
-      message: (error as any).response?.data?.error || 'Failed to refresh enumerator statistics'
-    };
-  }
 };
 
 // Hook to fetch survey-specific alert codes

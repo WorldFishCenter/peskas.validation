@@ -8,7 +8,8 @@
 const bcrypt = require('bcryptjs');
 const { withMiddleware, authenticateUser, requireAdmin } = require('../../../lib/middleware');
 const { getDb } = require('../../../lib/db');
-const { validateObjectId } = require('../../../lib/helpers');
+const { logAuditEvent } = require('../../../lib/audit-logger');
+const { validateObjectId, validatePassword } = require('../../../lib/helpers');
 const { sendNotFound, sendBadRequest, sendServerError, setCorsHeaders } = require('../../../lib/response');
 
 async function handler(req, res) {
@@ -105,10 +106,16 @@ async function handlePatch(req, res, id) {
     const unsetDoc = {};
 
     if (name !== undefined) {
+      if (typeof name !== 'string') {
+        return sendBadRequest(res, 'Name must be a string');
+      }
       updateDoc.name = name.trim();
     }
 
     if (country !== undefined) {
+      if (!Array.isArray(country)) {
+        return sendBadRequest(res, 'Country must be an array of country codes');
+      }
       updateDoc.country = country;
     }
 
@@ -121,31 +128,23 @@ async function handlePatch(req, res, id) {
       updateDoc.role = role;
     }
 
-    // Handle country field based on role
-    if (country !== undefined) {
-      if (newRole === 'viewer') {
-        if (country.length < 2) {
-          return sendBadRequest(res, 'Country code required for viewer role');
-        }
-        updateDoc.country = country.trim().toLowerCase();
-      } else if (newRole === 'admin') {
-        // Admins should not have country field - remove it
-        unsetDoc.country = '';
-      }
-    } else if (role === 'admin' && existingUser.country) {
-      // If changing to admin role and user has country, remove it
+    // Handle country field based on role. Only 'admin' and 'user' are valid roles (validated
+    // above), so the former 'viewer' branches here were unreachable — and one of them called
+    // .trim() on `country`, which is an array everywhere else in the codebase.
+    if (newRole === 'admin') {
+      // Admins are not scoped to a country.
       unsetDoc.country = '';
-    } else if (role === 'viewer' && !existingUser.country && !country) {
-      return sendBadRequest(res, 'Country code required when changing to viewer role');
+      delete updateDoc.country;
     }
 
     if (active !== undefined) {
       updateDoc.active = Boolean(active);
     }
 
-    if (password) {
-      if (password.length < 8) {
-        return sendBadRequest(res, 'Password must be at least 8 characters');
+    if (password !== undefined) {
+      const passwordError = validatePassword(password);
+      if (passwordError) {
+        return sendBadRequest(res, passwordError);
       }
       updateDoc.password_hash = await bcrypt.hash(password, 10);
     }
@@ -165,11 +164,28 @@ async function handlePatch(req, res, id) {
       { returnDocument: 'after', projection: { password_hash: 0 } }
     );
 
-    const updatedUser = result.value || result;
-
-    if (!updatedUser) {
+    // findOneAndUpdate returns the document itself, not a { value } wrapper.
+    if (!result) {
       return sendNotFound(res, 'User not found');
     }
+
+    const updatedUser = result;
+
+    await logAuditEvent(database, {
+      username: req.user.username,
+      user_id: req.user.id,
+      category: 'admin',
+      action: 'user_updated',
+      status: 'success',
+      details: {
+        target_user_id: updatedUser._id.toString(),
+        target_username: updatedUser.username,
+        // Field names only — never the new password, and no need for the values.
+        fields: Object.keys(updateDoc).filter(k => k !== 'updated_at' && k !== 'updated_by')
+          .map(k => (k === 'password_hash' ? 'password' : k))
+      },
+      req
+    });
 
     return res.json({
       success: true,
@@ -219,11 +235,24 @@ async function handleDelete(req, res, id) {
       return sendBadRequest(res, 'Cannot delete your own account');
     }
 
+    // Read first so the audit record can name who was deleted, not just an id.
+    const target = await database.collection('users').findOne({ _id: userId }, { projection: { username: 1, role: 1 } });
+
     const result = await database.collection('users').deleteOne({ _id: userId });
 
     if (result.deletedCount === 0) {
       return sendNotFound(res, 'User not found');
     }
+
+    await logAuditEvent(database, {
+      username: req.user.username,
+      user_id: req.user.id,
+      category: 'admin',
+      action: 'user_deleted',
+      status: 'success',
+      details: { target_user_id: id, target_username: target?.username || null, role: target?.role || null },
+      req
+    });
 
     return res.json({
       success: true,

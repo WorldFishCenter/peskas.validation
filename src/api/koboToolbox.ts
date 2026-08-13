@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getApiBaseUrl } from '../utils/apiConfig';
+import { extractErrorMessage } from '../utils/errors';
 
 // Get the appropriate API base URL based on environment
 const API_BASE_URL = getApiBaseUrl();
@@ -62,10 +63,19 @@ export const generateEditUrl = async (submissionId: string, assetId?: string): P
 };
 
 /**
- * Update the validation status for a submission
+ * Update the validation status for a submission, in both KoboToolbox and MongoDB.
  *
- * This function updates both MongoDB and KoboToolbox to keep them in sync
- * MongoDB is updated first so the table reflects changes immediately
+ * **KoboToolbox is written first, and MongoDB only if that succeeds.**
+ *
+ * The external R pipeline reconciles MongoDB *from* KoboToolbox on every run, which makes
+ * KoboToolbox the effective source of truth for validation status. Writing MongoDB first meant
+ * that when the KoboToolbox call failed the caller was told the update had failed while MongoDB
+ * had in fact already been changed — the two systems disagreed, and the next pipeline run
+ * silently reverted the change. Doing the authoritative write first means a failure leaves both
+ * systems untouched and the error the user sees is accurate.
+ *
+ * The trade-off is that a KoboToolbox outage now blocks the update outright instead of appearing
+ * to work locally. That is deliberate: the local-only change never survived anyway.
  */
 export const updateValidationStatus = async (
   submissionId: string,
@@ -73,17 +83,7 @@ export const updateValidationStatus = async (
   assetId?: string
 ): Promise<{ success: boolean; message: string }> => {
   try {
-    // Step 1: Update MongoDB first (so table reflects changes immediately)
-    const mongoResponse = await axios.patch(`${API_BASE_URL}/submissions/${submissionId}/validation-status`, {
-      validation_status: status,
-      asset_id: assetId
-    });
-
-    if (!mongoResponse.data.success) {
-      throw new Error(mongoResponse.data.message || 'Failed to update MongoDB');
-    }
-
-    // Step 2: Update KoboToolbox (must succeed to keep systems in sync)
+    // Step 1: KoboToolbox — the authoritative write.
     const koboResponse = await axios.patch(`${API_BASE_URL}/kobo/validation-status/${submissionId}`, {
       validation_status: status,
       asset_id: assetId
@@ -93,10 +93,26 @@ export const updateValidationStatus = async (
       throw new Error(koboResponse.data.message || 'Failed to update KoboToolbox');
     }
 
+    // Step 2: MongoDB — what the portal reads, so the table reflects the change without
+    // waiting for the next pipeline run. This is also where the audit event is recorded.
+    const mongoResponse = await axios.patch(`${API_BASE_URL}/submissions/${submissionId}/validation-status`, {
+      validation_status: status,
+      asset_id: assetId
+    });
+
+    if (!mongoResponse.data.success) {
+      throw new Error(mongoResponse.data.message || 'Failed to update MongoDB');
+    }
+
     return { success: true, message: mongoResponse.data.message || 'Status updated successfully' };
   } catch (error) {
     console.error('Failed to update status:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    // Prefer the server's own message ("You do not have access to the requested survey.") over
+    // axios's generic "Request failed with status code 403".
+    const errorMessage = extractErrorMessage(
+      error,
+      error instanceof Error ? error.message : 'Unknown error occurred'
+    );
     return { success: false, message: `Failed to update: ${errorMessage}` };
   }
 }; 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useFetchUsers, useFetchSurveys, deleteUser, User } from '../../api/admin';
 import ResetPasswordModal from './ResetPasswordModal';
 import { getApiBaseUrl } from '../../utils/apiConfig';
+import axios from '../../utils/axiosConfig';
 import { getCountryFlag, getCountryName } from '../../utils/countryMetadata';
 
 const AdminUsers: React.FC = () => {
@@ -26,6 +27,28 @@ const AdminUsers: React.FC = () => {
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Declared above `columns` because the column definitions close over them and list them as
+  // dependencies — a later `const` would be in the temporal dead zone when the memo evaluates.
+  const handleResetPassword = useCallback((user: User) => {
+    setSelectedUser(user);
+    setShowResetPasswordModal(true);
+  }, []);
+
+  const handleDeleteUser = useCallback(async (user: User) => {
+    if (!confirm(t('messages.deleteConfirm', { username: user.username }))) {
+      return;
+    }
+
+    const result = await deleteUser(user._id);
+
+    if (result.success) {
+      alert(result.message);
+      refetch();
+    } else {
+      alert(`Error: ${result.message}`);
+    }
+  }, [t, refetch]);
 
   // Column definitions
   const columns = useMemo<ColumnDef<User>[]>(
@@ -174,7 +197,7 @@ const AdminUsers: React.FC = () => {
         },
       },
     ],
-    [surveys, t]
+    [surveys, t, handleResetPassword, handleDeleteUser]
   );
 
   // TanStack Table setup
@@ -206,23 +229,9 @@ const AdminUsers: React.FC = () => {
 
     setIsSyncing(true);
     try {
-      const token = localStorage.getItem('authToken');
-
-      if (!token) {
-        alert(t('messages.tokenNotFound'));
-        return;
-      }
-
-      const API_BASE_URL = getApiBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/admin/sync-users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const result = await response.json();
+      // Shared axios instance: the interceptor attaches the token and handles 401 expiry.
+      const response = await axios.post(`${getApiBaseUrl()}/admin/sync-users`);
+      const result = response.data;
 
       if (result.success) {
         alert(t('messages.syncComplete', {
@@ -239,26 +248,6 @@ const AdminUsers: React.FC = () => {
       console.error('Sync error:', err);
     } finally {
       setIsSyncing(false);
-    }
-  };
-
-  const handleResetPassword = (user: User) => {
-    setSelectedUser(user);
-    setShowResetPasswordModal(true);
-  };
-
-  const handleDeleteUser = async (user: User) => {
-    if (!confirm(t('messages.deleteConfirm', { username: user.username }))) {
-      return;
-    }
-
-    const result = await deleteUser(user._id);
-
-    if (result.success) {
-      alert(result.message);
-      refetch();
-    } else {
-      alert(`Error: ${result.message}`);
     }
   };
 

@@ -259,7 +259,7 @@ const ValidationTable: React.FC = () => {
         filterFn: fuzzyFilter,
       },
     ],
-    [t, fromDate, toDate]
+    [t]
   );
 
   const table = useReactTable({
@@ -299,15 +299,15 @@ const ValidationTable: React.FC = () => {
     table.getColumn('submission_date')?.setFilterValue([fromDate, toDate]);
   }, [fromDate, toDate, table]);
 
-  // Update contextual submissions when filters change
+  // Update contextual submissions when filters change. The table-state reads are hoisted into
+  // named values so the dependency list is statically checkable.
+  const activeColumnFilters = table.getState().columnFilters;
+  const activeGlobalFilter = table.getState().globalFilter;
+
   useEffect(() => {
     const filtered = table.getFilteredRowModel().rows.map(row => row.original);
-    if (filtered.length > 0) {
-      setContextualSubmissions(filtered);
-    } else {
-      setContextualSubmissions(submissions || []);
-    }
-  }, [table.getState().columnFilters, table.getState().globalFilter, submissions]);
+    setContextualSubmissions(filtered.length > 0 ? filtered : (submissions || []));
+  }, [activeColumnFilters, activeGlobalFilter, submissions, table]);
 
   const handleRowClick = (row: Row<Submission>) => {
     setSelectedRow(row.original);

@@ -7,6 +7,7 @@
 
 const { withMiddleware, authenticateUser, requireAdmin } = require('../../../lib/middleware');
 const { getDb } = require('../../../lib/db');
+const { logAuditEvent } = require('../../../lib/audit-logger');
 const { validateObjectId } = require('../../../lib/helpers');
 const { sendNotFound, sendBadRequest, sendServerError, setCorsHeaders } = require('../../../lib/response');
 
@@ -66,11 +67,25 @@ async function handler(req, res) {
       { returnDocument: 'after', projection: { password_hash: 0 } }
     );
 
-    if (!result || !result.value) {
+    // findOneAndUpdate returns the document itself, not a { value } wrapper. Guarding on
+    // `result.value` made every successful permission change respond 404.
+    if (!result) {
       return sendNotFound(res, 'User not found');
     }
 
-    const updatedUser = result.value || result;
+    const updatedUser = result;
+
+    // Survey permissions decide what data a user can reach, so a change here is exactly the
+    // kind of event the audit log exists for.
+    await logAuditEvent(database, {
+      username: req.user.username,
+      user_id: req.user.id,
+      category: 'admin',
+      action: 'user_permissions_changed',
+      status: 'success',
+      details: { target_user_id: updatedUser._id.toString(), target_username: updatedUser.username, surveys },
+      req
+    });
 
     return res.json({
       success: true,

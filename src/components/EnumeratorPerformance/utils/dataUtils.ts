@@ -1,45 +1,4 @@
-import { EnumeratorData, SubmissionData, TimeframeType } from '../types';
-
-/**
- * Filter submissions by timeframe
- */
-export const filterByTimeframe = (date: string, timeframe: TimeframeType): boolean => {
-  if (timeframe === 'all') return true;
-  
-  try {
-    const now = new Date();
-    
-    // Check if date is valid
-    if (!date || typeof date !== 'string') {
-      console.warn('Invalid date format received:', date);
-      return false;
-    }
-    
-    const submissionDate = new Date(date);
-    
-    // Handle invalid dates
-    if (isNaN(submissionDate.getTime())) {
-      console.warn('Invalid date conversion:', date);
-      return false;
-    }
-    
-    // Set both dates to the start of day to avoid time differences affecting calculations
-    const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const subDate = new Date(submissionDate.getFullYear(), submissionDate.getMonth(), submissionDate.getDate());
-    
-    // Calculate days difference (more accurate)
-    const daysDifference = Math.floor((nowDate.getTime() - subDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (timeframe === '7days') return daysDifference < 7;
-    if (timeframe === '30days') return daysDifference < 30;
-    if (timeframe === '90days') return daysDifference < 90;
-    
-    return true;
-  } catch (error) {
-    console.error('Error in filterByTimeframe:', error, 'for date:', date);
-    return false;
-  }
-};
+import { EnumeratorData, SubmissionData } from '../types';
 
 /**
  * Process raw data into EnumeratorData format
@@ -80,7 +39,7 @@ export const processEnumeratorData = (rawData: SubmissionData[]): EnumeratorData
     // Track submission trends by date - Add null check for submission_date
     if (item.submission_date) {
       // Parse date safely, handling different formats
-      let dateStr = item.submission_date;
+      const dateStr = item.submission_date;
       
       // Extract just the date part (handles both ISO formats and other formats with spaces)
       const datePart = dateStr.includes('T') 
@@ -117,66 +76,6 @@ export const processEnumeratorData = (rawData: SubmissionData[]): EnumeratorData
   
   // Sort by total submissions (descending)
   return formattedData.sort((a, b) => b.totalSubmissions - a.totalSubmissions);
-};
-
-/**
- * Apply time filtering to enumerator data
- */
-export const applyTimeFiltering = (
-  enumerators: EnumeratorData[],
-  timeframe: TimeframeType
-): EnumeratorData[] => {
-  if (enumerators.length === 0) return [];
-
-  // Recalculate stats based on time filter
-  return enumerators.map(enumerator => {
-    try {
-      // Filter submissions by timeframe
-      const filteredSubmissions = enumerator.submissions.filter(submission => {
-        if (!submission.submission_date) return false;
-        
-        // Extract date part from submission_date, handling different formats
-        let datePart;
-        if (submission.submission_date.includes('T')) {
-          // Handle ISO format: "2025-02-19T00:00:00"
-          datePart = submission.submission_date.split('T')[0];
-        } else {
-          // Handle space format: "2025-02-19 00:00:00"
-          datePart = submission.submission_date.split(' ')[0];
-        }
-        
-        return filterByTimeframe(datePart, timeframe);
-      });
-      
-      // Count submissions with alerts in the filtered timeframe
-      const submissionsWithAlerts = filteredSubmissions.filter(
-        s => s.alert_flag && s.alert_flag !== "NA"
-      ).length;
-      
-      // Calculate new error rate based on filtered data
-      const errorRate = filteredSubmissions.length > 0
-        ? (submissionsWithAlerts / filteredSubmissions.length) * 100
-        : 0;
-
-      return {
-        ...enumerator,
-        filteredSubmissions,
-        filteredTotal: filteredSubmissions.length,
-        filteredAlertsCount: submissionsWithAlerts,
-        filteredErrorRate: errorRate
-      };
-    } catch (error) {
-      console.error(`Error filtering enumerator ${enumerator.name}:`, error);
-      // Return unfiltered data in case of error
-      return {
-        ...enumerator,
-        filteredSubmissions: [],
-        filteredTotal: 0,
-        filteredAlertsCount: 0,
-        filteredErrorRate: 0
-      };
-    }
-  });
 };
 
 /**

@@ -1,8 +1,18 @@
 const { getDb } = require('../../lib/db');
 const { sendPasswordResetEmail } = require('../../lib/email');
-const { checkPasswordResetRateLimit } = require('../../lib/rate-limit');
+const { consumeRateLimit } = require('../../lib/rate-limit');
 const { sendBadRequest, sendError, setCorsHeaders } = require('../../lib/response');
 const crypto = require('crypto');
+
+/**
+ * The single response every non-rate-limited outcome returns.
+ *
+ * Password reset must not disclose whether an account exists, so "sent", "no such user",
+ * "user has no email" and "send failed" are indistinguishable to the caller. Each case is
+ * logged server-side with its real reason.
+ */
+const GENERIC_RESPONSE =
+  'If an account matches that username or email, password reset instructions have been sent to it.';
 
 module.exports = async (req, res) => {
   // Set CORS headers
@@ -34,7 +44,7 @@ module.exports = async (req, res) => {
     const isDev = process.env.NODE_ENV === 'development';
     const ipLimit = isDev ? 1000 : 10;
 
-    const ipRateLimit = await checkPasswordResetRateLimit(clientIp, 'ip', ipLimit);
+    const ipRateLimit = await consumeRateLimit(clientIp, 'password_reset_ip', ipLimit);
     if (!ipRateLimit.allowed) {
       return res.status(429).json({
         success: false,
@@ -54,16 +64,15 @@ module.exports = async (req, res) => {
       active: true
     });
 
-    // Return error if user not found
-    if (!user) {
-      console.log('[PASSWORD_RESET] User not found:', sanitizedIdentifier);
-      return sendBadRequest(res, 'No account found with that username or email');
-    }
-
-    // Return error if no email registered
-    if (!user.email) {
-      console.log('[PASSWORD_RESET] User has no email:', user.username);
-      return sendBadRequest(res, 'This account does not have an email address registered. Please contact an administrator.');
+    // Never reveal whether an account exists, or whether it has an email on file: both
+    // outcomes return the same success response an actual send does. The reason is logged
+    // server-side only.
+    if (!user || !user.email) {
+      console.log('[PASSWORD_RESET] No email sent:', {
+        identifier: sanitizedIdentifier,
+        reason: user ? 'no_email_registered' : 'user_not_found'
+      });
+      return res.status(200).json({ success: true, message: GENERIC_RESPONSE });
     }
 
     // Rate limiting - User based
@@ -71,13 +80,15 @@ module.exports = async (req, res) => {
     // Production: 3 requests per 24h
     const userLimit = isDev ? 100 : 3;
 
-    const userRateLimit = await checkPasswordResetRateLimit(user._id.toString(), 'user', userLimit);
+    // Per-user cap stops mailbox flooding. It returns the generic response rather than a 429,
+    // because a 429 here would itself confirm the account exists.
+    const userRateLimit = await consumeRateLimit(user._id.toString(), 'password_reset_user', userLimit);
     if (!userRateLimit.allowed) {
-      return res.status(429).json({
-        success: false,
-        error: 'Too many password reset requests. Please try again later.',
-        retryAfter: userRateLimit.retryAfter
+      console.log('[PASSWORD_RESET] No email sent:', {
+        identifier: sanitizedIdentifier,
+        reason: 'user_rate_limited'
       });
+      return res.status(200).json({ success: true, message: GENERIC_RESPONSE });
     }
 
     // Generate secure reset token
@@ -111,13 +122,12 @@ module.exports = async (req, res) => {
         ip: clientIp
       });
 
-      return res.status(200).json({
-        success: true,
-        message: 'Password reset instructions have been sent to your email address.'
-      });
+      return res.status(200).json({ success: true, message: GENERIC_RESPONSE });
     } catch (emailError) {
+      // A delivery failure is only observable for accounts that exist, so it too returns the
+      // generic response. Operators find these in the logs.
       console.error('[PASSWORD_RESET] Email sending failed:', emailError);
-      return sendError(res, 'Failed to send password reset email. Please try again later or contact support.', 500);
+      return res.status(200).json({ success: true, message: GENERIC_RESPONSE });
     }
 
   } catch (error) {

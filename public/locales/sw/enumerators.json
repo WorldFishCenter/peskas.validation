@@ -2,7 +2,6 @@
   "pageTitle": "Dashibodi ya Utendaji wa Wakusanyaji",
   "pageSubtitle": "Fuatilia na kuchambua vipimo vya utendaji wa ukusanyaji data",
   "title": "Utendaji wa Wakusanyaji",
-  "adminTokenPrompt": "Weka tokeni ya msimamizi ili kusasisha data:",
   "refreshError": "Imeshindikana kusasisha data. Tafadhali jaribu tena.",
   "noData": "Hakuna data ya utendaji wa wakusanyaji inayopatikana.",
   "alertGuide": "Mwongozo wa Tahadhari",

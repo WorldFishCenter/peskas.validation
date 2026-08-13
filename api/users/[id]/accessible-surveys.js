@@ -9,6 +9,7 @@
 const { withMiddleware, authenticateUser } = require('../../../lib/middleware');
 const { getDb } = require('../../../lib/db');
 const { validateObjectId } = require('../../../lib/helpers');
+const { getAccessibleSurveys, normalizeCountryCode } = require('../../../lib/filter-permissions');
 const { sendNotFound, sendBadRequest, sendForbidden, sendServerError, setCorsHeaders } = require('../../../lib/response');
 
 async function handler(req, res) {
@@ -45,24 +46,9 @@ async function handler(req, res) {
       return sendNotFound(res, 'User not found');
     }
 
-    let surveys;
-
-    // Admin with empty permissions.surveys array = all access
-    if (user.role === 'admin' && (!user.permissions?.surveys || user.permissions.surveys.length === 0)) {
-      surveys = await database.collection('surveys')
-        .find({ active: true })
-        .sort({ country_code: 1, name: 1 })
-        .toArray();
-    } else {
-      // Regular user - only their assigned surveys
-      surveys = await database.collection('surveys')
-        .find({
-          asset_id: { $in: user.permissions?.surveys || [] },
-          active: true
-        })
-        .sort({ country_code: 1, name: 1 })
-        .toArray();
-    }
+    // Resolved for the *target* user, not the caller. Sorting previously used
+    // `country_code`, a field that does not exist on survey documents, so it was a no-op.
+    const surveys = await getAccessibleSurveys(user);
 
     return res.json({
       success: true,
@@ -75,7 +61,7 @@ async function handler(req, res) {
         id: survey._id.toString(),
         asset_id: survey.asset_id,
         name: survey.name,
-        country_code: survey.country_code,
+        country_code: normalizeCountryCode(survey.country_id),
         active: survey.active,
         description: survey.description
       }))

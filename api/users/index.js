@@ -8,6 +8,8 @@
 const bcrypt = require('bcryptjs');
 const { withMiddleware, authenticateUser, requireAdmin } = require('../../lib/middleware');
 const { getDb } = require('../../lib/db');
+const { logAuditEvent } = require('../../lib/audit-logger');
+const { validatePassword } = require('../../lib/helpers');
 const { sendBadRequest, sendServerError, setCorsHeaders } = require('../../lib/response');
 
 async function handler(req, res) {
@@ -64,12 +66,13 @@ async function handlePost(req, res) {
     const { username, name, password, country, role, permissions } = req.body;
 
     // Validation
-    if (!username || username.length < 3) {
+    if (typeof username !== 'string' || username.length < 3) {
       return sendBadRequest(res, 'Username must be at least 3 characters');
     }
 
-    if (!password || password.length < 8) {
-      return sendBadRequest(res, 'Password must be at least 8 characters');
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return sendBadRequest(res, passwordError);
     }
 
     if (!role || !['admin', 'user'].includes(role)) {
@@ -110,6 +113,17 @@ async function handlePost(req, res) {
 
     // Insert user
     const result = await database.collection('users').insertOne(newUser);
+
+    // Awaited before responding: Vercel freezes the context after res.json().
+    await logAuditEvent(database, {
+      username: req.user.username,
+      user_id: req.user.id,
+      category: 'admin',
+      action: 'user_created',
+      status: 'success',
+      details: { target_user_id: result.insertedId.toString(), target_username: newUser.username, role: newUser.role },
+      req
+    });
 
     return res.status(201).json({
       success: true,

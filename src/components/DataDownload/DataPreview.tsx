@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useReactTable,
@@ -44,13 +44,13 @@ const DataPreview: React.FC<DataPreviewProps> = ({
   } = useFetchFieldMetadata(appliedFilters?.scope);
 
   // Handle field info icon click
-  const handleFieldInfoClick = (fieldName: string) => {
+  const handleFieldInfoClick = useCallback((fieldName: string) => {
     if (!metadata && !metadataLoading) {
       fetchMetadata(); // Lazy load on first click
     }
     setSelectedField(fieldName);
     setShowMetadataModal(true);
-  };
+  }, [metadata, metadataLoading, fetchMetadata]);
 
   // Handle Data Dictionary button click
   const handleDataDictionaryClick = () => {
@@ -83,7 +83,7 @@ const DataPreview: React.FC<DataPreviewProps> = ({
         return String(value);
       }
     }));
-  }, [data]);
+  }, [data, handleFieldInfoClick]);
 
   const table = useReactTable({
     data: data || [],
@@ -171,7 +171,7 @@ const DataPreview: React.FC<DataPreviewProps> = ({
             <strong>{t('preview.filtersApplied')}:</strong>
             {' '}
             {Object.entries(appliedFilters)
-              .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+              .filter(([, value]) => value !== undefined && value !== null && value !== '')
               .map(([key, value]) => {
                 // Format the display
                 const displayKey = key.replace(/_/g, ' ');

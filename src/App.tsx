@@ -15,6 +15,18 @@ import AdminUsers from './components/Admin/AdminUsers';
 import AuditLog from './components/Admin/AuditLog';
 import HowItWorks from './components/HowItWorks/HowItWorks';
 
+/**
+ * Gate a route on the admin role.
+ *
+ * The API already rejects non-admins, so this is not the security boundary — it stops a
+ * non-admin who types /admin/users from rendering an admin screen that can only ever show
+ * errors. The nav link was hidden, but the route itself was reachable.
+ */
+const RequireAdmin: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  return user?.role === 'admin' ? <>{children}</> : <Navigate to="/" replace />;
+};
+
 const AppRoutes: React.FC = () => {
   return (
     <Routes>
@@ -45,14 +57,16 @@ const AppRoutes: React.FC = () => {
       } />
       <Route path="/admin/users" element={
         <ErrorBoundary>
-          <AdminUsers />
+          <RequireAdmin><AdminUsers /></RequireAdmin>
         </ErrorBoundary>
       } />
       <Route path="/admin/audit-logs" element={
         <ErrorBoundary>
-          <AuditLog />
+          <RequireAdmin><AuditLog /></RequireAdmin>
         </ErrorBoundary>
       } />
+      {/* Unknown paths returned an empty layout rather than going anywhere. */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

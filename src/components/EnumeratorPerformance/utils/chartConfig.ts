@@ -118,14 +118,3 @@ export const chartColors = {
   secondary: '#667382'
 };
 
-/**
- * Base chart configuration
- */
-export const baseChartConfig: Partial<Highcharts.Options> = {
-  credits: { enabled: false },
-  chart: {
-    style: {
-      fontFamily: 'inherit'
-    }
-  }
-};
