@@ -59,6 +59,8 @@ docs/
 # rules below were inert — those files are in the repo only because they were committed before
 # the rule existed, and any newly added workflow script would silently never be committed.
 scripts/*
+!scripts/ensure_survey_indexes.cjs
+!scripts/sync_all_from_airtable.js
 !scripts/sync_countries_from_airtable.cjs
 !scripts/sync_districts_from_airtable.cjs
 !scripts/sync_surveys_from_airtable.js

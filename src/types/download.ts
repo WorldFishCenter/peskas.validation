@@ -35,45 +35,6 @@ export interface DownloadFilters {
 export type DataRow = Record<string, unknown>;
 
 /**
- * Preview data response from API
- */
-export interface PreviewData {
-  /** Array of data rows (dynamic schema) */
-  data: DataRow[];
-
-  /** Total number of rows available */
-  total_count: number;
-
-  /** Filters that were actually applied (after permission filtering) */
-  filters_applied: DownloadFilters;
-}
-
-/**
- * Error response structure
- */
-export interface DownloadError {
-  /** Error message */
-  message: string;
-
-  /** Error code (optional) */
-  code?: string;
-}
-
-/**
- * GAUL code with metadata
- */
-export interface GaulCode {
-  /** GAUL code identifier */
-  code: string;
-
-  /** Human-readable name */
-  name: string;
-
-  /** Associated country code */
-  country: string;
-}
-
-/**
  * Country option for dropdown
  */
 export interface CountryOption {
@@ -140,11 +101,6 @@ export interface PreviewResponse {
   total_count: number;
   filters_applied: DownloadFilters;
 }
-
-/**
- * Download status
- */
-export type DownloadStatus = 'idle' | 'previewing' | 'downloading' | 'success' | 'error';
 
 /**
  * Field description from PeSKAS API metadata

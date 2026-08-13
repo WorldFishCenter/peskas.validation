@@ -63,8 +63,9 @@ module.exports = async (req, res) => {
             matchedUser = user;
             // Don't break - continue checking all to maintain constant time
           }
-        } catch (e) {
-          // Length mismatch or other error - continue
+        } catch {
+          // timingSafeEqual throws on a length mismatch, which just means this is not the
+          // matching user. Keep looping so the response time stays constant either way.
         }
       }
     }

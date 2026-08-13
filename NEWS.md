@@ -1,3 +1,76 @@
+# Management Platform 2.7.0
+
+A performance and reliability release. The two heaviest screens now move a fraction of the data
+they did, one survey that crashed the validation table works, and the enumerator dashboard no
+longer counts a person who does not exist.
+
+## Fixed
+
+- **Fixed: opening the validation table on the Zanzibar Fish Catch Survey crashed the page**
+  - Problem: none of that survey's 31,387 submissions carries a submission date. The code that
+    works out the date-picker range assumed at least one did, and threw as soon as the rows
+    loaded. One user has that survey as their only one, so the screen was unusable for them.
+  - Solution: the range is empty when no submission is dated, and the date filter stays inactive
+    instead of hiding every row. A test covers the case.
+
+- **Fixed: the enumerator dashboard ranked an enumerator called "undefined"**
+  - Problem: rows whose enumerator could not be identified are written with the text
+    `"undefined"`. The dashboard filtered out `"Unknown"`, which never occurs, and so treated
+    4,479 Kenya submissions and 382 Mozambique ones as the work of a single person.
+  - Solution: placeholder enumerators are excluded where the data is read, so they cannot reach
+    any chart.
+
+- **Fixed: submissions awaiting validation showed a raw label.** Surveys the pipeline has not
+  validated yet carry the status `not_validated`, which had no translation and no entry in the
+  status filter. It now reads "Not Validated" in all three languages, and the filter offers
+  whichever statuses the loaded survey actually contains rather than a fixed pair.
+
+## Performance
+
+- **The two main screens transfer 94% and 50% less data.** Measured against the largest survey
+  (Mozambique SSF-CD, ~52,000 submissions):
+
+  | Screen | Before | After |
+  |---|---:|---:|
+  | Enumerator Performance | 12.9 MB, 4.2 s | 0.68 MB, 1.0 s |
+  | Validation table | 19.5 MB, 6.0 s | 0.01 MB, 0.6 s |
+
+  The enumerator dashboard now asks the database for the counts it draws instead of downloading
+  every submission and counting them in the browser.
+
+- **The validation table loads one page at a time.** It used to download every submission in the
+  survey — all 51,912 of them on Mozambique SSF-CD — and then show ten. Turning a page, sorting a
+  column, searching or changing a filter now asks the database for exactly the rows being shown,
+  so the screen opens in well under a second whatever the survey's size, and stays that way as
+  the data grows.
+
+  Two things behave differently as a result. The **search box** matches the start of a submission
+  ID or an enumerator name across the whole survey, rather than fuzzily matching anything on
+  screen; it waits a moment after you stop typing before searching. And the **date pickers start
+  empty** rather than pre-filled with the survey's first and last day — the range they allow still
+  shows what the survey covers, but an empty box now honestly means "no date filter".
+
+- **Every request was making a spare round-trip to the database** to health-check a connection the
+  driver already monitors. Removed.
+
+- **Twenty-two missing database indexes were created.** Three collections — including one with
+  31,387 documents — had none beyond the default, so sorting them was done in memory.
+  `npm run ensure:indexes` re-checks and is safe to re-run.
+
+## Housekeeping
+
+- Sorting and filtering the validation table no longer copies all 52,000 rows on every keystroke.
+- The submission detail panel no longer has a Vessel or Catch # row. The data pipeline has not
+  written either field for any of the 118,466 submissions on record, so neither has ever
+  appeared; they are gone rather than sitting there permanently blank.
+- Removed roughly 700 lines of code with no callers, including three unused dependencies and the
+  client functions left behind when user editing moved to Airtable.
+- The backend is now type-checked (`api/`, `lib/`, `server/`), which found an audit-log category
+  that eight endpoints wrote but the type did not allow.
+- Moved to ESLint 9. Its stricter defaults surfaced five places where an error was rethrown with
+  the original cause discarded.
+- `npm run sync:all` referenced a script that was never committed, so it failed in a fresh clone.
+
 # Management Platform 2.6.0
 
 A maintenance release with no new screens. It closes a set of security holes, fixes several

@@ -13,7 +13,7 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom'],
           charts: ['highcharts', 'highcharts-react-official'],
-          table: ['@tanstack/react-table', '@tanstack/match-sorter-utils'],
+          table: ['@tanstack/react-table'],
           // Match what `src/main.tsx` actually imports — a bare '@tabler/core' here never
           // matched anything, so Tabler's JS was silently folded into the main chunk.
           ui: ['@tabler/core/dist/js/tabler.min.js', '@tabler/icons-react']

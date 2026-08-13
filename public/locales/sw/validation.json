@@ -12,7 +12,7 @@
   },
   "filters": {
     "search": "Tafuta uwasilishaji...",
-    "searchPlaceholder": "Tafuta uwasilishaji...",
+    "searchPlaceholder": "Tafuta kwa kitambulisho cha uwasilishaji au mkusanyaji...",
     "clearSearch": "Futa utafutaji",
     "status": "Hali",
     "survey": "Tafiti",
@@ -41,8 +41,6 @@
     "submissionIdLabel": "Kitambulisho cha Uwasilishaji:",
     "dateLabel": "Tarehe:",
     "submittedByLabel": "Imewasilishwa na:",
-    "vesselLabel": "Chombo:",
-    "catchNumberLabel": "Nyara #:",
     "statusLabel": "Hali:",
     "alertFlagsLabel": "Bendera za Tahadhari:",
     "lastValidatedLabel": "Ilithibitishwa Mwisho:",

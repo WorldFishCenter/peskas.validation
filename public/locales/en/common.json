@@ -19,7 +19,8 @@
     "onHold": "On Hold",
     "default": "Pending",
     "not_approved": "Not Approved",
-    "on_hold": "On Hold"
+    "on_hold": "On Hold",
+    "not_validated": "Not Validated"
   },
   "role": {
     "admin": "Admin",

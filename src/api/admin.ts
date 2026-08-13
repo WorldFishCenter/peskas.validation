@@ -21,28 +21,6 @@ export interface User {
   created_at?: string;
 }
 
-export interface CreateUserPayload {
-  username: string;
-  password: string;
-  name?: string;
-  country?: string[];
-  role: 'admin' | 'user';
-  permissions?: {
-    surveys?: string[];
-    enumerators?: string[];
-  };
-}
-
-export interface UpdateUserPayload {
-  name?: string;
-  country?: string[];
-  role?: 'admin' | 'user';
-  permissions?: {
-    surveys?: string[];
-    enumerators?: string[];
-  };
-}
-
 // Hook to fetch all users
 export const useFetchUsers = () => {
   const [data, setData] = useState<User[]>([]);
@@ -102,43 +80,6 @@ export const useFetchSurveys = () => {
   return { data, isLoading, error, refetch: fetchData };
 };
 
-// Create a new user
-export const createUser = async (userData: CreateUserPayload): Promise<{ success: boolean; message: string; user?: User }> => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/users`, userData);
-
-    return {
-      success: true,
-      message: response.data.message || 'User created successfully',
-      user: response.data.user
-    };
-  } catch (error: unknown) {
-    console.error('Error creating user:', error);
-    return {
-      success: false,
-      message: extractErrorMessage(error, 'Failed to create user')
-    };
-  }
-};
-
-// Update an existing user
-export const updateUser = async (userId: string, updates: UpdateUserPayload): Promise<{ success: boolean; message: string }> => {
-  try {
-    const response = await axios.patch(`${API_BASE_URL}/users/${userId}`, updates);
-
-    return {
-      success: true,
-      message: response.data.message || 'User updated successfully'
-    };
-  } catch (error: unknown) {
-    console.error('Error updating user:', error);
-    return {
-      success: false,
-      message: extractErrorMessage(error, 'Failed to update user')
-    };
-  }
-};
-
 // Delete a user
 export const deleteUser = async (userId: string): Promise<{ success: boolean; message: string }> => {
   try {
@@ -153,29 +94,6 @@ export const deleteUser = async (userId: string): Promise<{ success: boolean; me
     return {
       success: false,
       message: extractErrorMessage(error, 'Failed to delete user')
-    };
-  }
-};
-
-// Update user permissions (assign surveys)
-export const updateUserPermissions = async (
-  userId: string,
-  surveyIds: string[]
-): Promise<{ success: boolean; message: string }> => {
-  try {
-    const response = await axios.patch(`${API_BASE_URL}/users/${userId}/permissions`, {
-      surveys: surveyIds
-    });
-
-    return {
-      success: true,
-      message: response.data.message || 'Permissions updated successfully'
-    };
-  } catch (error: unknown) {
-    console.error('Error updating permissions:', error);
-    return {
-      success: false,
-      message: extractErrorMessage(error, 'Failed to update permissions')
     };
   }
 };
@@ -243,22 +161,4 @@ export const useFetchAuditLogs = (filters: AuditLogsFilters = {}) => {
   }, [fetchData]);
 
   return { data, isLoading, error, refetch: fetchData };
-};
-
-// Get accessible surveys for a user
-export const getUserAccessibleSurveys = async (userId: string): Promise<{ success: boolean; surveys?: Survey[]; message?: string }> => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/users/${userId}/accessible-surveys`);
-
-    return {
-      success: true,
-      surveys: response.data.surveys
-    };
-  } catch (error: unknown) {
-    console.error('Error fetching accessible surveys:', error);
-    return {
-      success: false,
-      message: extractErrorMessage(error, 'Failed to fetch accessible surveys')
-    };
-  }
 };

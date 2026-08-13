@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetchEnumeratorStats } from '../../api/api';
 import { ChartTabType, DetailTabType, EnumeratorData } from './types';
-import { processEnumeratorData, findBestEnumerator } from './utils/dataUtils';
+import { processEnumeratorData, findBestEnumerator, sumCounts, sumAlertCounts, toTrend } from './utils/dataUtils';
 import { refreshEnumeratorStats } from './utils/apiUtils';
 import { useContextualAlertCodes } from '../../hooks/useContextualAlertCodes';
 import { useAuth } from '../Auth/AuthContext';
@@ -27,7 +27,7 @@ declare module 'highcharts' {
 
 const EnumeratorPerformance: React.FC = () => {
   const { t } = useTranslation('enumerators');
-  const { data: rawData = [], accessibleSurveys, selectedSurvey, setSelectedSurvey, isLoading, error, refetch } = useFetchEnumeratorStats();
+  const { data: rawData = [], accessibleSurveys, loadedSurvey, selectedSurvey, setSelectedSurvey, isLoading, error, refetch } = useFetchEnumeratorStats();
   const { user } = useAuth();
   // Admin status comes from the authenticated session, the same source Navbar gates on — not
   // from the presence of a locally-stored token.
@@ -56,7 +56,7 @@ const EnumeratorPerformance: React.FC = () => {
     return survey?.country_id || '';
   }, [selectedSurvey, accessibleSurveys]);
 
-  const { surveyAlertCodes } = useContextualAlertCodes(rawData);
+  const { surveyAlertCodes } = useContextualAlertCodes(loadedSurvey);
 
   // Process raw data from the hook (already filtered to selected survey by backend)
   const processedData = useMemo<EnumeratorData[]>(() => {
@@ -76,71 +76,53 @@ const EnumeratorPerformance: React.FC = () => {
     }
   }, [processedData, selectedEnumerator]);
 
-  // Compute min/max dates from processedData - reset when survey changes
+  // Compute min/max dates from processedData - reset when survey changes.
+  // The rollup already carries plain `YYYY-MM-DD` days, so these are string comparisons.
   useEffect(() => {
-    if (processedData.length > 0) {
-      const allDates = processedData.flatMap(e =>
-        e.submissions.map(s => {
-          if (!s.submission_date) return null;
-          return s.submission_date.includes('T')
-            ? s.submission_date.split('T')[0]
-            : s.submission_date.split(' ')[0];
-        }).filter(Boolean)
-      ) as string[];
-      if (allDates.length > 0) {
-        const sorted = allDates.sort();
-        setMinDate(sorted[0]);
-        setMaxDate(sorted[sorted.length - 1]);
-        setFromDate(sorted[0]);
-        setToDate(sorted[sorted.length - 1]);
+    if (processedData.length === 0) return;
+    let min: string | null = null;
+    let max: string | null = null;
+    for (const enumerator of processedData) {
+      for (const stat of enumerator.dailyStats) {
+        if (!stat.date) continue;
+        if (min === null || stat.date < min) min = stat.date;
+        if (max === null || stat.date > max) max = stat.date;
       }
+    }
+    if (min && max) {
+      setMinDate(min);
+      setMaxDate(max);
+      setFromDate(min);
+      setToDate(max);
     }
   }, [processedData]);
 
   // Apply date range filtering — derived directly, no intermediate state
   const enumerators = useMemo<EnumeratorData[]>(() => {
     if (processedData.length === 0) return [];
-    const filterByDateRange = (date: string) => {
-      const datePart = date.includes('T') ? date.split('T')[0] : date.split(' ')[0];
-      const fromOk = fromDate ? datePart >= fromDate : true;
-      const toOk = toDate ? datePart <= toDate : true;
-      return fromOk && toOk;
-    };
     return processedData.map(enumerator => {
-      const filteredSubmissions = enumerator.submissions.filter(submission => {
-        if (!submission.submission_date) return false;
-        return filterByDateRange(submission.submission_date);
+      const filteredStats = enumerator.dailyStats.filter(stat => {
+        if (!stat.date) return false;
+        return (!fromDate || stat.date >= fromDate) && (!toDate || stat.date <= toDate);
       });
-      const submissionsWithAlerts = filteredSubmissions.filter(
-        s => s.alert_flag && s.alert_flag !== "NA"
-      ).length;
-      const errorRate = filteredSubmissions.length > 0
-        ? (submissionsWithAlerts / filteredSubmissions.length) * 100
-        : 0;
+      const filteredTotal = sumCounts(filteredStats);
+      const filteredAlertsCount = sumAlertCounts(filteredStats);
       return {
         ...enumerator,
-        filteredSubmissions,
-        filteredTotal: filteredSubmissions.length,
-        filteredAlertsCount: submissionsWithAlerts,
-        filteredErrorRate: errorRate
+        filteredStats,
+        filteredTrend: toTrend(filteredStats),
+        filteredTotal,
+        filteredAlertsCount,
+        filteredErrorRate: filteredTotal > 0 ? (filteredAlertsCount / filteredTotal) * 100 : 0
       };
     });
   }, [processedData, fromDate, toDate]);
 
   // Calculate dates for submission trend chart — must be above early returns (Rules of Hooks)
-  const uniqueDates = useMemo(() => {
-    const allDates = enumerators.flatMap(e =>
-      e.submissionTrend
-        .filter(trend => {
-          const datePart = trend.date.includes('T') ? trend.date.split('T')[0] : trend.date.split(' ')[0];
-          const fromOk = fromDate ? datePart >= fromDate : true;
-          const toOk = toDate ? datePart <= toDate : true;
-          return fromOk && toOk;
-        })
-        .map(trend => trend.date)
-    );
-    return [...new Set(allDates)].sort();
-  }, [enumerators, fromDate, toDate]);
+  const uniqueDates = useMemo(
+    () => [...new Set(enumerators.flatMap(e => (e.filteredTrend || []).map(t => t.date)))].sort(),
+    [enumerators]
+  );
 
   // Check for admin token
   // Handle admin refresh

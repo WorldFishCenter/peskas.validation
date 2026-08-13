@@ -1,90 +1,61 @@
-import { EnumeratorData, SubmissionData } from '../types';
+import { EnumeratorData, EnumeratorDailyStat } from '../types';
+
+/** Sum the counts of a set of rollup rows. */
+export const sumCounts = (stats: EnumeratorDailyStat[]): number =>
+  stats.reduce((total, stat) => total + stat.count, 0);
+
+/** Sum the counts of the rollup rows that carry an alert code. */
+export const sumAlertCounts = (stats: EnumeratorDailyStat[]): number =>
+  stats.reduce((total, stat) => (stat.alert_flag ? total + stat.count : total), 0);
 
 /**
- * Accumulator used while grouping rows by enumerator. It differs from `EnumeratorData` in
- * two ways: `errorRate` is not known until the group is complete, and `submissionTrend` is
- * a date → count map here, flattened to a sorted array on the way out.
+ * Collapse rollup rows to a sorted date → count series.
+ *
+ * Several rows can share a day — one per alert code — so they are summed rather than listed.
+ * Rows whose date could not be parsed carry no day and are dropped from the trend, exactly as
+ * they were when the endpoint returned raw submissions.
  */
-type EnumeratorAccumulator = Omit<EnumeratorData, 'errorRate' | 'submissionTrend'> & {
-  submissionTrend: Record<string, number>;
+export const toTrend = (stats: EnumeratorDailyStat[]): { date: string; count: number }[] => {
+  const byDate: Record<string, number> = {};
+  for (const stat of stats) {
+    if (!stat.date) continue;
+    byDate[stat.date] = (byDate[stat.date] || 0) + stat.count;
+  }
+  return Object.entries(byDate)
+    .map(([date, count]) => ({ date, count }))
+    .sort((a, b) => a.date.localeCompare(b.date));
 };
 
 /**
- * Process raw data into EnumeratorData format
+ * Group the `/enumerators-stats` rollup by enumerator.
+ *
+ * The endpoint already excludes placeholder enumerators and folds the three spellings of "no
+ * alert" into an absent field, so there is nothing left to clean here — this is a group-by and
+ * three sums.
  */
-export const processEnumeratorData = (rawData: SubmissionData[]): EnumeratorData[] => {
-  if (!rawData || rawData.length === 0) return [];
+export const processEnumeratorData = (rollup: EnumeratorDailyStat[]): EnumeratorData[] => {
+  if (!rollup || rollup.length === 0) return [];
 
-  // Format data from the raw submissions
-  const processedData: Record<string, EnumeratorAccumulator> = {};
+  const byEnumerator: Record<string, EnumeratorDailyStat[]> = {};
+  for (const stat of rollup) {
+    if (!stat.submitted_by) continue;
+    (byEnumerator[stat.submitted_by] ||= []).push(stat);
+  }
 
-  // Group by enumerator
-  rawData.forEach((item: SubmissionData) => {
-    // Skip items with missing or "Unknown" enumerator name
-    if (!item.submitted_by || item.submitted_by === 'Unknown') {
-      return;
-    }
-    
-    const enumerator = item.submitted_by;
-    
-    if (!processedData[enumerator]) {
-      processedData[enumerator] = {
-        name: enumerator,
-        submissions: [],
-        totalSubmissions: 0,
-        submissionsWithAlerts: 0,
-        submissionTrend: {}
+  return Object.entries(byEnumerator)
+    .map(([name, dailyStats]): EnumeratorData => {
+      const totalSubmissions = sumCounts(dailyStats);
+      const submissionsWithAlerts = sumAlertCounts(dailyStats);
+      return {
+        name,
+        dailyStats,
+        totalSubmissions,
+        submissionsWithAlerts,
+        errorRate: totalSubmissions > 0 ? (submissionsWithAlerts / totalSubmissions) * 100 : 0,
+        submissionTrend: toTrend(dailyStats)
       };
-    }
-    
-    processedData[enumerator].submissions.push(item);
-    processedData[enumerator].totalSubmissions++;
-    
-    // Count submissions with alerts
-    if (item.alert_flag && item.alert_flag !== "NA") {
-      processedData[enumerator].submissionsWithAlerts++;
-    }
-    
-    // Track submission trends by date - Add null check for submission_date
-    if (item.submission_date) {
-      // Parse date safely, handling different formats
-      const dateStr = item.submission_date;
-      
-      // Extract just the date part (handles both ISO formats and other formats with spaces)
-      const datePart = dateStr.includes('T') 
-        ? dateStr.split('T')[0]  // Handle ISO format: "2025-02-19T00:00:00"
-        : dateStr.split(' ')[0]; // Handle space format: "2025-02-19 00:00:00"
-        
-      if (datePart) {
-        if (!processedData[enumerator].submissionTrend[datePart]) {
-          processedData[enumerator].submissionTrend[datePart] = 0;
-        }
-        processedData[enumerator].submissionTrend[datePart]++;
-      }
-    }
-  });
-  
-  // Calculate error rates and format the data for charts
-  const formattedData = Object.values(processedData).map((enumerator): EnumeratorData => {
-    // Calculate error rate
-    const errorRate = enumerator.totalSubmissions > 0
-      ? (enumerator.submissionsWithAlerts / enumerator.totalSubmissions) * 100
-      : 0;
-
-    // Format submission trend for the chart
-    const submissionTrend = Object.entries(enumerator.submissionTrend).map(
-      ([date, count]) => ({ date, count })
-    ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    return {
-      ...enumerator,
-      errorRate,
-      submissionTrend
-    };
-  });
-  
-  // Sort by total submissions (descending)
-  return formattedData.sort((a, b) => b.totalSubmissions - a.totalSubmissions);
+    })
+    .sort((a, b) => b.totalSubmissions - a.totalSubmissions);
 };
 
 /**
@@ -110,9 +81,9 @@ export const tallyAlertFlags = (
   const counts: Record<string, number> = {};
 
   enumerators.forEach(enumerator => {
-    (enumerator.filteredSubmissions || enumerator.submissions).forEach(submission => {
-      if (submission.alert_flag && submission.alert_flag !== 'NA') {
-        counts[submission.alert_flag] = (counts[submission.alert_flag] || 0) + 1;
+    (enumerator.filteredStats || enumerator.dailyStats).forEach(stat => {
+      if (stat.alert_flag) {
+        counts[stat.alert_flag] = (counts[stat.alert_flag] || 0) + stat.count;
       }
     });
   });
@@ -139,7 +110,7 @@ export const findBestEnumerator = (
       name: '',
       errorRate: 0,
       filteredErrorRate: 0,
-      submissions: [],
+      dailyStats: [],
       totalSubmissions: 0,
       submissionsWithAlerts: 0,
       submissionTrend: []

@@ -109,18 +109,13 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = React.m
   const { t } = useTranslation('enumerators');
 
   const { categories, data, tickInterval, totalSubmissions } = useMemo(() => {
-    const trendData = selectedEnumeratorData?.submissionTrend || [];
-
-    const filteredDates = trendData
-      .filter(item => {
-        const datePart = item.date.includes('T') ? item.date.split('T')[0] : item.date.split(' ')[0];
-        return selectedEnumeratorData.filteredSubmissions?.some(s => {
-          if (!s.submission_date) return false;
-          const sDate = s.submission_date.includes('T') ? s.submission_date.split('T')[0] : s.submission_date.split(' ')[0];
-          return sDate === datePart;
-        });
-      })
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // `filteredTrend` is the date-filtered series, already summed and sorted. This used to
+    // intersect the full trend against the filtered submissions with a nested `some()` — one pass
+    // over every submission for every date the enumerator ever worked.
+    // `?? []` only satisfies the optional field on `EnumeratorData`; the caller always passes an
+    // enumerator from the date-filtered list, so the series is there. Falling back to the
+    // unfiltered `submissionTrend` would have drawn dates outside the selected range.
+    const filteredDates = selectedEnumeratorData.filteredTrend ?? [];
 
     const cats = filteredDates.map(item => {
       const d = new Date(item.date);

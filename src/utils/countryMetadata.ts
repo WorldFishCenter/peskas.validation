@@ -97,9 +97,3 @@ export const getCountryName = (countryCode: string | undefined): string => {
   return metadata?.name || normalizeCountryCode(countryCode).toUpperCase();
 };
 
-/**
- * Get all available countries
- */
-export const getAllCountries = (): CountryMetadata[] => {
-  return Object.values(COUNTRY_METADATA);
-};

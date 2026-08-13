@@ -1,6 +1,6 @@
 import { Table } from '@tanstack/react-table';
 import { IconSearch, IconInfoCircle } from '@tabler/icons-react';
-import { VALIDATION_STATUS_OPTIONS, AccessibleSurvey } from '../../types/validation';
+import { statusLabelKey, AccessibleSurvey } from '../../types/validation';
 import { useTranslation } from 'react-i18next';
 
 interface TableFiltersProps<T> {
@@ -14,6 +14,8 @@ interface TableFiltersProps<T> {
   setToDate: (date: string) => void;
   minDate: string;
   maxDate: string;
+  /** The statuses actually present in the collection, from `metadata.statuses`. */
+  statusOptions: string[];
   accessibleSurveys: AccessibleSurvey[];
   selectedSurvey: string | null;
   onSurveyChange: (assetId: string | null) => void;
@@ -31,6 +33,7 @@ const TableFilters = <T,>({
   setToDate,
   minDate,
   maxDate,
+  statusOptions,
   accessibleSurveys,
   selectedSurvey,
   onSurveyChange,
@@ -41,6 +44,12 @@ const TableFilters = <T,>({
   // Get columns with defensive access
   const statusColumn = table.getColumn('validation_status');
   const alertColumn = table.getColumn('alert_flag');
+
+  // `statusOptions` is the set the API reports for the whole collection. It used to be derived
+  // from the loaded rows, which now means one page of ten. The list is not hardcoded because the
+  // statuses in the data are not a closed set — the pipeline writes bare `not_validated` on the
+  // 31,387 rows of the Zanzibar Fish Catch Survey, which a hardcoded approved/not-approved pair
+  // could not filter for at all.
 
   const showSurveySelector = accessibleSurveys.length > 1;
 
@@ -132,11 +141,9 @@ const TableFilters = <T,>({
             disabled={!statusColumn}
           >
             <option value="">{t('filters.allStatuses')}</option>
-            {VALIDATION_STATUS_OPTIONS.map(status => (
+            {statusOptions.map(status => (
               <option key={status} value={status}>
-                {status === 'validation_status_approved' && t('status.approved', { ns: 'common' })}
-                {status === 'validation_status_not_approved' && t('status.notApproved', { ns: 'common' })}
-                {status === 'validation_status_on_hold' && t('status.onHold', { ns: 'common' })}
+                {t(statusLabelKey(status), { ns: 'common' })}
               </option>
             ))}
           </select>

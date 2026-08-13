@@ -7,7 +7,7 @@ import { useSurveyContext } from '../contexts/SurveyContext';
 // Get the appropriate API base URL based on environment
 const API_BASE_URL = getApiBaseUrl();
 
-import { Submission, SubmissionData, AccessibleSurvey } from '../types/validation';
+import { Submission, EnumeratorDailyStat, AccessibleSurvey } from '../types/validation';
 import {
   DownloadFilters,
   PreviewResponse,
@@ -18,22 +18,32 @@ import {
   Survey
 } from '../types/download';
 
-// Normalize field names for consistent access
-const normalizeSubmissionData = (item: Record<string, unknown>): Submission => {
-  // Create a new object with all keys from the original
-  const normalized = { ...item } as unknown as Submission & { _submitted_by?: unknown };
+/**
+ * Expand a stored submission row into the shape the table and its filters expect.
+ *
+ * `/kobo/submissions` returns rows exactly as MongoDB holds them and names the owning survey
+ * once in `metadata.survey`. Re-attaching the survey fields and the empty-value defaults here
+ * rather than on the wire is what keeps the largest survey's response from doubling in size —
+ * three survey fields and six defaults repeated across 52,000 rows was 9 MB of the 18.5 MB
+ * measured before. Defaults are reproduced exactly so column filters behave as they did.
+ */
+const normalizeSubmissionData = (
+  item: Record<string, unknown>,
+  survey: AccessibleSurvey | undefined
+): Submission => {
+  const alertFlag = typeof item.alert_flag === 'string' ? item.alert_flag : '';
 
-
-  // Handle common field name transformations
-  if (!normalized.submitted_by && normalized._submitted_by) {
-    normalized.submitted_by = String(normalized._submitted_by);
-  }
-
-  // Ensure submitted_by is always a string, even if empty
-  normalized.submitted_by = normalized.submitted_by ? String(normalized.submitted_by) : '';
-
-
-  return normalized;
+  return {
+    ...(item as unknown as Submission),
+    submitted_by: item.submitted_by ? String(item.submitted_by) : '',
+    validation_status: (item.validation_status as string) || 'validation_status_on_hold',
+    validated_at: (item.validated_at as string) ?? null,
+    alert_flag: alertFlag,
+    alert_flags: alertFlag ? alertFlag.split(', ') : [],
+    asset_id: survey?.asset_id,
+    survey_name: survey?.name,
+    survey_country: survey?.country_id,
+  };
 };
 
 /**
@@ -56,11 +66,50 @@ const buildDownloadQuery = (filters: DownloadFilters): string => {
   return params.toString();
 };
 
-// Hook to fetch submissions
-export const useFetchSubmissions = () => {
+/**
+ * One page of the validation table, as the server understands it.
+ *
+ * Every field is a primitive so the fetching `useCallback` can list them individually and stay
+ * honest about its dependencies — an object here would either lie to `exhaustive-deps` or force
+ * every caller to memoize.
+ */
+export interface SubmissionQuery {
+  /** 1-based, matching the API. */
+  page: number;
+  limit: number;
+  /** Checked against an allowlist server-side; anything else falls back to `submission_date`. */
+  sort: string;
+  order: 'asc' | 'desc';
+  status?: string;
+  /** `'with-alerts'` | `'no-alerts'`; omitted means all. */
+  alert?: string;
+  /** `YYYY-MM-DD`, inclusive. */
+  from?: string;
+  to?: string;
+  /** Prefix match on `submitted_by` / `submission_id`. Debounce before passing it in. */
+  search?: string;
+}
+
+/** Bounds for the date pickers, from the whole collection rather than the loaded page. */
+export interface SubmissionDateRange {
+  min: string | null;
+  max: string | null;
+}
+
+// Hook to fetch one page of submissions
+export const useFetchSubmissions = (query: SubmissionQuery) => {
+  const { page, limit, sort, order, status, alert, from, to, search } = query;
   const { selectedSurveyId, setSelectedSurveyId } = useSurveyContext();
   const [data, setData] = useState<Submission[]>([]);
+  const [total, setTotal] = useState(0);
+  // Derived from the whole collection by the API — the table can no longer work these out from
+  // the rows it holds, because it only holds one page of them.
+  const [statuses, setStatuses] = useState<string[]>([]);
+  const [dateRange, setDateRange] = useState<SubmissionDateRange>({ min: null, max: null });
   const [accessibleSurveys, setAccessibleSurveys] = useState<AccessibleSurvey[]>([]);
+  // The one survey these rows belong to, as named by the API. Consumers read it instead of
+  // deriving it from the rows.
+  const [loadedSurvey, setLoadedSurvey] = useState<AccessibleSurvey | null>(null);
   const [alertCodes, setAlertCodes] = useState<Record<string, Record<string, string>>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,10 +135,18 @@ export const useFetchSubmissions = () => {
 
       const surveyToFetch = forcedSurveyId !== undefined ? forcedSurveyId : selectedSurveyRef.current;
 
-      const params: Record<string, string> = {};
-      if (surveyToFetch) {
-        params.survey_id = surveyToFetch;
-      }
+      const params: Record<string, string> = {
+        page: String(page),
+        limit: String(limit),
+        sort,
+        order,
+      };
+      if (surveyToFetch) params.survey_id = surveyToFetch;
+      if (status) params.status = status;
+      if (alert) params.alert = alert;
+      if (from) params.from = from;
+      if (to) params.to = to;
+      if (search) params.search = search;
 
       const response = await axios.get(`${API_BASE_URL}/kobo/submissions`, {
         params,
@@ -99,6 +156,8 @@ export const useFetchSubmissions = () => {
       // Handle case where backend requires survey selection
       if (response.data.message === 'Please select a survey to view submissions') {
         setData([]);
+        setTotal(0);
+        setLoadedSurvey(null);
         if (response.data.metadata?.accessible_surveys) {
           const surveys = response.data.metadata.accessible_surveys;
           setAccessibleSurveys(surveys);
@@ -118,10 +177,21 @@ export const useFetchSubmissions = () => {
 
       if (!Array.isArray(response.data.results)) {
         setData([]);
+        setTotal(0);
+        setLoadedSurvey(null);
         return;
       }
 
-      setData(response.data.results.map(normalizeSubmissionData));
+      const survey: AccessibleSurvey | undefined = response.data.metadata?.survey;
+      setLoadedSurvey(survey ?? null);
+      setData(
+        response.data.results.map((row: Record<string, unknown>) =>
+          normalizeSubmissionData(row, survey)
+        )
+      );
+      setTotal(response.data.total ?? 0);
+      setStatuses(response.data.metadata?.statuses ?? []);
+      setDateRange(response.data.metadata?.date_range ?? { min: null, max: null });
 
       if (response.data.metadata?.accessible_surveys) {
         const surveys = response.data.metadata.accessible_surveys;
@@ -147,12 +217,15 @@ export const useFetchSubmissions = () => {
       if (controller.signal.aborted) return;
       setError(extractErrorMessage(err, 'Failed to load submissions'));
       setData([]);
+      setTotal(0);
       setAccessibleSurveys([]);
+      setLoadedSurvey(null);
     } finally {
       if (!controller.signal.aborted) setIsLoading(false);
     }
-  // setSelectedSurveyId from useState is always stable — no other deps needed.
-  }, [setSelectedSurveyId]);
+  // setSelectedSurveyId from useState is always stable. The query fields are listed individually
+  // so that changing a page, sort or filter recreates fetchData and the effect below refetches.
+  }, [setSelectedSurveyId, page, limit, sort, order, status, alert, from, to, search]);
 
   useEffect(() => {
     fetchData();
@@ -161,7 +234,11 @@ export const useFetchSubmissions = () => {
 
   return {
     data,
+    total,
+    statuses,
+    dateRange,
     accessibleSurveys,
+    loadedSurvey,
     alertCodes,
     selectedSurvey: selectedSurveyId,
     setSelectedSurvey: setSelectedSurveyId,
@@ -174,8 +251,9 @@ export const useFetchSubmissions = () => {
 // Hook to fetch enumerator statistics from the new MongoDB collection
 export const useFetchEnumeratorStats = () => {
   const { selectedSurveyId, setSelectedSurveyId } = useSurveyContext();
-  const [data, setData] = useState<SubmissionData[]>([]);
+  const [data, setData] = useState<EnumeratorDailyStat[]>([]);
   const [accessibleSurveys, setAccessibleSurveys] = useState<AccessibleSurvey[]>([]);
+  const [loadedSurvey, setLoadedSurvey] = useState<AccessibleSurvey | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -207,6 +285,7 @@ export const useFetchEnumeratorStats = () => {
 
       if (response.data.message === 'Please select a survey to view statistics') {
         setData([]);
+        setLoadedSurvey(null);
         if (response.data.metadata?.accessible_surveys) {
           const surveys = response.data.metadata.accessible_surveys;
           setAccessibleSurveys(surveys);
@@ -223,8 +302,10 @@ export const useFetchEnumeratorStats = () => {
 
       if (!Array.isArray(response.data.results)) {
         setData([]);
+        setLoadedSurvey(null);
         return;
       }
+      setLoadedSurvey(response.data.metadata?.survey ?? null);
       setData(response.data.results);
 
       if (response.data.metadata?.accessible_surveys) {
@@ -240,6 +321,7 @@ export const useFetchEnumeratorStats = () => {
       setError(extractErrorMessage(err, 'Failed to load enumerator statistics'));
       setData([]);
       setAccessibleSurveys([]);
+      setLoadedSurvey(null);
     } finally {
       if (!controller.signal.aborted) setIsLoading(false);
     }
@@ -254,6 +336,7 @@ export const useFetchEnumeratorStats = () => {
   return {
     data,
     accessibleSurveys,
+    loadedSurvey,
     selectedSurvey: selectedSurveyId,
     setSelectedSurvey: setSelectedSurveyId,
     isLoading,
