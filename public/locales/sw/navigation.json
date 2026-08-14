@@ -10,6 +10,10 @@
   "users": "Watumiaji",
   "auditLog": "Kumbukumbu ya Ukaguzi",
   "logout": "Toka",
+  "feedback": {
+    "menuItem": "Tuma maoni au omba msaada",
+    "title": "Tusaidie kuboresha mfumo wako wa Peskas"
+  },
   "role": {
     "admin": "Msimamizi",
     "user": "Mtumiaji"

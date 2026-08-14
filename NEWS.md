@@ -1,3 +1,36 @@
+# Management Platform 2.8.0
+
+Peskas users can now write to the team without leaving the portal.
+
+## New Features
+
+- **Send feedback or ask for help, from any page.** The avatar menu at the top right has a new
+  entry that opens a form in place — no email client, no separate website, no new tab. It reaches
+  the Peskas team directly, and a notification goes out the moment something is submitted.
+
+  The form covers the **whole system**, not only this portal: the public country dashboards, the
+  Tracks app, the open data exports, and the validation, enumerator performance, data download and
+  Data Explorer screens here. Report a figure that looks wrong, ask what a column means, ask for
+  help with validation work, propose a new feature, or propose adding or changing a quality flag.
+  Questions are as welcome as bug reports, and you can write in English, Portuguese or Swahili.
+
+- **The form already knows who you are.** Your name is filled in from your session, and so is your
+  country when your account is scoped to a single one — those questions are then hidden, so there
+  is less to fill in before you can say what you came to say. Anything the portal cannot determine
+  is left for you to answer rather than guessed: administrators and users working across several
+  countries pick their own, and a country the portal does not recognise is never stamped onto your
+  message.
+
+## Notes
+
+- Only a one-line summary and the details are required. Everything else — what kind of message it
+  is, which part of Peskas it concerns, how much it is holding you up, your role, organisation and
+  email — is optional, and the flag question appears only when you say your message is about a
+  quality flag.
+- Screenshots and files can be attached, and they travel with the message as real attachments.
+- The feedback entry only appears once a form is configured, so the menu can never point at
+  something that is not there.
+
 # Management Platform 2.7.0
 
 A performance and reliability release. The two heaviest screens now move a fraction of the data

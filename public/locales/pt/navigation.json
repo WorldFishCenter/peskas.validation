@@ -10,6 +10,10 @@
   "users": "Utilizadores",
   "auditLog": "Registo de Auditoria",
   "logout": "Terminar sessão",
+  "feedback": {
+    "menuItem": "Enviar comentários ou pedir ajuda",
+    "title": "Ajude-nos a melhorar o seu sistema Peskas"
+  },
   "role": {
     "admin": "Administrador",
     "user": "Utilizador"
