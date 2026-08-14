@@ -124,6 +124,12 @@ export const useFetchSubmissions = (query: SubmissionQuery) => {
   // a new call (or StrictMode remount) can cancel the previous one.
   const abortRef = useRef<AbortController | null>(null);
 
+  // The survey whose `statuses` / `date_range` we already hold. Those describe the whole
+  // collection, so they survive every page turn, sort and filter — only a different survey
+  // invalidates them. `?meta=1` asks the API to compute them; without it, it skips three
+  // queries per request.
+  const metaSurveyRef = useRef<string | null>(null);
+
   const fetchData = useCallback(async (forcedSurveyId?: string | null) => {
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -142,6 +148,7 @@ export const useFetchSubmissions = (query: SubmissionQuery) => {
         order,
       };
       if (surveyToFetch) params.survey_id = surveyToFetch;
+      if (!surveyToFetch || surveyToFetch !== metaSurveyRef.current) params.meta = '1';
       if (status) params.status = status;
       if (alert) params.alert = alert;
       if (from) params.from = from;
@@ -190,8 +197,12 @@ export const useFetchSubmissions = (query: SubmissionQuery) => {
         )
       );
       setTotal(response.data.total ?? 0);
-      setStatuses(response.data.metadata?.statuses ?? []);
-      setDateRange(response.data.metadata?.date_range ?? { min: null, max: null });
+      // Present only on a `meta=1` request; otherwise keep what we have for this survey.
+      if (response.data.metadata?.statuses) {
+        setStatuses(response.data.metadata.statuses);
+        setDateRange(response.data.metadata.date_range ?? { min: null, max: null });
+        metaSurveyRef.current = survey?.asset_id ?? null;
+      }
 
       if (response.data.metadata?.accessible_surveys) {
         const surveys = response.data.metadata.accessible_surveys;
@@ -220,6 +231,8 @@ export const useFetchSubmissions = (query: SubmissionQuery) => {
       setTotal(0);
       setAccessibleSurveys([]);
       setLoadedSurvey(null);
+      // Whatever we held is no longer known to match a loaded survey — ask again next time.
+      metaSurveyRef.current = null;
     } finally {
       if (!controller.signal.aborted) setIsLoading(false);
     }

@@ -1,5 +1,5 @@
 /**
- * Ensure every per-survey collection has the indexes the portal's queries need.
+ * Ensure every collection has the indexes the portal's queries need.
  *
  * Usage: node scripts/ensure_survey_indexes.cjs [--dry-run]
  *
@@ -16,6 +16,15 @@
  * free, and this is safe to run against production.
  *
  * Creating an index never changes data. This script does not drop or modify anything.
+ *
+ * Supersedes `add_performance_indexes.cjs`, which did the same job for the per-survey collections
+ * under a second set of names (`type_1` where the pipeline writes `idx_type`) — two names for one
+ * key, which MongoDB would have built as two indexes. The static-collection specs below are the
+ * one thing that script did and this one did not; they are reproduced verbatim from what it
+ * already built in production, so running this changes nothing that is already there.
+ *
+ * Not reproduced: its `surveys.country_code` index. That field is present on 5 of 14 survey
+ * documents and no query in the portal filters on it.
  */
 
 const { MongoClient } = require('mongodb');
@@ -54,8 +63,38 @@ const INDEXES = {
   ]
 };
 
+/** The fixed collections, keyed by exact name rather than prefix. */
+const STATIC_INDEXES = {
+  surveys: [
+    { key: { active: 1, country_id: 1 }, name: 'active_1_country_id_1' },
+    { key: { asset_id: 1 }, name: 'asset_id_1', unique: true }
+  ],
+  countries: [{ key: { code: 1 }, name: 'code_1', unique: true }],
+  users: [{ key: { username: 1 }, name: 'username_1', unique: true }]
+};
+
+/**
+ * Create whichever of `specs` the collection is missing, matching on index name.
+ *
+ * @returns {Promise<number>} how many were created
+ */
+async function ensure(collection, specs) {
+  const existing = new Set((await collection.indexes()).map((i) => i.name));
+  const missing = specs.filter((i) => !existing.has(i.name));
+
+  if (missing.length === 0) {
+    console.log(`  ✓ ${collection.collectionName} — complete`);
+    return 0;
+  }
+
+  console.log(`  + ${collection.collectionName} — missing ${missing.length}: ${missing.map((i) => i.name).join(', ')}`);
+  if (DRY_RUN) return 0;
+  await collection.createIndexes(missing);
+  return missing.length;
+}
+
 async function main() {
-  console.log(`🔎 Checking per-survey indexes${DRY_RUN ? ' (dry run — nothing will be created)' : ''}...\n`);
+  console.log(`🔎 Checking indexes${DRY_RUN ? ' (dry run — nothing will be created)' : ''}...\n`);
 
   const client = new MongoClient(MONGODB_URI);
 
@@ -67,6 +106,10 @@ async function main() {
     const names = (await db.listCollections().toArray()).map((c) => c.name).sort();
     let created = 0;
     let skippedEmpty = 0;
+
+    for (const [name, specs] of Object.entries(STATIC_INDEXES)) {
+      created += await ensure(db.collection(name), specs);
+    }
 
     for (const name of names) {
       const prefix = Object.keys(INDEXES).find((p) => name.startsWith(p));
@@ -81,19 +124,7 @@ async function main() {
         continue;
       }
 
-      const existing = new Set((await collection.indexes()).map((i) => i.name));
-      const missing = INDEXES[prefix].filter((i) => !existing.has(i.name));
-
-      if (missing.length === 0) {
-        console.log(`  ✓ ${name} — complete`);
-        continue;
-      }
-
-      console.log(`  + ${name} — missing ${missing.length}: ${missing.map((i) => i.name).join(', ')}`);
-      if (!DRY_RUN) {
-        await collection.createIndexes(missing);
-        created += missing.length;
-      }
+      created += await ensure(collection, INDEXES[prefix]);
     }
 
     console.log(

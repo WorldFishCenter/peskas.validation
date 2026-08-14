@@ -95,10 +95,16 @@ async function handler(req, res) {
 
     const { filter, sort, skip, limit, page } = buildSubmissionsQuery(req.query, enumeratorFilter);
 
-    // Everything the survey as a whole implies — how many statuses exist, how far the dates run —
+    // Everything the survey as a whole implies — which statuses exist, how far the dates run —
     // has to come from the collection now that only one page of rows is loaded. The picker bounds
     // used to be derived from the rows themselves, which stops being correct at the first page
-    // break. All four queries are index-served; they run together rather than in sequence.
+    // break.
+    //
+    // Only computed when the client asks (`?meta=1`), because none of it changes as you page,
+    // sort or filter within a survey — `src/api/api.ts` keeps it and re-asks when the survey
+    // changes. One request at a time these three cost nothing measurable; ten at once they cost
+    // a third of the response time, which is where the page turns of several users collide.
+    const wantMeta = req.query.meta === '1';
     const scope = { type: { $ne: 'metadata' }, ...enumeratorFilter };
     const dated = { ...scope, submission_date: { $ne: null } };
     /** @type {import('mongodb').FindOptions} */
@@ -107,9 +113,9 @@ async function handler(req, res) {
     const [results, total, statuses, earliest, latest] = await Promise.all([
       collection.find(filter, { projection: PROJECTION }).sort(sort).skip(skip).limit(limit).toArray(),
       collection.countDocuments(filter),
-      collection.distinct('validation_status', scope),
-      collection.findOne(dated, bounds),
-      collection.findOne(dated, { ...bounds, sort: { submission_date: -1 } })
+      wantMeta ? collection.distinct('validation_status', scope) : null,
+      wantMeta ? collection.findOne(dated, bounds) : null,
+      wantMeta ? collection.findOne(dated, { ...bounds, sort: { submission_date: -1 } }) : null
     ]);
 
     // Rows are returned exactly as stored. The identity of the owning survey goes in
@@ -125,11 +131,15 @@ async function handler(req, res) {
       results,
       metadata: {
         survey: surveyRef(survey),
-        statuses: statuses.filter(Boolean).sort(),
-        date_range: {
-          min: earliest?.submission_date ?? null,
-          max: latest?.submission_date ?? null
-        },
+        // Absent rather than empty when not asked for, so the client can tell "no statuses in
+        // this survey" from "you did not ask" and keeps what it already has.
+        ...(wantMeta && {
+          statuses: statuses.filter(Boolean).sort(),
+          date_range: {
+            min: earliest?.submission_date ?? null,
+            max: latest?.submission_date ?? null
+          }
+        }),
         accessible_surveys: allAccessibleSurveys.map(surveyOption)
       }
     });
