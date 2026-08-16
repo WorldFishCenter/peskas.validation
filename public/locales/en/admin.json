@@ -112,7 +112,8 @@
     "categories": {
       "auth": "Auth",
       "validation": "Validation",
-      "download": "Download"
+      "download": "Download",
+      "admin": "Admin"
     },
     "actions": {
       "login_success": "Login",
@@ -121,7 +122,16 @@
       "password_reset_completed": "Password reset completed",
       "validation_status_changed": "Status changed",
       "data_preview": "Data preview",
-      "data_export": "Data export"
+      "data_export": "Data export",
+      "user_created": "User created",
+      "user_updated": "User updated",
+      "user_deleted": "User deleted",
+      "user_permissions_changed": "Permissions changed",
+      "user_password_reset": "Password reset by admin",
+      "country_created": "Country created",
+      "country_updated": "Country updated",
+      "country_deleted": "Country deleted",
+      "data_explorer_load": "Data Explorer load"
     },
     "columns": {
       "timestamp": "Timestamp",
@@ -139,6 +149,13 @@
       "to": "To",
       "apply": "Apply",
       "reset": "Reset"
+    },
+    "details": {
+      "targetUser": "user",
+      "role": "role",
+      "fields": "fields",
+      "surveys": "surveys",
+      "country": "country"
     }
   }
 }

@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import './config'; // Initialize i18n configuration
-import axios from 'axios';
+import axios from '../utils/axiosConfig';
+import { getApiBaseUrl } from '../utils/apiConfig';
 
 export interface Language {
   code: string;
@@ -70,26 +71,19 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('i18n_language', lang);
 
       // Update user preference in database if authenticated
-      const authToken = localStorage.getItem('authToken');
       const storedUser = localStorage.getItem('user');
 
-      if (authToken && storedUser) {
+      if (localStorage.getItem('authToken') && storedUser) {
         try {
           const user = JSON.parse(storedUser);
           const userId = user._id || user.id;
 
           if (userId) {
-            // Update user language preference in backend
-            await axios.patch(
-              `/api/users/${userId}/language`,
-              { language: lang },
-              {
-                headers: {
-                  'Authorization': `Bearer ${authToken}`,
-                  'Content-Type': 'application/json'
-                }
-              }
-            );
+            // Must go through getApiBaseUrl(): a hardcoded '/api' path resolves against the
+            // page origin, which is wrong whenever VITE_API_URL points off-origin — including
+            // local dev, where the API is on :3001. The shared axios instance supplies the
+            // Authorization header.
+            await axios.patch(`${getApiBaseUrl()}/users/${userId}/language`, { language: lang });
 
             // Update stored user data with new language
             const updatedUser = { ...user, language: lang };

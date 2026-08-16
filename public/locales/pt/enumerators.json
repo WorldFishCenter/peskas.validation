@@ -2,7 +2,6 @@
   "pageTitle": "Painel de Desempenho dos Enumeradores",
   "pageSubtitle": "Monitorizar e analisar métricas de desempenho da recolha de dados",
   "title": "Desempenho dos Enumeradores",
-  "adminTokenPrompt": "Introduza o token de administrador para atualizar os dados:",
   "refreshError": "Falha ao atualizar os dados. Tente novamente.",
   "noData": "Não existem dados de desempenho de enumeradores.",
   "alertGuide": "Guia de Alertas",

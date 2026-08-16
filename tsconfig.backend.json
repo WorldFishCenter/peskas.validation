@@ -1,0 +1,26 @@
+// Type-checks the backend. `tsconfig.json` only includes `src`, so until this existed the ~2,700
+// lines under api/, lib/ and server/ were checked by nothing but eslint:recommended. Turning it on
+// surfaced 22 problems, including an audit-category union that omitted 'admin' although eight
+// endpoints write it, and a JSDoc @param naming a parameter that did not exist.
+//
+// Deliberately relaxed: `strict` and `noImplicitAny` are off. The goal is catching real mistakes
+// — typos, wrong arity, properties that do not exist — not annotating every parameter in a
+// codebase that is JavaScript on purpose. Tightening is a separate change.
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "types": ["node"]
+  },
+  "include": ["api/**/*.js", "lib/**/*.js", "server/**/*.js"]
+}

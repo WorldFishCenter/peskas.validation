@@ -10,6 +10,7 @@ import {
   wrapTooltip,
   chartColors
 } from '../utils/chartConfig';
+import { qualityScore as computeQualityScore } from '../utils/dataUtils';
 
 interface SubmissionVolumeChartProps {
   enumerators: EnumeratorData[];
@@ -47,14 +48,12 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = React.memo((
       },
       tooltip: {
         ...baseTooltipConfig,
-        formatter: function(this: any) {
+        formatter: function(this: Highcharts.Point) {
           // Get enumerator name from category axis
-          const categoryName = this.key ||
-            (typeof this.x === 'string' ? this.x : this.chart.xAxis[0].categories[this.x]);
+          const categoryName = this.key || this.series.chart.xAxis[0].categories[this.x];
           const name = String(categoryName);
           const enumerator = sortedEnumerators.find(e => e.name === name);
-          const errorRate = enumerator?.filteredErrorRate ?? enumerator?.errorRate ?? 0;
-          const qualityScore = (100 - errorRate).toFixed(1);
+          const qualityScore = computeQualityScore(enumerator).toFixed(1);
 
           return wrapTooltip(
             formatTooltipHeader(name) +

@@ -5,10 +5,11 @@
  * Requires authentication
  */
 
-const { getDb } = require('../../../lib/db');
-const { sendDetailedError, setCorsHeaders } = require('../../../lib/response');
+const { sendDetailedError, sendForbidden, setCorsHeaders } = require('../../../lib/response');
 const { withMiddleware, authenticateUser } = require('../../../lib/middleware');
 const { makeKoboRequest, isValidAssetId, sanitizeString } = require('../../../lib/api-utils');
+const { getAccessibleSurveys } = require('../../../lib/filter-permissions');
+const { VALIDATION_STATUSES } = require('../../../lib/helpers');
 
 async function handler(req, res) {
   // Set CORS headers
@@ -57,24 +58,24 @@ async function handler(req, res) {
         new Error('Invalid asset_id format'), req, 400);
     }
 
-    // Validate validation_status format (must be one of the allowed values)
-    const validStatuses = ['validation_status_approved', 'validation_status_not_approved'];
-    if (!validStatuses.includes(validation_status)) {
+    // Validate validation_status against the shared list, so this endpoint and the MongoDB one
+    // accept exactly the same set.
+    if (!VALIDATION_STATUSES.includes(validation_status)) {
       return sendDetailedError(res, 'PATCH /api/kobo/validation-status/:id - Invalid validation_status',
-        new Error(`validation_status must be one of: ${validStatuses.join(', ')}`), req, 400);
+        new Error(`validation_status must be one of: ${VALIDATION_STATUSES.join(', ')}`), req, 400);
     }
 
-    // Fetch survey configuration to get the correct API URL
-    const database = await getDb();
-    if (!database) {
-      return sendDetailedError(res, 'PATCH /api/kobo/validation_status/:id - Database connection',
-        new Error('Database connection not available'), req, 500);
-    }
+    // Permission check before touching the database or KoboToolbox. This endpoint writes to the
+    // external system the R pipeline reconciles Mongo *from*, so it is the more consequential of
+    // the two write paths — it previously had authentication but no authorization, letting any
+    // signed-in user set a status on any survey. Resolving the survey through the permission
+    // filter also stops the error messages below from disclosing names and config state of
+    // surveys the caller cannot see.
+    const accessibleSurveys = await getAccessibleSurveys(req.user);
+    const survey = accessibleSurveys.find(s => s.asset_id === koboAssetId);
 
-    const survey = await database.collection('surveys').findOne({ asset_id: koboAssetId });
     if (!survey) {
-      return sendDetailedError(res, 'PATCH /api/kobo/validation_status/:id - Survey not found',
-        new Error(`Survey with asset_id '${koboAssetId}' not found in database`), req, 404);
+      return sendForbidden(res, 'You do not have access to the requested survey.');
     }
 
     if (!survey.kobo_config) {

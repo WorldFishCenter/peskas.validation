@@ -16,6 +16,7 @@ import {
 } from '@tabler/icons-react';
 import { DownloadFilters as FiltersType } from '../../types/download';
 import { useFetchDownloadMetadata } from '../../api/api';
+import { AuthUser } from '../Auth/AuthContext';
 
 interface DownloadFiltersProps {
   filters: FiltersType;
@@ -23,7 +24,7 @@ interface DownloadFiltersProps {
   onPreview: () => void;
   onReset: () => void;
   isLoading: boolean;
-  user: any;
+  user: AuthUser | null;
 }
 
 /** Small leading icon for a field label (subtle, for scannability). */
@@ -58,7 +59,8 @@ const DownloadFilters: React.FC<DownloadFiltersProps> = ({
   const hasAccess = isAdmin ? !!filters.country : surveys.length > 0;
   const isPreviewDisabled = isLoading || loadingMetadata || !hasAccess;
 
-  const handleChange = (field: keyof FiltersType, value: any) => {
+  // Every caller passes a `<select>`/`<input>` value, so a plain string covers all fields.
+  const handleChange = (field: keyof FiltersType, value: string) => {
     if (field === 'country') {
       // Country changed → reset the cascade below it (survey + district).
       setFilters({ ...filters, [field]: value, survey_id: [], gaul_2: '' });
@@ -267,7 +269,7 @@ const DownloadFilters: React.FC<DownloadFiltersProps> = ({
                   className="link-secondary"
                 >
                   <IconExternalLink className="icon icon-inline" size={14} />
-                  {t('common.learnMore')}
+                  {t('learnMore', { ns: 'common' })}
                 </a>
               </small>
             </div>

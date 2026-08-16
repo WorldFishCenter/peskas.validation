@@ -19,7 +19,8 @@
     "onHold": "Imesitishwa",
     "default": "Inasubiri",
     "not_approved": "Haijaidhinishwa",
-    "on_hold": "Imesitishwa"
+    "on_hold": "Imesitishwa",
+    "not_validated": "Haijathibitishwa"
   },
   "role": {
     "admin": "Msimamizi",
@@ -52,5 +53,6 @@
   "unknown": "Haijulikani",
   "footer": {
     "copyright": "WorldFish Center © 2025"
-  }
+  },
+  "learnMore": "Jifunze zaidi"
 }

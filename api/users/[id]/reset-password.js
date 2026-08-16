@@ -8,8 +8,9 @@
 const bcrypt = require('bcryptjs');
 const { withMiddleware, authenticateUser, requireAdmin } = require('../../../lib/middleware');
 const { getDb } = require('../../../lib/db');
-const { validateObjectId } = require('../../../lib/helpers');
+const { validateObjectId, validatePassword } = require('../../../lib/helpers');
 const { setCorsHeaders } = require('../../../lib/response');
+const { logAuditEvent } = require('../../../lib/audit-logger');
 
 async function handler(req, res) {
   setCorsHeaders(res, req);
@@ -30,20 +31,12 @@ async function handler(req, res) {
     // Validate ObjectId before using it
     const userId = validateObjectId(id, 'User ID');
 
-    if (!newPassword || newPassword.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password must be at least 8 characters'
-      });
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      return res.status(400).json({ success: false, message: passwordError });
     }
 
     const database = await getDb();
-    if (!database) {
-      return res.status(500).json({
-        success: false,
-        message: 'Database not configured'
-      });
-    }
 
     // Hash the new password
     const password_hash = await bcrypt.hash(newPassword, 10);
@@ -66,6 +59,19 @@ async function handler(req, res) {
         message: 'User not found'
       });
     }
+
+    // An admin changing another account's password is exactly the kind of action the audit
+    // log exists for. Awaited before responding: Vercel freezes the context after the
+    // response, so a fire-and-forget write is dropped.
+    await logAuditEvent(database, {
+      username: req.user.username,
+      user_id: req.user.id,
+      category: 'admin',
+      action: 'user_password_reset',
+      status: 'success',
+      details: { target_user_id: userId.toString() },
+      req
+    });
 
     return res.json({
       success: true,

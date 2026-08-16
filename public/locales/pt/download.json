@@ -89,8 +89,5 @@
     "invalidDateRange": "Intervalo de datas inválido. 'Data Inicial' deve ser anterior a 'Data Final'.",
     "noCountrySelected": "Por favor, selecione um país.",
     "previewFailed": "Falha ao carregar visualização. Por favor, verifique seus filtros e tente novamente."
-  },
-  "common": {
-    "learnMore": "Saiba mais"
   }
 }

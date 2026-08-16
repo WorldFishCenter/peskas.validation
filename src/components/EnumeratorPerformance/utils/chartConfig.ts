@@ -65,13 +65,16 @@ export const columnTooltipConfig: Highcharts.TooltipOptions = {
  * Format a tooltip row with colored bullet and value
  */
 export const formatTooltipRow = (
-  color: string,
+  color: Highcharts.ColorType | undefined,
   label: string,
   value: string | number,
   suffix: string = ''
 ): string => {
+  // A point's colour can also be a gradient or pattern object, neither of which has a CSS
+  // string form — fall back to the inherited colour rather than emitting "[object Object]".
+  const swatch = typeof color === 'string' ? color : 'currentColor';
   return `<div style="display: flex; align-items: center; margin: 4px 0;">
-    <span style="color: ${color}; font-size: 16px; margin-right: 6px;">●</span>
+    <span style="color: ${swatch}; font-size: 16px; margin-right: 6px;">●</span>
     <span style="color: #666;">${label}:</span>
     <span style="font-weight: 600; margin-left: 4px;">${value}${suffix}</span>
   </div>`;
@@ -118,14 +121,3 @@ export const chartColors = {
   secondary: '#667382'
 };
 
-/**
- * Base chart configuration
- */
-export const baseChartConfig: Partial<Highcharts.Options> = {
-  credits: { enabled: false },
-  chart: {
-    style: {
-      fontFamily: 'inherit'
-    }
-  }
-};

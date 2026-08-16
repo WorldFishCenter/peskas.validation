@@ -7,8 +7,9 @@
 
 const { withMiddleware, authenticateUser } = require('../../../lib/middleware');
 const { getDb } = require('../../../lib/db');
-const { getSurveyFlagsCollection } = require('../../../lib/helpers');
-const { sendBadRequest, sendServerError, setCorsHeaders } = require('../../../lib/response');
+const { getSurveyFlagsCollection, VALIDATION_STATUSES } = require('../../../lib/helpers');
+const { getAccessibleSurveys } = require('../../../lib/filter-permissions');
+const { sendBadRequest, sendForbidden, sendNotFound, sendServerError, setCorsHeaders } = require('../../../lib/response');
 const { logAuditEvent } = require('../../../lib/audit-logger');
 
 async function handler(req, res) {
@@ -34,20 +35,38 @@ async function handler(req, res) {
       return sendBadRequest(res, 'asset_id is required');
     }
 
-    const VALID_STATUSES = ['validation_status_approved', 'validation_status_not_approved', 'validation_status_on_hold'];
-    if (!validation_status || !VALID_STATUSES.includes(validation_status)) {
+    // Shared with api/kobo/validation-status/[id].js so both write paths accept the same set.
+    if (!VALIDATION_STATUSES.includes(validation_status)) {
       return sendBadRequest(res, 'Invalid validation_status value');
     }
 
     database = await getDb();
-    if (!database) {
-      return sendServerError(res, 'Database not configured');
+
+    // The asset_id names the collection that gets written to, so it must be one of the
+    // surveys this user may touch — not merely a non-empty string. Without this check any
+    // authenticated user could write into any survey, and an unrecognised value would create
+    // a new `surveys_flags-*` collection on first upsert.
+    const accessibleSurveys = await getAccessibleSurveys(req.user);
+    if (!accessibleSurveys.some(s => s.asset_id === asset_id)) {
+      return sendForbidden(res, 'You do not have access to the requested survey.');
     }
 
     const collectionName = getSurveyFlagsCollection(asset_id);
 
+    // `submission_id` is written by the R pipeline as a NUMBER, but arrives here as a string
+    // from the URL path, and MongoDB does not coerce across BSON types. Matching on the raw
+    // string found nothing; combined with the old `upsert: true` that silently inserted a
+    // throwaway string-keyed document instead of updating the real row, so portal status
+    // changes never actually landed in Mongo. Match either representation.
+    const numericId = /^\d+$/.test(id) ? Number(id) : null;
+    const idFilter = numericId === null
+      ? { submission_id: id }
+      : { submission_id: { $in: [id, numericId] } };
+
+    // No upsert: a submission the R pipeline has not written yet is a genuine 404, not a new
+    // document keyed on nothing but a client-supplied submission_id.
     const before = await database.collection(collectionName).findOneAndUpdate(
-      { submission_id: id },
+      idFilter,
       {
         $set: {
           validation_status,
@@ -55,9 +74,14 @@ async function handler(req, res) {
           validated_by: req.user.username
         }
       },
-      { upsert: true, returnDocument: 'before' }
+      { returnDocument: 'before' }
     );
-    const fromStatus = before?.validation_status || null;
+
+    if (!before) {
+      return sendNotFound(res, `Submission ${id} not found in the selected survey`);
+    }
+
+    const fromStatus = before.validation_status || null;
 
     await logAuditEvent(database, {
       username: req.user.username,

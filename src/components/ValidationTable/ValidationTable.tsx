@@ -2,17 +2,12 @@ import React, { useMemo, useState, useEffect } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
   flexRender,
   ColumnDef,
   Row,
   ColumnFiltersState,
-  FilterFn,
   SortingState,
 } from '@tanstack/react-table';
-import { rankItem } from '@tanstack/match-sorter-utils';
 import { useTranslation } from 'react-i18next';
 import StatusUpdateForm from './StatusUpdateForm';
 import { useFetchSubmissions } from '../../api/api';
@@ -25,12 +20,10 @@ import AlertGuideModal from './AlertGuideModal';
 import StatusBadge from './StatusBadge';
 import { getCountryFlag, getCountryName } from '../../utils/countryMetadata';
 
-// Define a fuzzy filter function using rankItem
-const fuzzyFilter: FilterFn<Submission> = (row, columnId, value, addMeta) => {
-  const itemRank = rankItem(row.getValue(columnId), value);
-  addMeta({ itemRank });
-  return itemRank.passed;
-};
+/** How long the search box waits before asking the server. */
+const SEARCH_DEBOUNCE_MS = 300;
+
+const day = (iso: string | null): string => (iso ? iso.slice(0, 10) : '');
 
 const formatDateWithDefault = (dateStr: string | null, defaultText: string, invalidText: string): string => {
   if (!dateStr) return defaultText;
@@ -53,32 +46,22 @@ const formatDateWithDefault = (dateStr: string | null, defaultText: string, inva
       hour: '2-digit',
       minute: '2-digit'
     });
-  } catch (e) {
+  } catch {
     return invalidText;
   }
 };
 
-// Helper to get min and max date from submissions
-const getMinMaxDate = (subs: Submission[] | undefined): [string, string] => {
-  if (!subs || subs.length === 0) return ['2024-02-01', '2024-02-01'];
-  let min = subs[0].submission_date;
-  let max = subs[0].submission_date;
-  for (const s of subs) {
-    if (s.submission_date && s.submission_date < min) min = s.submission_date;
-    if (s.submission_date && s.submission_date > max) max = s.submission_date;
-  }
-  return [min.slice(0, 10), max.slice(0, 10)];
-};
 
 const ValidationTable: React.FC = () => {
   const { t } = useTranslation('validation');
-  const { data: submissions, accessibleSurveys, selectedSurvey, setSelectedSurvey, isLoading, error, refetch } = useFetchSubmissions();
   const [selectedRow, setSelectedRow] = useState<Submission | null>(null);
   const [statusToUpdate, setStatusToUpdate] = useState<string>('validation_status_approved');
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(10);
+  // Raw input value, and the debounced copy that actually reaches the server.
   const [globalFilter, setGlobalFilter] = useState('');
+  const [search, setSearch] = useState('');
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
@@ -86,8 +69,51 @@ const ValidationTable: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-  const [minDate, maxDate] = getMinMaxDate(submissions);
-  const [contextualSubmissions, setContextualSubmissions] = useState<Submission[]>(submissions || []);
+
+  useEffect(() => {
+    const id = setTimeout(() => setSearch(globalFilter), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(id);
+  }, [globalFilter]);
+
+  // Paging, sorting and filtering all happen in MongoDB — the table holds one page, never the
+  // whole collection. `columnFilters` is still the state container the filter dropdowns write
+  // to; it is read here and sent to the server rather than applied to the rows.
+  const statusFilter = columnFilters.find(f => f.id === 'validation_status')?.value as string | undefined;
+  const alertFilter = columnFilters.find(f => f.id === 'alert_flag')?.value as string | undefined;
+
+  const {
+    data: submissions,
+    total,
+    statuses,
+    dateRange,
+    accessibleSurveys,
+    loadedSurvey,
+    selectedSurvey,
+    setSelectedSurvey,
+    isLoading,
+    error,
+    refetch,
+  } = useFetchSubmissions({
+    page: pageIndex + 1,
+    limit: pageSize,
+    sort: sorting[0]?.id ?? 'submission_date',
+    order: sorting[0] && !sorting[0].desc ? 'asc' : 'desc',
+    status: statusFilter,
+    alert: alertFilter === 'all' ? undefined : alertFilter,
+    from: fromDate || undefined,
+    to: toDate || undefined,
+    search: search || undefined,
+  });
+
+  // Bounds for the date pickers come from the collection, not from the loaded rows — deriving
+  // them from the rows stopped being correct at the first page break. Both are null on a survey
+  // whose submissions carry no date at all, which leaves the pickers empty and unconstrained.
+  const minDate = day(dateRange.min);
+  const maxDate = day(dateRange.max);
+
+  // Any change to what is being asked for starts again at page one. Doing it in the setters
+  // rather than in an effect avoids firing a request for the old page first.
+  const firstPage = () => setPageIndex(0);
 
   // Helper function that uses translation
   const formatDate = (dateStr: string | null): string => {
@@ -104,33 +130,14 @@ const ValidationTable: React.FC = () => {
         hour: '2-digit',
         minute: '2-digit'
       });
-    } catch (e) {
+    } catch {
       return t('table.invalidDate');
     }
   };
 
-  // Sync contextualSubmissions when submissions first load
-  useEffect(() => {
-    if (submissions && submissions.length > 0 && contextualSubmissions.length === 0) {
-      setContextualSubmissions(submissions);
-    }
-  }, [submissions, contextualSubmissions.length]);
-
-  // Get contextual alert codes based on currently visible/filtered data
-  const { surveyAlertCodes } = useContextualAlertCodes(contextualSubmissions);
-
-  useEffect(() => {
-    setFromDate(minDate);
-    setToDate(maxDate);
-  }, [minDate, maxDate]);
-
-  const dateRangeFilter: FilterFn<Submission> = (row, columnId, value) => {
-    const [from, to] = value as [string, string];
-    const dateStr = row.getValue(columnId) as string;
-    if (!dateStr) return false;
-    const rowDate = dateStr.slice(0, 10);
-    return (!from || rowDate >= from) && (!to || rowDate <= to);
-  };
+  // Alert codes for the survey these rows came from. The API names it directly, so this no
+  // longer keeps a second filtered copy of every row just to work out which survey they are.
+  const { surveyAlertCodes } = useContextualAlertCodes(loadedSurvey);
 
   const columns = useMemo<ColumnDef<Submission, unknown>[]>(
     () => [
@@ -139,8 +146,6 @@ const ValidationTable: React.FC = () => {
         header: () => t('columns.submissionId'),
         cell: info => info.getValue(),
         enableSorting: true,
-        enableColumnFilter: true,
-        filterFn: fuzzyFilter,
       },
       {
         accessorKey: 'survey_name',
@@ -164,9 +169,9 @@ const ValidationTable: React.FC = () => {
             </div>
           );
         },
-        enableSorting: true,
-        enableColumnFilter: true,
-        filterFn: fuzzyFilter,
+        // Every row on the page belongs to the same survey — the API serves exactly one per
+        // request — so there is nothing here to sort by.
+        enableSorting: false,
       },
       {
         accessorKey: 'submitted_by',
@@ -183,8 +188,8 @@ const ValidationTable: React.FC = () => {
           if (!displayValue && row) {
             if (typeof row.submitted_by === 'string' && row.submitted_by.trim() !== '') {
               displayValue = row.submitted_by;
-            } else if (typeof (row as any).submittedBy === 'string' && (row as any).submittedBy.trim() !== '') {
-              displayValue = (row as any).submittedBy;
+            } else if (typeof row.submittedBy === 'string' && row.submittedBy.trim() !== '') {
+              displayValue = row.submittedBy;
             }
           }
           
@@ -194,8 +199,6 @@ const ValidationTable: React.FC = () => {
             : <span className="text-muted">—</span>;
         },
         enableSorting: true,
-        enableColumnFilter: true,
-        filterFn: fuzzyFilter,
       },
       {
         accessorKey: 'submission_date',
@@ -206,13 +209,11 @@ const ValidationTable: React.FC = () => {
           try {
             // For submission date, we only want YYYY-MM-DD
             return date.split('T')[0];
-          } catch (e) {
+          } catch {
             return t('table.invalidDate');
           }
         },
         enableSorting: true,
-        enableColumnFilter: true,
-        filterFn: dateRangeFilter,
       },
       {
         accessorKey: 'alert_flag',
@@ -232,13 +233,6 @@ const ValidationTable: React.FC = () => {
           return <span className="text-muted">—</span>;
         },
         enableColumnFilter: true,
-        filterFn: (row, columnId, filterValue) => {
-          if (filterValue === 'all') return true;
-          const alertFlag = row.getValue(columnId) as string;
-          return filterValue === 'with-alerts' 
-            ? Boolean(alertFlag && alertFlag.trim() !== '')
-            : !alertFlag || alertFlag.trim() === '';
-        },
       },
       {
         accessorKey: 'validation_status',
@@ -246,7 +240,6 @@ const ValidationTable: React.FC = () => {
         cell: info => <StatusBadge status={info.getValue() as string} />,
         enableSorting: true,
         enableColumnFilter: true,
-        filterFn: 'equals',
         size: 150,
         minSize: 150,
       },
@@ -255,23 +248,20 @@ const ValidationTable: React.FC = () => {
         header: () => t('columns.actions'),
         cell: info => formatDateWithDefault(info.getValue() as string, t('table.neverValidated'), t('table.invalidDate')),
         enableSorting: true,
-        enableColumnFilter: true,
-        filterFn: fuzzyFilter,
       },
     ],
-    [t, fromDate, toDate]
+    [t]
   );
 
   const table = useReactTable({
-    data: submissions || [],
-    columns: columns as any,
+    data: submissions,
+    columns,
     state: {
       sorting,
       pagination: { pageIndex, pageSize },
-      globalFilter,
       columnFilters,
     },
-    onSortingChange: setSorting,
+    onSortingChange: updater => { setSorting(updater); firstPage(); },
     onPaginationChange: updater => {
       if (typeof updater === 'function') {
         const newState = updater({ pageIndex, pageSize });
@@ -279,35 +269,26 @@ const ValidationTable: React.FC = () => {
         setPageSize(newState.pageSize);
       }
     },
-    onGlobalFilterChange: setGlobalFilter,
-    onColumnFiltersChange: setColumnFilters,
+    onColumnFiltersChange: updater => { setColumnFilters(updater); firstPage(); },
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    globalFilterFn: fuzzyFilter as any,
-    filterFns: {
-      fuzzy: fuzzyFilter as any,
-      dateRange: dateRangeFilter as any,
-    },
-    initialState: {
-      pagination: { pageSize: 10 },
-    },
+    // The row models that page, sort and filter in the browser are gone: the server does all
+    // three. Without this the table would page a single page of rows a second time.
+    manualPagination: true,
+    manualSorting: true,
+    manualFiltering: true,
+    pageCount: Math.max(1, Math.ceil(total / pageSize)),
   });
 
-  useEffect(() => {
-    table.getColumn('submission_date')?.setFilterValue([fromDate, toDate]);
-  }, [fromDate, toDate, table]);
-
-  // Update contextual submissions when filters change
-  useEffect(() => {
-    const filtered = table.getFilteredRowModel().rows.map(row => row.original);
-    if (filtered.length > 0) {
-      setContextualSubmissions(filtered);
-    } else {
-      setContextualSubmissions(submissions || []);
-    }
-  }, [table.getState().columnFilters, table.getState().globalFilter, submissions]);
+  const resetFilters = () => {
+    setGlobalFilter('');
+    // Cleared directly as well as through `globalFilter`: waiting for the debounce would fetch
+    // once with the old search term still attached, then again 300ms later once it clears.
+    setSearch('');
+    table.resetColumnFilters();
+    setFromDate('');
+    setToDate('');
+    firstPage();
+  };
 
   const handleRowClick = (row: Row<Submission>) => {
     setSelectedRow(row.original);
@@ -335,7 +316,10 @@ const ValidationTable: React.FC = () => {
     }
   };
 
-  if (isLoading)
+  // Only the first load replaces the page. Every page turn, sort and filter is now a request
+  // too, and swapping the whole screen out for a spinner each time would unmount the search box
+  // mid-typing; those show as a dimmed table instead.
+  if (isLoading && !loadedSurvey)
     return (
       <div className="page-body">
         <div className="container-xl">
@@ -380,30 +364,19 @@ const ValidationTable: React.FC = () => {
               <TableFilters
                 table={table}
                 globalFilter={globalFilter}
-                setGlobalFilter={setGlobalFilter}
-                resetFilters={() => {
-                  setGlobalFilter('');
-                  table.resetColumnFilters();
-                  setFromDate(minDate);
-                  setToDate(maxDate);
-                  table.getColumn('submission_date')?.setFilterValue([minDate, maxDate]);
-                }}
+                setGlobalFilter={(value: string) => { setGlobalFilter(value); firstPage(); }}
+                resetFilters={resetFilters}
                 fromDate={fromDate}
                 toDate={toDate}
-                setFromDate={(date: string) => {
-                  setFromDate(date);
-                  table.getColumn('submission_date')?.setFilterValue([date, toDate]);
-                }}
-                setToDate={(date: string) => {
-                  setToDate(date);
-                  table.getColumn('submission_date')?.setFilterValue([fromDate, date]);
-                }}
+                setFromDate={(date: string) => { setFromDate(date); firstPage(); }}
+                setToDate={(date: string) => { setToDate(date); firstPage(); }}
                 minDate={minDate}
                 maxDate={maxDate}
+                statusOptions={statuses}
                 accessibleSurveys={accessibleSurveys}
                 selectedSurvey={selectedSurvey}
                 onSurveyChange={(assetId) => {
-                  table.resetColumnFilters();
+                  resetFilters();
                   setSelectedSurvey(assetId);
                   refetch(assetId);
                 }}
@@ -413,7 +386,7 @@ const ValidationTable: React.FC = () => {
           </div>
 
           {/* Table Card */}
-          <div className="card">
+          <div className={`card ${isLoading ? 'opacity-50' : ''}`} aria-busy={isLoading}>
             <div className="table-responsive-fixed">
               <table className="table table-vcenter table-hover">
                 <thead>
@@ -475,7 +448,7 @@ const ValidationTable: React.FC = () => {
             {/* Pagination Footer */}
             <div className="card-footer d-flex align-items-center">
               <p className="m-0 text-muted">
-                {t('pagination.showing', { ns: 'common' })} <span>{table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}</span> {t('pagination.to', { ns: 'common' })} <span>{Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getPrePaginationRowModel().rows.length)}</span> {t('pagination.of', { ns: 'common' })} <span>{table.getPrePaginationRowModel().rows.length}</span> {t('pagination.entries', { ns: 'common' })}
+                {t('pagination.showing', { ns: 'common' })} <span>{total === 0 ? 0 : pageIndex * pageSize + 1}</span> {t('pagination.to', { ns: 'common' })} <span>{Math.min((pageIndex + 1) * pageSize, total)}</span> {t('pagination.of', { ns: 'common' })} <span>{total}</span> {t('pagination.entries', { ns: 'common' })}
               </p>
               <ul className="pagination m-0 ms-auto">
                 <li className={`page-item ${!table.getCanPreviousPage() ? 'disabled' : ''}`}>
@@ -568,18 +541,6 @@ const ValidationTable: React.FC = () => {
                       {selectedRow?.submitted_by || t('table.unknownEnumerator')}
                     </div>
                   </div>
-                  {selectedRow?.vessel_number && (
-                    <div className="datagrid-item">
-                      <div className="datagrid-title">{t('table.vesselLabel')}</div>
-                      <div className="datagrid-content">{selectedRow.vessel_number}</div>
-                    </div>
-                  )}
-                  {selectedRow?.catch_number && (
-                    <div className="datagrid-item">
-                      <div className="datagrid-title">{t('table.catchNumberLabel')}</div>
-                      <div className="datagrid-content">{selectedRow.catch_number}</div>
-                    </div>
-                  )}
                   <div className="datagrid-item">
                     <div className="datagrid-title">{t('table.statusLabel')}</div>
                     <div className="datagrid-content">

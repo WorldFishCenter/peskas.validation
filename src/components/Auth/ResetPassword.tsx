@@ -31,7 +31,7 @@ const ResetPassword: React.FC = () => {
         if (result.valid && result.username) {
           setUsername(result.username);
         }
-      } catch (err) {
+      } catch {
         setTokenValid(false);
       }
     };
@@ -63,8 +63,8 @@ const ResetPassword: React.FC = () => {
       setTimeout(() => {
         navigate('/');
       }, 3000);
-    } catch (err: any) {
-      setError(err.message || t('errors.resetFailed'));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t('errors.resetFailed'));
     } finally {
       setLoading(false);
     }
@@ -101,7 +101,9 @@ const ResetPassword: React.FC = () => {
               <h2 className="card-title mb-3">{t('resetPassword.invalidToken')}</h2>
               <p className="text-secondary">{t('resetPassword.invalidTokenMessage')}</p>
               <div className="mt-4">
-                <Link to="/forgot-password" className="btn btn-primary w-100">
+                {/* The login page hosts the reset-request modal; there is no /forgot-password
+                    route, so this used to fall through the catch-all to "/" anyway. */}
+                <Link to="/" className="btn btn-primary w-100">
                   {t('resetPassword.requestNewLink')}
                 </Link>
               </div>

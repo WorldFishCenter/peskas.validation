@@ -1,15 +1,40 @@
 /**
  * GET /api/kobo/submissions
  *
- * Fetch submissions from MongoDB filtered by user permissions.
+ * Fetch one page of submissions from MongoDB, filtered by user permissions.
  * Supports multi-survey architecture with explicit survey selection.
  * Requires authentication.
+ *
+ * Paging, sorting and filtering all happen in MongoDB. Returning the whole collection put the
+ * largest survey (51,912 rows) at 9.8 MB — past Vercel's 4.5 MB response cap, and growing with
+ * the data. Query parameters: `page`, `limit`, `sort`, `order`, `status`, `alert`, `from`, `to`,
+ * `search`; see `lib/submissions-query.js` for how each is validated.
  */
 
 const { withMiddleware, authenticateUser } = require('../../lib/middleware');
 const { getDb } = require('../../lib/db');
 const { getSurveyFlagsCollection } = require('../../lib/helpers');
+const { getAccessibleSurveys } = require('../../lib/filter-permissions');
+const { buildSubmissionsQuery } = require('../../lib/submissions-query');
 const { sendSuccess, sendServerError, sendMethodNotAllowed, setCorsHeaders } = require('../../lib/response');
+
+const PROJECTION = {
+  submission_id: 1,
+  submission_date: 1,
+  submitted_by: 1,
+  validation_status: 1,
+  validated_at: 1,
+  validated_by: 1,
+  alert_flag: 1,
+  _id: 0
+};
+
+const surveyRef = s => ({ asset_id: s.asset_id, name: s.name, country_id: s.country_id });
+
+const surveyOption = s => ({ ...surveyRef(s), alert_codes: s.alert_codes || {} });
+
+const emptyPage = (res, extra = {}) =>
+  sendSuccess(res, { count: 0, total: 0, page: 1, limit: 0, results: [], metadata: { accessible_surveys: [] }, ...extra });
 
 async function handler(req, res) {
   setCorsHeaders(res, req);
@@ -30,25 +55,10 @@ async function handler(req, res) {
 
     const user = req.user;
 
-    // Determine which surveys the user has access to
-    let accessibleSurveys;
-
-    if (user.role === 'admin' && (!user.permissions?.surveys || user.permissions.surveys.length === 0)) {
-      accessibleSurveys = await database.collection('surveys')
-        .find({ active: true })
-        .toArray();
-    } else {
-      accessibleSurveys = await database.collection('surveys')
-        .find({ asset_id: { $in: user.permissions?.surveys || [] }, active: true })
-        .toArray();
-    }
+    let accessibleSurveys = await getAccessibleSurveys(user);
 
     if (accessibleSurveys.length === 0) {
-      return sendSuccess(res, {
-        count: 0,
-        results: [],
-        metadata: { accessible_surveys: [] }
-      });
+      return emptyPage(res);
     }
 
     // Save full list before any filtering — always returned in metadata so the
@@ -62,121 +72,75 @@ async function handler(req, res) {
       accessibleSurveys = allAccessibleSurveys.filter(s => s.asset_id === surveyIdFilter);
 
       if (accessibleSurveys.length === 0) {
-        return sendSuccess(res, {
-          count: 0,
-          results: [],
-          message: 'Survey not found or access denied',
-          metadata: { accessible_surveys: [] }
-        });
+        return emptyPage(res, { message: 'Survey not found or access denied' });
       }
     } else if (accessibleSurveys.length > 1) {
       // Multiple surveys available but no selection — require explicit choice
-      return sendSuccess(res, {
-        count: 0,
-        results: [],
+      return emptyPage(res, {
         message: 'Please select a survey to view submissions',
-        metadata: {
-          accessible_surveys: allAccessibleSurveys.map(s => ({
-            asset_id: s.asset_id,
-            name: s.name,
-            country_id: s.country_id,
-            alert_codes: s.alert_codes || {}
-          }))
-        }
+        metadata: { accessible_surveys: allAccessibleSurveys.map(surveyOption) }
       });
     }
 
     // Enumerator restrictions
     const allowedEnumerators = user.permissions?.enumerators || [];
-    const hasEnumeratorRestrictions = allowedEnumerators.length > 0;
-    const enumeratorFilter = hasEnumeratorRestrictions
+    const enumeratorFilter = allowedEnumerators.length > 0
       ? { submitted_by: { $in: allowedEnumerators } }
       : {};
 
-    // Fetch all submissions from MongoDB — pagination is applied in-memory after combining surveys
-    const submissionsPromises = accessibleSurveys.map(async (survey) => {
-      const collectionName = getSurveyFlagsCollection(survey.asset_id);
+    // Exactly one survey is loaded per request — either the client picked one, or the user has
+    // only one. Both branches above guarantee it, so there is no fan-out to merge.
+    const survey = accessibleSurveys[0];
+    const collection = database.collection(getSurveyFlagsCollection(survey.asset_id));
 
-      try {
-        const mongoSubmissions = await database.collection(collectionName)
-          .find(
-            { type: { $ne: 'metadata' }, ...enumeratorFilter },
-            {
-              projection: {
-                submission_id: 1,
-                submission_date: 1,
-                vessel_number: 1,
-                catch_number: 1,
-                submitted_by: 1,
-                validation_status: 1,
-                validated_at: 1,
-                validated_by: 1,
-                alert_flag: 1,
-                _id: 0
-              }
-            }
-          )
-          .sort({ submission_date: -1 })
-          .toArray();
+    const { filter, sort, skip, limit, page } = buildSubmissionsQuery(req.query, enumeratorFilter);
 
-        return {
-          asset_id: survey.asset_id,
-          submissions: mongoSubmissions,
-          survey_name: survey.name,
-          survey_country: survey.country_id
-        };
-      } catch (error) {
-        console.error(`Error fetching submissions for survey ${survey.asset_id}:`, error);
-        return {
-          asset_id: survey.asset_id,
-          submissions: [],
-          survey_name: survey.name,
-          survey_country: survey.country_id
-        };
-      }
-    });
+    // Everything the survey as a whole implies — which statuses exist, how far the dates run —
+    // has to come from the collection now that only one page of rows is loaded. The picker bounds
+    // used to be derived from the rows themselves, which stops being correct at the first page
+    // break.
+    //
+    // Only computed when the client asks (`?meta=1`), because none of it changes as you page,
+    // sort or filter within a survey — `src/api/api.ts` keeps it and re-asks when the survey
+    // changes. One request at a time these three cost nothing measurable; ten at once they cost
+    // a third of the response time, which is where the page turns of several users collide.
+    const wantMeta = req.query.meta === '1';
+    const scope = { type: { $ne: 'metadata' }, ...enumeratorFilter };
+    const dated = { ...scope, submission_date: { $ne: null } };
+    /** @type {import('mongodb').FindOptions} */
+    const bounds = { sort: { submission_date: 1 }, projection: { submission_date: 1, _id: 0 } };
 
-    const surveySubmissions = await Promise.all(submissionsPromises);
+    const [results, total, statuses, earliest, latest] = await Promise.all([
+      collection.find(filter, { projection: PROJECTION }).sort(sort).skip(skip).limit(limit).toArray(),
+      collection.countDocuments(filter),
+      wantMeta ? collection.distinct('validation_status', scope) : null,
+      wantMeta ? collection.findOne(dated, bounds) : null,
+      wantMeta ? collection.findOne(dated, { ...bounds, sort: { submission_date: -1 } }) : null
+    ]);
 
-    let allSubmissions = [];
-
-    surveySubmissions.forEach(surveyData => {
-      const processedSubmissions = surveyData.submissions.map(mongoDoc => ({
-        submission_id: mongoDoc.submission_id,
-        submission_date: mongoDoc.submission_date,
-        vessel_number: mongoDoc.vessel_number || '',
-        catch_number: mongoDoc.catch_number || '',
-        submitted_by: mongoDoc.submitted_by || '',
-        validation_status: mongoDoc.validation_status || 'validation_status_on_hold',
-        validated_at: mongoDoc.validated_at || null,
-        validated_by: mongoDoc.validated_by || '',
-        alert_flag: mongoDoc.alert_flag || '',
-        alert_flags: mongoDoc.alert_flag ? mongoDoc.alert_flag.split(', ') : [],
-        asset_id: surveyData.asset_id,
-        survey_name: surveyData.survey_name || 'Unknown Survey',
-        survey_country: surveyData.survey_country || ''
-      }));
-
-      allSubmissions.push(...processedSubmissions);
-    });
-
-    // Sort combined results by submission_date descending
-    allSubmissions.sort((a, b) => {
-      if (!a.submission_date) return 1;
-      if (!b.submission_date) return -1;
-      return new Date(b.submission_date).getTime() - new Date(a.submission_date).getTime();
-    });
-
+    // Rows are returned exactly as stored. The identity of the owning survey goes in
+    // `metadata.survey` once instead of on every row, and absent fields stay absent rather than
+    // being padded with '' / null. Repeating three survey fields and six empty defaults across
+    // 52k rows doubled the largest response (18.5 MB measured) for no added information;
+    // `src/api/api.ts` re-attaches them client-side.
     return sendSuccess(res, {
-      count: allSubmissions.length,
-      results: allSubmissions,
+      count: results.length,
+      total,
+      page,
+      limit,
+      results,
       metadata: {
-        accessible_surveys: allAccessibleSurveys.map(s => ({
-          asset_id: s.asset_id,
-          name: s.name,
-          country_id: s.country_id,
-          alert_codes: s.alert_codes || {}
-        }))
+        survey: surveyRef(survey),
+        // Absent rather than empty when not asked for, so the client can tell "no statuses in
+        // this survey" from "you did not ask" and keeps what it already has.
+        ...(wantMeta && {
+          statuses: statuses.filter(Boolean).sort(),
+          date_range: {
+            min: earliest?.submission_date ?? null,
+            max: latest?.submission_date ?? null
+          }
+        }),
+        accessible_surveys: allAccessibleSurveys.map(surveyOption)
       }
     });
 

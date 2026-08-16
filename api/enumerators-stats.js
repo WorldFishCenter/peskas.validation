@@ -9,8 +9,13 @@
 
 const { withMiddleware, authenticateUser } = require('../lib/middleware');
 const { getDb } = require('../lib/db');
-const { getEnumeratorStatsCollection } = require('../lib/helpers');
+const { getEnumeratorStatsCollection, PLACEHOLDER_ENUMERATORS } = require('../lib/helpers');
+const { getAccessibleSurveys } = require('../lib/filter-permissions');
 const { sendSuccess, sendServerError, sendMethodNotAllowed, setCorsHeaders } = require('../lib/response');
+
+/** Kept local rather than shared with `api/kobo/submissions.js` — the survey shape already
+ *  varies by endpoint (`api/data-download/metadata.js` carries `active` instead). */
+const surveyRef = s => ({ asset_id: s.asset_id, name: s.name, country_id: s.country_id });
 
 async function handler(req, res) {
   setCorsHeaders(res, req);
@@ -31,18 +36,10 @@ async function handler(req, res) {
 
     const user = req.user;
 
-    // Determine which surveys the user has access to
-    let accessibleSurveys;
-
-    if (user.role === 'admin' && (!user.permissions?.surveys || user.permissions.surveys.length === 0)) {
-      accessibleSurveys = await database.collection('surveys')
-        .find({ active: true })
-        .toArray();
-    } else {
-      accessibleSurveys = await database.collection('surveys')
-        .find({ asset_id: { $in: user.permissions?.surveys || [] }, active: true })
-        .toArray();
-    }
+    // Permission filtering goes through filter-permissions.js. This endpoint used to inline its
+    // own copy of the admin/empty-array rule, which meant the rule was written twice and could
+    // drift — the surveys endpoint had already drifted the same way.
+    let accessibleSurveys = await getAccessibleSurveys(user);
 
     if (accessibleSurveys.length === 0) {
       return sendSuccess(res, {
@@ -65,7 +62,7 @@ async function handler(req, res) {
           count: 0,
           results: [],
           message: 'Survey not found or access denied',
-          metadata: { accessible_surveys: allAccessibleSurveys.map(s => ({ asset_id: s.asset_id, name: s.name, country_id: s.country_id })) }
+          metadata: { accessible_surveys: allAccessibleSurveys.map(surveyRef) }
         });
       }
     } else if (accessibleSurveys.length > 1) {
@@ -73,53 +70,75 @@ async function handler(req, res) {
         count: 0,
         results: [],
         message: 'Please select a survey to view statistics',
-        metadata: {
-          accessible_surveys: allAccessibleSurveys.map(s => ({
-            asset_id: s.asset_id,
-            name: s.name,
-            country_id: s.country_id
-          }))
-        }
+        metadata: { accessible_surveys: allAccessibleSurveys.map(surveyRef) }
       });
     }
 
     // Enumerator restrictions
     const allowedEnumerators = user.permissions?.enumerators || [];
-    const hasEnumeratorRestrictions = allowedEnumerators.length > 0;
+    const enumeratorFilter = allowedEnumerators.length > 0
+      ? { submitted_by: { $in: allowedEnumerators } }
+      : {};
 
-    const statsPromises = accessibleSurveys.map(async (survey) => {
-      const collectionName = getEnumeratorStatsCollection(survey.asset_id);
-      try {
-        const filter = {
-          type: { $ne: 'metadata' },
-          ...(hasEnumeratorRestrictions && { submitted_by: { $in: allowedEnumerators } })
-        };
-        const stats = await database.collection(collectionName).find(filter).toArray();
+    // Exactly one survey is loaded per request, same as /api/kobo/submissions.
+    const survey = accessibleSurveys[0];
 
-        return stats.map(stat => ({
-          ...stat,
-          asset_id: survey.asset_id,
-          survey_name: survey.name,
-          survey_country: survey.country_id
-        }));
-      } catch (error) {
-        console.error(`Error fetching stats for survey ${survey.asset_id}:`, error);
-        return [];
-      }
-    });
-
-    const allStats = await Promise.all(statsPromises);
-    const results = allStats.flat();
+    // The dashboard never shows an individual submission: every chart is a count per enumerator,
+    // per day, or per alert code. So the grouping happens in MongoDB rather than being shipped raw
+    // and grouped in the browser — 52,102 documents collapse to 9,582 rollup rows for the largest
+    // survey, measured. Every figure the UI renders is still derivable, because the rollup key is
+    // the full (enumerator, day, alert code) triple.
+    //
+    // `$convert` rather than a bare `$dateToString`: not every collection is guaranteed to store
+    // `submission_date` as a BSON date, and a string would abort the whole pipeline. A row whose
+    // date will not parse still counts toward the enumerator's total, it just has no day.
+    const results = await database.collection(getEnumeratorStatsCollection(survey.asset_id))
+      .aggregate([
+        {
+          $match: {
+            type: { $ne: 'metadata' },
+            submitted_by: { $nin: PLACEHOLDER_ENUMERATORS },
+            ...enumeratorFilter
+          }
+        },
+        {
+          $group: {
+            _id: {
+              submitted_by: '$submitted_by',
+              date: {
+                $dateToString: {
+                  format: '%Y-%m-%d',
+                  date: { $convert: { input: '$submission_date', to: 'date', onError: null, onNull: null } },
+                  onNull: null
+                }
+              },
+              alert_flag: '$alert_flag'
+            },
+            count: { $sum: 1 }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            count: 1,
+            submitted_by: '$_id.submitted_by',
+            date: '$_id.date',
+            // Absent, 'NA' and '' all mean "no alert". Collapsing them to one absent field keeps
+            // the client from having to know three spellings of the same thing.
+            alert_flag: {
+              $cond: [{ $in: ['$_id.alert_flag', [null, 'NA', '']] }, '$$REMOVE', '$_id.alert_flag']
+            }
+          }
+        }
+      ])
+      .toArray();
 
     return sendSuccess(res, {
       count: results.length,
       results,
       metadata: {
-        accessible_surveys: allAccessibleSurveys.map(s => ({
-          asset_id: s.asset_id,
-          name: s.name,
-          country_id: s.country_id
-        }))
+        survey: surveyRef(survey),
+        accessible_surveys: allAccessibleSurveys.map(surveyRef)
       }
     });
 

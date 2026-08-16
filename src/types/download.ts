@@ -29,43 +29,10 @@ export interface DownloadFilters {
 }
 
 /**
- * Preview data response from API
+ * One row of downloaded data. The schema is dynamic — it depends on the survey and the
+ * selected scope — so values are narrowed at the point of rendering.
  */
-export interface PreviewData {
-  /** Array of data rows (dynamic schema) */
-  data: Record<string, any>[];
-
-  /** Total number of rows available */
-  total_count: number;
-
-  /** Filters that were actually applied (after permission filtering) */
-  filters_applied: DownloadFilters;
-}
-
-/**
- * Error response structure
- */
-export interface DownloadError {
-  /** Error message */
-  message: string;
-
-  /** Error code (optional) */
-  code?: string;
-}
-
-/**
- * GAUL code with metadata
- */
-export interface GaulCode {
-  /** GAUL code identifier */
-  code: string;
-
-  /** Human-readable name */
-  name: string;
-
-  /** Associated country code */
-  country: string;
-}
+export type DataRow = Record<string, unknown>;
 
 /**
  * Country option for dropdown
@@ -76,6 +43,9 @@ export interface CountryOption {
 
   /** Display name */
   name: string;
+
+  /** Whether the country row is active */
+  active?: boolean;
 }
 
 /**
@@ -89,11 +59,18 @@ export interface District {
   name: string;
 
   /** Associated country code */
-  country: string | null;
+  country_id?: string;
+
+  /** Name of the survey this district belongs to, when districts were cascaded from one */
+  survey_label?: string;
 }
 
 /**
- * Survey option for dropdown
+ * A survey, as returned by `/surveys` and by `/data-download/metadata`.
+ *
+ * The single declaration for the whole app — `src/api/admin.ts` re-exports it. `_id` and
+ * `description` are only sent by `/surveys`; `kobo_config` is deliberately absent because
+ * it holds an API token and is projected out server-side.
  */
 export interface Survey {
   /** KoboToolbox asset ID */
@@ -107,6 +84,12 @@ export interface Survey {
 
   /** Whether survey is active */
   active: boolean;
+
+  /** MongoDB id, stringified — `/surveys` only */
+  _id?: string;
+
+  /** Free-text description — `/surveys` only */
+  description?: string;
 }
 
 /**
@@ -114,15 +97,10 @@ export interface Survey {
  */
 export interface PreviewResponse {
   success: boolean;
-  data: Record<string, any>[];
+  data: DataRow[];
   total_count: number;
   filters_applied: DownloadFilters;
 }
-
-/**
- * Download status
- */
-export type DownloadStatus = 'idle' | 'previewing' | 'downloading' | 'success' | 'error';
 
 /**
  * Field description from PeSKAS API metadata
@@ -146,7 +124,7 @@ export interface FieldDescription {
   unit?: string;
 
   /** Sample data instances (array of examples) */
-  examples?: any[];
+  examples?: unknown[];
 
   /** Enumerated categorical options (possible values) */
   possible_values?: string[];

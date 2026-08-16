@@ -3,11 +3,10 @@ export interface Submission {
   submission_date: string;
   submitted_by?: string;
   submittedBy?: string;
-  vessel_number?: string;
-  catch_number?: string;
   alert_number?: string;
   validation_status: string;
-  validated_at: string;
+  /** Null until the submission has been validated — the pipeline omits the field entirely. */
+  validated_at: string | null;
   alert_flag?: string;
   alert_flags?: string[];
   asset_id?: string;
@@ -15,49 +14,51 @@ export interface Submission {
   survey_country?: string;
 }
 
+/**
+ * One row from `/enumerators-stats`: a count of submissions sharing an enumerator, a day and an
+ * alert code. The endpoint groups in MongoDB rather than returning raw submissions — the
+ * dashboard only ever renders counts, and the largest survey collapses from 52,102 documents to
+ * 9,582 of these.
+ */
+export interface EnumeratorDailyStat {
+  submitted_by: string;
+  /** `YYYY-MM-DD` (UTC), or null when the stored date could not be parsed. */
+  date: string | null;
+  /** Absent means no alert — the endpoint folds missing, `"NA"` and `""` into one absent field. */
+  alert_flag?: string;
+  count: number;
+}
+
+/**
+ * A survey the signed-in user may read, as returned in `metadata.accessible_surveys`
+ * by the submissions and enumerator-stats endpoints.
+ */
+export interface AccessibleSurvey {
+  asset_id: string;
+  name: string;
+  country_id: string;
+  /** Alert code → description. Only the submissions endpoint sends these. */
+  alert_codes?: Record<string, string>;
+}
+
 export type ValidationStatus =
   | 'validation_status_approved'
   | 'validation_status_not_approved'
   | 'default';
 
-type StyleConfig = {
-  backgroundColor: string;
-  textColor: string;
-  borderColor: string;
-};
-
-export const STATUS_STYLES: Record<ValidationStatus, StyleConfig> = {
-  validation_status_approved: {
-    backgroundColor: 'rgba(87, 167, 115, 0.15)',  // #57A773
-    textColor: '#57A773',
-    borderColor: 'rgba(87, 167, 115, 0.3)',
-  },
-  validation_status_not_approved: {
-    backgroundColor: 'rgba(211, 78, 36, 0.15)',   // #D34E24
-    textColor: '#D34E24',
-    borderColor: 'rgba(211, 78, 36, 0.3)',
-  },
-  default: {
-    backgroundColor: 'rgba(137, 144, 159, 0.15)',
-    textColor: '#89909F',
-    borderColor: 'rgba(137, 144, 159, 0.3)',
-  },
-};
-
-export const ALERT_FLAG_DESCRIPTIONS = {
-  '1': 'A catch was reported, but no taxon was specified',
-  '2': 'A taxon was specified, but no information was provided about the number of fish, their size, or their weight',
-  '3': 'Length is smaller than minimum length threshold for the selected catch taxon',
-  '4': 'Length exceeds maximum length threshold for the selected catch taxon',
-  '5': 'Bucket weight exceeds maximum (50kg)',
-  '6': 'Number of buckets exceeds maximum (300)',
-  '7': 'Number of individuals exceeds maximum (100)',
-  '8': 'Price per kg exceeds maximum threshold',
-  '9': 'Catch per unit effort exceeds maximum (30kg per hour per fisher)',
-  '10': 'Revenue per unit effort exceeds maximum threshold'
-};
-
-export const VALIDATION_STATUS_OPTIONS = [
-  'validation_status_approved',
-  'validation_status_not_approved'
-]; 
+/**
+ * The `common:status.*` translation key for a stored validation status.
+ *
+ * One rule, used by both the badge and the filter dropdown, because the statuses in the data are
+ * not a closed set: KoboToolbox writes `validation_status_*`, while the R pipeline writes bare
+ * `not_validated` on surveys it has not validated yet.
+ *
+ * Returns i18next's key-fallback list rather than one key, so a value the pipeline starts writing
+ * tomorrow degrades to "Pending" instead of rendering the literal string `status.whatever` —
+ * `src/i18n/config.ts` sets `returnEmptyString: false`, which means a missing key renders as
+ * itself.
+ */
+export const statusLabelKey = (status: string | undefined): string[] =>
+  status
+    ? [`status.${status.replace('validation_status_', '')}`, 'status.default']
+    : ['status.default'];

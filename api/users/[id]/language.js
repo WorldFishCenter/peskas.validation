@@ -67,11 +67,13 @@ async function handler(req, res) {
       { returnDocument: 'after', projection: { password_hash: 0 } }
     );
 
-    if (!result || !result.value) {
+    // findOneAndUpdate returns the document itself, not a { value } wrapper. Guarding on
+    // `result.value` made every successful language change respond 404.
+    if (!result) {
       return sendNotFound(res, 'User not found');
     }
 
-    const updatedUser = result.value || result;
+    const updatedUser = result;
 
     return res.json({
       success: true,

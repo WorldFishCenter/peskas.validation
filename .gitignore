@@ -36,6 +36,9 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
+# Knowledge-graph analysis output (6MB of AST/semantic caches) - regenerate with /graphify
+graphify-out/
+
 # Documentation
 # Only CLAUDE.md, README.md and NEWS.md are committed. Everything else is local working material:
 # docs/ (architecture reference, decision log, authoring guides) and .claude/ (rules, agents,
@@ -49,7 +52,16 @@ docs/
 .todo
 
 # Scripts - ignore all except those needed for GitHub Actions workflow
-scripts/
+# (.github/workflows/sync-airtable.yml runs these; they must be in the repo)
+#
+# `scripts/*` not `scripts/`: excluding the directory itself stops git descending into it, and a
+# negation cannot re-include a file whose parent directory is excluded. With `scripts/` the three
+# rules below were inert — those files are in the repo only because they were committed before
+# the rule existed, and any newly added workflow script would silently never be committed.
+scripts/*
+!scripts/ensure_survey_indexes.cjs
+!scripts/sync_all_from_airtable.js
+!scripts/sync_countries_from_airtable.cjs
 !scripts/sync_districts_from_airtable.cjs
 !scripts/sync_surveys_from_airtable.js
 !scripts/sync_users_from_airtable.js

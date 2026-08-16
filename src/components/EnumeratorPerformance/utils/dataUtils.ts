@@ -1,182 +1,96 @@
-import { EnumeratorData, SubmissionData, TimeframeType } from '../types';
+import { EnumeratorData, EnumeratorDailyStat } from '../types';
+
+/** Sum the counts of a set of rollup rows. */
+export const sumCounts = (stats: EnumeratorDailyStat[]): number =>
+  stats.reduce((total, stat) => total + stat.count, 0);
+
+/** Sum the counts of the rollup rows that carry an alert code. */
+export const sumAlertCounts = (stats: EnumeratorDailyStat[]): number =>
+  stats.reduce((total, stat) => (stat.alert_flag ? total + stat.count : total), 0);
 
 /**
- * Filter submissions by timeframe
+ * Collapse rollup rows to a sorted date → count series.
+ *
+ * Several rows can share a day — one per alert code — so they are summed rather than listed.
+ * Rows whose date could not be parsed carry no day and are dropped from the trend, exactly as
+ * they were when the endpoint returned raw submissions.
  */
-export const filterByTimeframe = (date: string, timeframe: TimeframeType): boolean => {
-  if (timeframe === 'all') return true;
-  
-  try {
-    const now = new Date();
-    
-    // Check if date is valid
-    if (!date || typeof date !== 'string') {
-      console.warn('Invalid date format received:', date);
-      return false;
-    }
-    
-    const submissionDate = new Date(date);
-    
-    // Handle invalid dates
-    if (isNaN(submissionDate.getTime())) {
-      console.warn('Invalid date conversion:', date);
-      return false;
-    }
-    
-    // Set both dates to the start of day to avoid time differences affecting calculations
-    const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const subDate = new Date(submissionDate.getFullYear(), submissionDate.getMonth(), submissionDate.getDate());
-    
-    // Calculate days difference (more accurate)
-    const daysDifference = Math.floor((nowDate.getTime() - subDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (timeframe === '7days') return daysDifference < 7;
-    if (timeframe === '30days') return daysDifference < 30;
-    if (timeframe === '90days') return daysDifference < 90;
-    
-    return true;
-  } catch (error) {
-    console.error('Error in filterByTimeframe:', error, 'for date:', date);
-    return false;
+export const toTrend = (stats: EnumeratorDailyStat[]): { date: string; count: number }[] => {
+  const byDate: Record<string, number> = {};
+  for (const stat of stats) {
+    if (!stat.date) continue;
+    byDate[stat.date] = (byDate[stat.date] || 0) + stat.count;
   }
+  return Object.entries(byDate)
+    .map(([date, count]) => ({ date, count }))
+    .sort((a, b) => a.date.localeCompare(b.date));
 };
 
 /**
- * Process raw data into EnumeratorData format
+ * Group the `/enumerators-stats` rollup by enumerator.
+ *
+ * The endpoint already excludes placeholder enumerators and folds the three spellings of "no
+ * alert" into an absent field, so there is nothing left to clean here — this is a group-by and
+ * three sums.
  */
-export const processEnumeratorData = (rawData: SubmissionData[]): EnumeratorData[] => {
-  if (!rawData || rawData.length === 0) return [];
-  
-  // Format data from the raw submissions
-  const processedData: Record<string, any> = {};
-  
-  // Group by enumerator
-  rawData.forEach((item: SubmissionData) => {
-    // Skip items with missing or "Unknown" enumerator name
-    if (!item.submitted_by || item.submitted_by === 'Unknown') {
-      return;
-    }
-    
-    const enumerator = item.submitted_by;
-    
-    if (!processedData[enumerator]) {
-      processedData[enumerator] = {
-        name: enumerator,
-        submissions: [],
-        totalSubmissions: 0,
-        submissionsWithAlerts: 0,
-        submissionTrend: {}
+export const processEnumeratorData = (rollup: EnumeratorDailyStat[]): EnumeratorData[] => {
+  if (!rollup || rollup.length === 0) return [];
+
+  const byEnumerator: Record<string, EnumeratorDailyStat[]> = {};
+  for (const stat of rollup) {
+    if (!stat.submitted_by) continue;
+    (byEnumerator[stat.submitted_by] ||= []).push(stat);
+  }
+
+  return Object.entries(byEnumerator)
+    .map(([name, dailyStats]): EnumeratorData => {
+      const totalSubmissions = sumCounts(dailyStats);
+      const submissionsWithAlerts = sumAlertCounts(dailyStats);
+      return {
+        name,
+        dailyStats,
+        totalSubmissions,
+        submissionsWithAlerts,
+        errorRate: totalSubmissions > 0 ? (submissionsWithAlerts / totalSubmissions) * 100 : 0,
+        submissionTrend: toTrend(dailyStats)
       };
-    }
-    
-    processedData[enumerator].submissions.push(item);
-    processedData[enumerator].totalSubmissions++;
-    
-    // Count submissions with alerts
-    if (item.alert_flag && item.alert_flag !== "NA") {
-      processedData[enumerator].submissionsWithAlerts++;
-    }
-    
-    // Track submission trends by date - Add null check for submission_date
-    if (item.submission_date) {
-      // Parse date safely, handling different formats
-      let dateStr = item.submission_date;
-      
-      // Extract just the date part (handles both ISO formats and other formats with spaces)
-      const datePart = dateStr.includes('T') 
-        ? dateStr.split('T')[0]  // Handle ISO format: "2025-02-19T00:00:00"
-        : dateStr.split(' ')[0]; // Handle space format: "2025-02-19 00:00:00"
-        
-      if (datePart) {
-        if (!processedData[enumerator].submissionTrend[datePart]) {
-          processedData[enumerator].submissionTrend[datePart] = 0;
-        }
-        processedData[enumerator].submissionTrend[datePart]++;
+    })
+    .sort((a, b) => b.totalSubmissions - a.totalSubmissions);
+};
+
+/**
+ * Quality score for an enumerator: 100 minus their error rate.
+ *
+ * Prefers `filteredErrorRate`, which is set whenever a date filter is active, and falls back
+ * to the all-time rate otherwise. Every quality figure in the UI comes from here so the
+ * filtered/unfiltered fallback cannot be applied inconsistently.
+ */
+export const qualityScore = (
+  enumerator: Pick<EnumeratorData, 'errorRate' | 'filteredErrorRate'> | undefined
+): number => 100 - (enumerator?.filteredErrorRate ?? enumerator?.errorRate ?? 0);
+
+/**
+ * Tally alert flags across one or more enumerators, most frequent first.
+ *
+ * Shared by the aggregate alert chart and the single-enumerator one — the former passes the
+ * whole list, the latter an array of one. "NA" is the pipeline's marker for no alert.
+ */
+export const tallyAlertFlags = (
+  enumerators: EnumeratorData[]
+): { name: string; y: number }[] => {
+  const counts: Record<string, number> = {};
+
+  enumerators.forEach(enumerator => {
+    (enumerator.filteredStats || enumerator.dailyStats).forEach(stat => {
+      if (stat.alert_flag) {
+        counts[stat.alert_flag] = (counts[stat.alert_flag] || 0) + stat.count;
       }
-    }
+    });
   });
-  
-  // Calculate error rates and format the data for charts
-  const formattedData = Object.values(processedData).map((enumerator: any) => {
-    // Calculate error rate
-    const errorRate = enumerator.totalSubmissions > 0 
-      ? (enumerator.submissionsWithAlerts / enumerator.totalSubmissions) * 100 
-      : 0;
-    
-    // Format submission trend for the chart
-    const submissionTrend = Object.entries(enumerator.submissionTrend).map(
-      ([date, count]: [string, any]) => ({ date, count })
-    ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    
-    return {
-      ...enumerator,
-      errorRate,
-      submissionTrend
-    } as EnumeratorData;
-  });
-  
-  // Sort by total submissions (descending)
-  return formattedData.sort((a, b) => b.totalSubmissions - a.totalSubmissions);
-};
 
-/**
- * Apply time filtering to enumerator data
- */
-export const applyTimeFiltering = (
-  enumerators: EnumeratorData[],
-  timeframe: TimeframeType
-): EnumeratorData[] => {
-  if (enumerators.length === 0) return [];
-
-  // Recalculate stats based on time filter
-  return enumerators.map(enumerator => {
-    try {
-      // Filter submissions by timeframe
-      const filteredSubmissions = enumerator.submissions.filter(submission => {
-        if (!submission.submission_date) return false;
-        
-        // Extract date part from submission_date, handling different formats
-        let datePart;
-        if (submission.submission_date.includes('T')) {
-          // Handle ISO format: "2025-02-19T00:00:00"
-          datePart = submission.submission_date.split('T')[0];
-        } else {
-          // Handle space format: "2025-02-19 00:00:00"
-          datePart = submission.submission_date.split(' ')[0];
-        }
-        
-        return filterByTimeframe(datePart, timeframe);
-      });
-      
-      // Count submissions with alerts in the filtered timeframe
-      const submissionsWithAlerts = filteredSubmissions.filter(
-        s => s.alert_flag && s.alert_flag !== "NA"
-      ).length;
-      
-      // Calculate new error rate based on filtered data
-      const errorRate = filteredSubmissions.length > 0
-        ? (submissionsWithAlerts / filteredSubmissions.length) * 100
-        : 0;
-
-      return {
-        ...enumerator,
-        filteredSubmissions,
-        filteredTotal: filteredSubmissions.length,
-        filteredAlertsCount: submissionsWithAlerts,
-        filteredErrorRate: errorRate
-      };
-    } catch (error) {
-      console.error(`Error filtering enumerator ${enumerator.name}:`, error);
-      // Return unfiltered data in case of error
-      return {
-        ...enumerator,
-        filteredSubmissions: [],
-        filteredTotal: 0,
-        filteredAlertsCount: 0,
-        filteredErrorRate: 0
-      };
-    }
-  });
+  return Object.entries(counts)
+    .map(([name, y]) => ({ name, y }))
+    .sort((a, b) => b.y - a.y);
 };
 
 /**
@@ -196,7 +110,7 @@ export const findBestEnumerator = (
       name: '',
       errorRate: 0,
       filteredErrorRate: 0,
-      submissions: [],
+      dailyStats: [],
       totalSubmissions: 0,
       submissionsWithAlerts: 0,
       submissionTrend: []

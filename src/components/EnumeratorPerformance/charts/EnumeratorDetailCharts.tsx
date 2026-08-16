@@ -13,6 +13,7 @@ import {
   formatStatRow,
   chartColors
 } from '../utils/chartConfig';
+import { tallyAlertFlags } from '../utils/dataUtils';
 
 interface AlertDistributionChartProps {
   selectedEnumeratorData: EnumeratorData;
@@ -25,18 +26,7 @@ export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = Rea
   const { t } = useTranslation('enumerators');
 
   const { alertData, totalAlerts } = useMemo(() => {
-    const submissions = selectedEnumeratorData.filteredSubmissions || selectedEnumeratorData.submissions;
-    const alertDistribution = submissions.reduce((counts: Record<string, number>, submission) => {
-      if (submission.alert_flag && submission.alert_flag !== "NA") {
-        counts[submission.alert_flag] = (counts[submission.alert_flag] || 0) + 1;
-      }
-      return counts;
-    }, {});
-
-    const data = Object.entries(alertDistribution)
-      .map(([label, count]) => ({ name: label, y: count }))
-      .sort((a, b) => b.y - a.y);
-
+    const data = tallyAlertFlags([selectedEnumeratorData]);
     return { alertData: data, totalAlerts: data.reduce((sum, item) => sum + item.y, 0) };
   }, [selectedEnumeratorData]);
 
@@ -53,15 +43,14 @@ export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = Rea
     },
     tooltip: {
       ...pieTooltipConfig,
-      formatter: function(this: any) {
-        const point = this.point;
-        const totalAlerts = this.series.data.reduce((sum: number, p: any) => sum + (p.y || 0), 0);
+      formatter: function(this: Highcharts.Point) {
+        const totalAlerts = this.series.data.reduce((sum, p) => sum + (p.y || 0), 0);
         const alertText = totalAlerts === 1 ? t('charts.alertCount', { count: totalAlerts }) : t('charts.alertCountPlural', { count: totalAlerts });
 
         return wrapTooltip(
-          formatTooltipHeader(`${t('charts.alertType')}${point.name}`) +
-          formatTooltipRow(point.color, t('charts.count'), point.y, '') +
-          formatStatRow(t('charts.percentage'), `${point.percentage.toFixed(1)}%`) +
+          formatTooltipHeader(`${t('charts.alertType')}${this.name}`) +
+          formatTooltipRow(this.color, t('charts.count'), this.y ?? 0, '') +
+          formatStatRow(t('charts.percentage'), `${(this.percentage ?? 0).toFixed(1)}%`) +
           formatStatRow(t('charts.outOfTotal'), alertText)
         );
       }
@@ -120,18 +109,13 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = React.m
   const { t } = useTranslation('enumerators');
 
   const { categories, data, tickInterval, totalSubmissions } = useMemo(() => {
-    const trendData = selectedEnumeratorData?.submissionTrend || [];
-
-    const filteredDates = trendData
-      .filter(item => {
-        const datePart = item.date.includes('T') ? item.date.split('T')[0] : item.date.split(' ')[0];
-        return selectedEnumeratorData.filteredSubmissions?.some(s => {
-          if (!s.submission_date) return false;
-          const sDate = s.submission_date.includes('T') ? s.submission_date.split('T')[0] : s.submission_date.split(' ')[0];
-          return sDate === datePart;
-        });
-      })
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // `filteredTrend` is the date-filtered series, already summed and sorted. This used to
+    // intersect the full trend against the filtered submissions with a nested `some()` — one pass
+    // over every submission for every date the enumerator ever worked.
+    // `?? []` only satisfies the optional field on `EnumeratorData`; the caller always passes an
+    // enumerator from the date-filtered list, so the series is there. Falling back to the
+    // unfiltered `submissionTrend` would have drawn dates outside the selected range.
+    const filteredDates = selectedEnumeratorData.filteredTrend ?? [];
 
     const cats = filteredDates.map(item => {
       const d = new Date(item.date);
@@ -185,16 +169,15 @@ export const EnumeratorTrendChart: React.FC<EnumeratorTrendChartProps> = React.m
     },
     tooltip: {
       ...columnTooltipConfig,
-      formatter: function(this: any) {
+      formatter: function(this: Highcharts.Point) {
         // Get formatted date from category axis
-        const dateLabel = this.key || 
-          (typeof this.x === 'string' ? this.x : this.chart.xAxis[0].categories[this.x]);
+        const dateLabel = this.key || this.series.chart.xAxis[0].categories[this.x];
         const value = this.y || 0;
-        
+
         // Calculate stats for context
-        const allData = this.series.data.map((p: any) => p.y || 0);
+        const allData = this.series.data.map(p => p.y || 0);
         const maxValue = Math.max(...allData);
-        const avgValue = (allData.reduce((sum: number, v: number) => sum + v, 0) / allData.length).toFixed(1);
+        const avgValue = (allData.reduce((sum, v) => sum + v, 0) / allData.length).toFixed(1);
         const isPeak = value === maxValue && value > 0;
 
         let content = formatTooltipHeader(String(dateLabel)) +

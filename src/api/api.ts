@@ -1,45 +1,116 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { getApiBaseUrl } from '../utils/apiConfig';
+import { extractErrorMessage } from '../utils/errors';
 import { useSurveyContext } from '../contexts/SurveyContext';
 
 // Get the appropriate API base URL based on environment
 const API_BASE_URL = getApiBaseUrl();
 
-import { Submission } from '../types/validation';
-import { DownloadFilters, PreviewResponse, FieldMetadata } from '../types/download';
+import { Submission, EnumeratorDailyStat, AccessibleSurvey } from '../types/validation';
+import {
+  DownloadFilters,
+  PreviewResponse,
+  FieldMetadata,
+  DataRow,
+  CountryOption,
+  District,
+  Survey
+} from '../types/download';
 
-// Extract a user-readable error message from an axios error response.
-// Vercel gateway errors return { error: { code, message } } rather than a string.
-const extractErrorMessage = (err: any, fallback: string): string => {
-  const raw = err.response?.data?.error;
-  return typeof raw === 'string' ? raw : raw?.message || fallback;
+/**
+ * Expand a stored submission row into the shape the table and its filters expect.
+ *
+ * `/kobo/submissions` returns rows exactly as MongoDB holds them and names the owning survey
+ * once in `metadata.survey`. Re-attaching the survey fields and the empty-value defaults here
+ * rather than on the wire is what keeps the largest survey's response from doubling in size —
+ * three survey fields and six defaults repeated across 52,000 rows was 9 MB of the 18.5 MB
+ * measured before. Defaults are reproduced exactly so column filters behave as they did.
+ */
+const normalizeSubmissionData = (
+  item: Record<string, unknown>,
+  survey: AccessibleSurvey | undefined
+): Submission => {
+  const alertFlag = typeof item.alert_flag === 'string' ? item.alert_flag : '';
+
+  return {
+    ...(item as unknown as Submission),
+    submitted_by: item.submitted_by ? String(item.submitted_by) : '',
+    validation_status: (item.validation_status as string) || 'validation_status_on_hold',
+    validated_at: (item.validated_at as string) ?? null,
+    alert_flag: alertFlag,
+    alert_flags: alertFlag ? alertFlag.split(', ') : [],
+    asset_id: survey?.asset_id,
+    survey_name: survey?.name,
+    survey_country: survey?.country_id,
+  };
 };
 
-// Normalize field names for consistent access
-const normalizeSubmissionData = (item: any): any => {
-  // Create a new object with all keys from the original
-  const normalized = { ...item };
-  
-  
-  // Handle common field name transformations
-  if (!normalized.submitted_by && normalized._submitted_by) {
-    normalized.submitted_by = normalized._submitted_by;
-  }
-  
-  // Ensure submitted_by is always a string, even if empty
-  normalized.submitted_by = normalized.submitted_by ? String(normalized.submitted_by) : '';
-  
-  
-  return normalized;
+/**
+ * Serialize download filters into a query string.
+ *
+ * Empty values are dropped and arrays are joined with commas, which is what the
+ * data-download endpoints expect. Shared by the preview hook and the CSV export so the
+ * two cannot drift apart.
+ */
+const buildDownloadQuery = (filters: DownloadFilters): string => {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return;
+    if (Array.isArray(value)) {
+      if (value.length > 0) params.append(key, value.join(','));
+    } else {
+      params.append(key, String(value));
+    }
+  });
+  return params.toString();
 };
 
-// Hook to fetch submissions
-export const useFetchSubmissions = () => {
+/**
+ * One page of the validation table, as the server understands it.
+ *
+ * Every field is a primitive so the fetching `useCallback` can list them individually and stay
+ * honest about its dependencies — an object here would either lie to `exhaustive-deps` or force
+ * every caller to memoize.
+ */
+export interface SubmissionQuery {
+  /** 1-based, matching the API. */
+  page: number;
+  limit: number;
+  /** Checked against an allowlist server-side; anything else falls back to `submission_date`. */
+  sort: string;
+  order: 'asc' | 'desc';
+  status?: string;
+  /** `'with-alerts'` | `'no-alerts'`; omitted means all. */
+  alert?: string;
+  /** `YYYY-MM-DD`, inclusive. */
+  from?: string;
+  to?: string;
+  /** Prefix match on `submitted_by` / `submission_id`. Debounce before passing it in. */
+  search?: string;
+}
+
+/** Bounds for the date pickers, from the whole collection rather than the loaded page. */
+export interface SubmissionDateRange {
+  min: string | null;
+  max: string | null;
+}
+
+// Hook to fetch one page of submissions
+export const useFetchSubmissions = (query: SubmissionQuery) => {
+  const { page, limit, sort, order, status, alert, from, to, search } = query;
   const { selectedSurveyId, setSelectedSurveyId } = useSurveyContext();
   const [data, setData] = useState<Submission[]>([]);
-  const [accessibleSurveys, setAccessibleSurveys] = useState<any[]>([]);
-  const [alertCodes, setAlertCodes] = useState<Record<string, any>>({});
+  const [total, setTotal] = useState(0);
+  // Derived from the whole collection by the API — the table can no longer work these out from
+  // the rows it holds, because it only holds one page of them.
+  const [statuses, setStatuses] = useState<string[]>([]);
+  const [dateRange, setDateRange] = useState<SubmissionDateRange>({ min: null, max: null });
+  const [accessibleSurveys, setAccessibleSurveys] = useState<AccessibleSurvey[]>([]);
+  // The one survey these rows belong to, as named by the API. Consumers read it instead of
+  // deriving it from the rows.
+  const [loadedSurvey, setLoadedSurvey] = useState<AccessibleSurvey | null>(null);
+  const [alertCodes, setAlertCodes] = useState<Record<string, Record<string, string>>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,6 +124,12 @@ export const useFetchSubmissions = () => {
   // a new call (or StrictMode remount) can cancel the previous one.
   const abortRef = useRef<AbortController | null>(null);
 
+  // The survey whose `statuses` / `date_range` we already hold. Those describe the whole
+  // collection, so they survive every page turn, sort and filter — only a different survey
+  // invalidates them. `?meta=1` asks the API to compute them; without it, it skips three
+  // queries per request.
+  const metaSurveyRef = useRef<string | null>(null);
+
   const fetchData = useCallback(async (forcedSurveyId?: string | null) => {
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -64,10 +141,19 @@ export const useFetchSubmissions = () => {
 
       const surveyToFetch = forcedSurveyId !== undefined ? forcedSurveyId : selectedSurveyRef.current;
 
-      const params: any = {};
-      if (surveyToFetch) {
-        params.survey_id = surveyToFetch;
-      }
+      const params: Record<string, string> = {
+        page: String(page),
+        limit: String(limit),
+        sort,
+        order,
+      };
+      if (surveyToFetch) params.survey_id = surveyToFetch;
+      if (!surveyToFetch || surveyToFetch !== metaSurveyRef.current) params.meta = '1';
+      if (status) params.status = status;
+      if (alert) params.alert = alert;
+      if (from) params.from = from;
+      if (to) params.to = to;
+      if (search) params.search = search;
 
       const response = await axios.get(`${API_BASE_URL}/kobo/submissions`, {
         params,
@@ -77,6 +163,8 @@ export const useFetchSubmissions = () => {
       // Handle case where backend requires survey selection
       if (response.data.message === 'Please select a survey to view submissions') {
         setData([]);
+        setTotal(0);
+        setLoadedSurvey(null);
         if (response.data.metadata?.accessible_surveys) {
           const surveys = response.data.metadata.accessible_surveys;
           setAccessibleSurveys(surveys);
@@ -96,17 +184,32 @@ export const useFetchSubmissions = () => {
 
       if (!Array.isArray(response.data.results)) {
         setData([]);
+        setTotal(0);
+        setLoadedSurvey(null);
         return;
       }
 
-      setData(response.data.results.map(normalizeSubmissionData));
+      const survey: AccessibleSurvey | undefined = response.data.metadata?.survey;
+      setLoadedSurvey(survey ?? null);
+      setData(
+        response.data.results.map((row: Record<string, unknown>) =>
+          normalizeSubmissionData(row, survey)
+        )
+      );
+      setTotal(response.data.total ?? 0);
+      // Present only on a `meta=1` request; otherwise keep what we have for this survey.
+      if (response.data.metadata?.statuses) {
+        setStatuses(response.data.metadata.statuses);
+        setDateRange(response.data.metadata.date_range ?? { min: null, max: null });
+        metaSurveyRef.current = survey?.asset_id ?? null;
+      }
 
       if (response.data.metadata?.accessible_surveys) {
         const surveys = response.data.metadata.accessible_surveys;
         setAccessibleSurveys(surveys);
 
-        const codesMap: Record<string, any> = {};
-        surveys.forEach((survey: any) => {
+        const codesMap: Record<string, Record<string, string>> = {};
+        surveys.forEach((survey: AccessibleSurvey) => {
           if (survey.alert_codes) {
             codesMap[survey.asset_id] = survey.alert_codes;
           }
@@ -121,17 +224,21 @@ export const useFetchSubmissions = () => {
           setSelectedSurveyId(surveys[0].asset_id);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (controller.signal.aborted) return;
       setError(extractErrorMessage(err, 'Failed to load submissions'));
       setData([]);
+      setTotal(0);
       setAccessibleSurveys([]);
+      setLoadedSurvey(null);
+      // Whatever we held is no longer known to match a loaded survey — ask again next time.
+      metaSurveyRef.current = null;
     } finally {
       if (!controller.signal.aborted) setIsLoading(false);
     }
-  // setSelectedSurveyId from useState is always stable — no other deps needed.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setSelectedSurveyId]);
+  // setSelectedSurveyId from useState is always stable. The query fields are listed individually
+  // so that changing a page, sort or filter recreates fetchData and the effect below refetches.
+  }, [setSelectedSurveyId, page, limit, sort, order, status, alert, from, to, search]);
 
   useEffect(() => {
     fetchData();
@@ -140,7 +247,11 @@ export const useFetchSubmissions = () => {
 
   return {
     data,
+    total,
+    statuses,
+    dateRange,
     accessibleSurveys,
+    loadedSurvey,
     alertCodes,
     selectedSurvey: selectedSurveyId,
     setSelectedSurvey: setSelectedSurveyId,
@@ -150,51 +261,12 @@ export const useFetchSubmissions = () => {
   };
 };
 
-// PERFORMANCE OPTIMIZATION: Enhanced hook with optimistic updates support
-export const useUpdateValidationStatus = () => {
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [updateMessage, setUpdateMessage] = useState<string | null>(null);
-
-  const updateStatus = async (
-    submissionId: string,
-    status: string,
-    assetId?: string,
-    onOptimisticUpdate?: (updatedSubmission: any) => void
-  ) => {
-    try {
-      setIsUpdating(true);
-      setUpdateMessage(null);
-
-      const response = await axios.patch(`${API_BASE_URL}/submissions/${submissionId}/validation_status`, {
-        validation_status: status,
-        asset_id: assetId
-      });
-
-      setUpdateMessage(response.data.message || `Validation status correctly updated for submission ${submissionId}`);
-
-      // PERFORMANCE FIX: If backend returns updated document, trigger optimistic update
-      if (response.data.data && onOptimisticUpdate) {
-        onOptimisticUpdate(response.data.data);
-      }
-
-      return { success: true, data: response.data.data };
-    } catch (err) {
-      console.error('Error updating validation status:', err);
-      setUpdateMessage('Error updating validation status. Please try again.');
-      return { success: false, data: null };
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  return { updateStatus, isUpdating, updateMessage };
-};
-
 // Hook to fetch enumerator statistics from the new MongoDB collection
 export const useFetchEnumeratorStats = () => {
   const { selectedSurveyId, setSelectedSurveyId } = useSurveyContext();
-  const [data, setData] = useState<any[]>([]);
-  const [accessibleSurveys, setAccessibleSurveys] = useState<any[]>([]);
+  const [data, setData] = useState<EnumeratorDailyStat[]>([]);
+  const [accessibleSurveys, setAccessibleSurveys] = useState<AccessibleSurvey[]>([]);
+  const [loadedSurvey, setLoadedSurvey] = useState<AccessibleSurvey | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -214,7 +286,7 @@ export const useFetchEnumeratorStats = () => {
 
       const surveyToFetch = forcedSurveyId !== undefined ? forcedSurveyId : selectedSurveyRef.current;
 
-      const params: any = {};
+      const params: Record<string, string> = {};
       if (surveyToFetch) {
         params.survey_id = surveyToFetch;
       }
@@ -226,6 +298,7 @@ export const useFetchEnumeratorStats = () => {
 
       if (response.data.message === 'Please select a survey to view statistics') {
         setData([]);
+        setLoadedSurvey(null);
         if (response.data.metadata?.accessible_surveys) {
           const surveys = response.data.metadata.accessible_surveys;
           setAccessibleSurveys(surveys);
@@ -242,8 +315,10 @@ export const useFetchEnumeratorStats = () => {
 
       if (!Array.isArray(response.data.results)) {
         setData([]);
+        setLoadedSurvey(null);
         return;
       }
+      setLoadedSurvey(response.data.metadata?.survey ?? null);
       setData(response.data.results);
 
       if (response.data.metadata?.accessible_surveys) {
@@ -254,15 +329,16 @@ export const useFetchEnumeratorStats = () => {
           setSelectedSurveyId(surveys[0].asset_id);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (controller.signal.aborted) return;
       setError(extractErrorMessage(err, 'Failed to load enumerator statistics'));
       setData([]);
       setAccessibleSurveys([]);
+      setLoadedSurvey(null);
     } finally {
       if (!controller.signal.aborted) setIsLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // setSelectedSurveyId from useState is always stable — no other deps needed.
   }, [setSelectedSurveyId]);
 
   useEffect(() => {
@@ -273,79 +349,13 @@ export const useFetchEnumeratorStats = () => {
   return {
     data,
     accessibleSurveys,
+    loadedSurvey,
     selectedSurvey: selectedSurveyId,
     setSelectedSurvey: setSelectedSurveyId,
     isLoading,
     error,
     refetch: fetchData
   };
-};
-
-// Function to trigger a manual refresh of enumerator stats (admin only)
-export const refreshEnumeratorStats = async (adminToken: string) => {
-  try {
-    const response = await axios.post(
-      `${API_BASE_URL}/admin/refresh-enumerator-stats`,
-      {},
-      {
-        headers: {
-          'Admin-Token': adminToken
-        }
-      }
-    );
-    return {
-      success: true,
-      message: response.data.message
-    };
-  } catch (error) {
-    console.error('Error refreshing enumerator stats:', error);
-    return {
-      success: false,
-      message: (error as any).response?.data?.error || 'Failed to refresh enumerator statistics'
-    };
-  }
-};
-
-// Hook to fetch survey-specific alert codes
-export const useFetchAlertCodes = (assetId: string | null) => {
-  const [alertCodes, setAlertCodes] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!assetId) return;
-
-    const fetchAlertCodes = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await axios.get(`${API_BASE_URL}/surveys/${assetId}/alert-codes`);
-        setAlertCodes(response.data.alert_codes);
-      } catch (err) {
-        console.error('Error fetching alert codes:', err);
-        setError('Failed to fetch alert codes');
-        // Set default alert codes on error
-        setAlertCodes({
-          "1": "A catch was reported, but no taxon was specified",
-          "2": "A taxon was specified, but no information was provided",
-          "3": "Length is smaller than minimum length threshold",
-          "4": "Length exceeds maximum length threshold",
-          "5": "Bucket weight exceeds maximum (50kg)",
-          "6": "Number of buckets exceeds maximum (300)",
-          "7": "Number of individuals exceeds maximum (100)",
-          "8": "Price per kg exceeds threshold",
-          "9": "Catch per unit effort exceeds maximum",
-          "10": "Revenue per unit effort exceeds threshold"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAlertCodes();
-  }, [assetId]);
-
-  return { alertCodes, isLoading, error };
 };
 
 // ========================================
@@ -359,7 +369,7 @@ export const useFetchAlertCodes = (assetId: string | null) => {
  * to preview before downloading the full dataset.
  */
 export const useFetchDownloadPreview = () => {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<DataRow[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [appliedFilters, setAppliedFilters] = useState<DownloadFilters | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -370,29 +380,14 @@ export const useFetchDownloadPreview = () => {
     setError(null);
 
     try {
-      // Build query string
-      const params = new URLSearchParams();
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          if (Array.isArray(value)) {
-            // Only append if array has items
-            if (value.length > 0) {
-              params.append(key, value.join(','));
-            }
-          } else {
-            params.append(key, String(value));
-          }
-        }
-      });
-
       const response = await axios.get<PreviewResponse>(
-        `${API_BASE_URL}/data-download/preview?${params.toString()}`
+        `${API_BASE_URL}/data-download/preview?${buildDownloadQuery(filters)}`
       );
 
       setData(response.data.data);
       setTotalCount(response.data.total_count);
       setAppliedFilters(response.data.filters_applied);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching preview:', err);
       setError(extractErrorMessage(err, 'Failed to fetch preview'));
       setData([]);
@@ -416,23 +411,8 @@ export const useFetchDownloadPreview = () => {
  */
 export const downloadCSV = async (filters: DownloadFilters): Promise<boolean> => {
   try {
-    // Build query string
-    const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        if (Array.isArray(value)) {
-          // Only append if array has items
-          if (value.length > 0) {
-            params.append(key, value.join(','));
-          }
-        } else {
-          params.append(key, String(value));
-        }
-      }
-    });
-
     const response = await axios.get(
-      `${API_BASE_URL}/data-download/export?${params.toString()}`,
+      `${API_BASE_URL}/data-download/export?${buildDownloadQuery(filters)}`,
       {
         responseType: 'blob' // Important for file download
       }
@@ -477,15 +457,13 @@ export const downloadCSV = async (filters: DownloadFilters): Promise<boolean> =>
  */
 export const useFetchDownloadMetadata = (countryId?: string, surveyId?: string) => {
   const [metadata, setMetadata] = useState<{
-    countries: any[];
-    districts: any[];
-    surveys: any[];
-    userContext: any;
+    countries: CountryOption[];
+    districts: District[];
+    surveys: Survey[];
   }>({
     countries: [],
     districts: [],
-    surveys: [],
-    userContext: null
+    surveys: []
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -506,10 +484,9 @@ export const useFetchDownloadMetadata = (countryId?: string, surveyId?: string) 
       setMetadata({
         countries: response.data.countries || [],
         districts: response.data.districts || [],
-        surveys: response.data.surveys || [],
-        userContext: response.data.user_context || null
+        surveys: response.data.surveys || []
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching download metadata:', err);
       setError(extractErrorMessage(err, 'Failed to load filter metadata'));
     } finally {
@@ -586,7 +563,7 @@ export const useFetchFieldMetadata = (scope?: string) => {
         console.warn('Failed to cache metadata:', err);
         // Continue even if caching fails
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching field metadata:', err);
       setError(extractErrorMessage(err, 'Failed to load field descriptions'));
       setMetadata(null);
@@ -597,96 +574,3 @@ export const useFetchFieldMetadata = (scope?: string) => {
 
   return { metadata, isLoading, error, fetchMetadata };
 };
-
-/**
- * Fetch countries for data download filters
- * @deprecated Use useFetchDownloadMetadata instead for better performance
- */
-export const useFetchCountries = () => {
-  const [countries, setCountries] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchCountries = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await axios.get(`${API_BASE_URL}/countries`);
-      setCountries(response.data?.countries || []);
-    } catch (err: any) {
-      console.error('Error fetching countries:', err);
-      setError(extractErrorMessage(err, 'Failed to load countries'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchCountries();
-  }, [fetchCountries]);
-
-  return { countries, isLoading, error, refetch: fetchCountries };
-};
-
-/**
- * Fetch districts (GAUL codes) for data download filters
- * @deprecated Use useFetchDownloadMetadata instead for better performance
- */
-export const useFetchDistricts = () => {
-  const [districts, setDistricts] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchDistricts = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await axios.get(`${API_BASE_URL}/districts`);
-      setDistricts(response.data?.data || []);
-    } catch (err: any) {
-      console.error('Error fetching districts:', err);
-      setError(extractErrorMessage(err, 'Failed to load districts'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchDistricts();
-  }, [fetchDistricts]);
-
-  return { districts, isLoading, error, refetch: fetchDistricts };
-};
-
-/**
- * Fetch surveys for data download filters
- * @deprecated Use useFetchDownloadMetadata instead for better performance
- */
-export const useFetchSurveys = () => {
-  const [surveys, setSurveys] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchSurveys = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await axios.get(`${API_BASE_URL}/surveys`);
-      setSurveys(response.data?.surveys || []);
-    } catch (err: any) {
-      console.error('Error fetching surveys:', err);
-      setError(extractErrorMessage(err, 'Failed to load surveys'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSurveys();
-  }, [fetchSurveys]);
-
-  return { surveys, isLoading, error, refetch: fetchSurveys };
-}; 

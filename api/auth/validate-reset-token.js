@@ -1,5 +1,6 @@
 const { getDb } = require('../../lib/db');
 const { sendError, setCorsHeaders } = require('../../lib/response');
+const { isValidResetToken } = require('../../lib/helpers');
 const crypto = require('crypto');
 
 module.exports = async (req, res) => {
@@ -19,7 +20,7 @@ module.exports = async (req, res) => {
     const startTime = Date.now();
     const { token } = req.query;
 
-    if (!token || typeof token !== 'string' || token.length !== 64) {
+    if (!isValidResetToken(token)) {
       // Invalid token format - still apply timing delay
       await applyTimingDelay(startTime);
       return res.status(200).json({
@@ -62,8 +63,9 @@ module.exports = async (req, res) => {
             matchedUser = user;
             // Don't break - continue checking all to maintain constant time
           }
-        } catch (e) {
-          // Length mismatch or other error - continue
+        } catch {
+          // timingSafeEqual throws on a length mismatch, which just means this is not the
+          // matching user. Keep looping so the response time stays constant either way.
         }
       }
     }

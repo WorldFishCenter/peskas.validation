@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ValidationStatus } from '../../types/validation';
+import { ValidationStatus, statusLabelKey } from '../../types/validation';
 
 interface StatusBadgeProps {
   status: string;
@@ -23,15 +23,7 @@ const getStatusBadgeClass = (status: string): string => {
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   const { t } = useTranslation('common');
   const badgeClass = getStatusBadgeClass(status);
-
-  // Map status to translation key
-  const getStatusKey = (status: string): string => {
-    const normalized = status || 'default';
-    const key = normalized.replace('validation_status_', '');
-    return `status.${key}`;
-  };
-
-  const displayText = t(getStatusKey(status));
+  const displayText = t(statusLabelKey(status));
 
   return (
     <span className={`${badgeClass} text-uppercase text-nowrap`}>

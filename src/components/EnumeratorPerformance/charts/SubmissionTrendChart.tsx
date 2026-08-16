@@ -80,14 +80,15 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = React.memo(({
     tooltip: {
       ...baseTooltipConfig,
       shared: true,
-      formatter: function(this: any) {
+      formatter: function(this: Highcharts.Point) {
+        const categories = this.series.chart.xAxis[0].categories;
         const points = this.points || [];
-        const activePoints = points.filter((p: any) => (p.y || 0) > 0);
+        const activePoints = points.filter(p => (p.y || 0) > 0);
 
         // Get formatted date from category axis (more reliable than this.x)
-        const dateLabel = points.length > 0 
-          ? (points[0].key || this.chart.xAxis[0].categories[points[0].x])
-          : (typeof this.x === 'string' ? this.x : this.chart.xAxis[0].categories[this.x]);
+        const dateLabel = points.length > 0
+          ? (points[0].key || categories[points[0].x])
+          : categories[this.x];
 
         if (activePoints.length === 0) {
           return wrapTooltip(
@@ -97,11 +98,11 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = React.memo(({
         }
 
         let content = formatTooltipHeader(String(dateLabel));
-        const total = activePoints.reduce((sum: number, p: any) => sum + (p.y || 0), 0);
+        const total = activePoints.reduce((sum, p) => sum + (p.y || 0), 0);
 
         activePoints
-          .sort((a: any, b: any) => (b.y || 0) - (a.y || 0))
-          .forEach((point: any) => {
+          .sort((a, b) => (b.y || 0) - (a.y || 0))
+          .forEach(point => {
             const value = point.y || 0;
             content += `<div style="display: flex; align-items: center; margin: 3px 0;">
               <span style="color: ${point.series.color}; font-size: 14px; margin-right: 6px;">●</span>

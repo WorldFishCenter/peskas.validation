@@ -1,8 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { getApiBaseUrl } from '../utils/apiConfig';
+import { extractErrorMessage } from '../utils/errors';
+import { Survey } from '../types/download';
 
 const API_BASE_URL = getApiBaseUrl();
+
+export type { Survey };
 
 export interface User {
   _id: string;
@@ -15,40 +19,6 @@ export interface User {
     enumerators?: string[];
   };
   created_at?: string;
-}
-
-export interface Survey {
-  _id: string;
-  asset_id: string;
-  name: string;
-  country_id: string;
-  active: boolean;
-  kobo_config?: {
-    api_url: string;
-    token: string;
-  };
-}
-
-export interface CreateUserPayload {
-  username: string;
-  password: string;
-  name?: string;
-  country?: string[];
-  role: 'admin' | 'user';
-  permissions?: {
-    surveys?: string[];
-    enumerators?: string[];
-  };
-}
-
-export interface UpdateUserPayload {
-  name?: string;
-  country?: string[];
-  role?: 'admin' | 'user';
-  permissions?: {
-    surveys?: string[];
-    enumerators?: string[];
-  };
 }
 
 // Hook to fetch all users
@@ -64,9 +34,9 @@ export const useFetchUsers = () => {
 
       const response = await axios.get(`${API_BASE_URL}/users`);
       setData(response.data.users || []); // Extract users array from response
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching users:', err);
-      setError(err.response?.data?.error || 'Failed to load users');
+      setError(extractErrorMessage(err, 'Failed to load users'));
       setData([]);
     } finally {
       setIsLoading(false);
@@ -94,9 +64,9 @@ export const useFetchSurveys = () => {
       const response = await axios.get(`${API_BASE_URL}/surveys`);
       // API returns { success: true, surveys: [...] }
       setData(response.data.surveys || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching surveys:', err);
-      setError(err.response?.data?.error || 'Failed to load surveys');
+      setError(extractErrorMessage(err, 'Failed to load surveys'));
       setData([]);
     } finally {
       setIsLoading(false);
@@ -110,43 +80,6 @@ export const useFetchSurveys = () => {
   return { data, isLoading, error, refetch: fetchData };
 };
 
-// Create a new user
-export const createUser = async (userData: CreateUserPayload): Promise<{ success: boolean; message: string; user?: User }> => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/users`, userData);
-
-    return {
-      success: true,
-      message: response.data.message || 'User created successfully',
-      user: response.data.user
-    };
-  } catch (error: any) {
-    console.error('Error creating user:', error);
-    return {
-      success: false,
-      message: error.response?.data?.error || 'Failed to create user'
-    };
-  }
-};
-
-// Update an existing user
-export const updateUser = async (userId: string, updates: UpdateUserPayload): Promise<{ success: boolean; message: string }> => {
-  try {
-    const response = await axios.patch(`${API_BASE_URL}/users/${userId}`, updates);
-
-    return {
-      success: true,
-      message: response.data.message || 'User updated successfully'
-    };
-  } catch (error: any) {
-    console.error('Error updating user:', error);
-    return {
-      success: false,
-      message: error.response?.data?.error || 'Failed to update user'
-    };
-  }
-};
-
 // Delete a user
 export const deleteUser = async (userId: string): Promise<{ success: boolean; message: string }> => {
   try {
@@ -156,34 +89,11 @@ export const deleteUser = async (userId: string): Promise<{ success: boolean; me
       success: true,
       message: response.data.message || 'User deleted successfully'
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting user:', error);
     return {
       success: false,
-      message: error.response?.data?.error || 'Failed to delete user'
-    };
-  }
-};
-
-// Update user permissions (assign surveys)
-export const updateUserPermissions = async (
-  userId: string,
-  surveyIds: string[]
-): Promise<{ success: boolean; message: string }> => {
-  try {
-    const response = await axios.patch(`${API_BASE_URL}/users/${userId}/permissions`, {
-      surveys: surveyIds
-    });
-
-    return {
-      success: true,
-      message: response.data.message || 'Permissions updated successfully'
-    };
-  } catch (error: any) {
-    console.error('Error updating permissions:', error);
-    return {
-      success: false,
-      message: error.response?.data?.error || 'Failed to update permissions'
+      message: extractErrorMessage(error, 'Failed to delete user')
     };
   }
 };
@@ -193,7 +103,7 @@ export interface AuditLog {
   timestamp: string;
   username: string | null;
   user_id: string | null;
-  category: 'auth' | 'validation' | 'download';
+  category: 'auth' | 'validation' | 'download' | 'admin';
   action: string;
   status: 'success' | 'failure';
   details: Record<string, unknown>;
@@ -235,14 +145,15 @@ export const useFetchAuditLogs = (filters: AuditLogsFilters = {}) => {
 
       const response = await axios.get(`${API_BASE_URL}/admin/audit-logs?${params.toString()}`);
       setData({ logs: response.data.logs || [], total: response.data.total || 0 });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching audit logs:', err);
-      setError(err.response?.data?.error || 'Failed to load audit logs');
+      setError(extractErrorMessage(err, 'Failed to load audit logs'));
       setData({ logs: [], total: 0 });
     } finally {
       setIsLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- object identity: individual filter primitives listed explicitly to avoid re-renders on every call
+  // Filter primitives are listed individually rather than depending on the `filters` object,
+  // whose identity changes on every render.
   }, [filters.page, filters.limit, filters.username, filters.category, filters.from, filters.to, filters.sortBy, filters.sortOrder]);
 
   useEffect(() => {
@@ -250,22 +161,4 @@ export const useFetchAuditLogs = (filters: AuditLogsFilters = {}) => {
   }, [fetchData]);
 
   return { data, isLoading, error, refetch: fetchData };
-};
-
-// Get accessible surveys for a user
-export const getUserAccessibleSurveys = async (userId: string): Promise<{ success: boolean; surveys?: Survey[]; message?: string }> => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/users/${userId}/accessible-surveys`);
-
-    return {
-      success: true,
-      surveys: response.data.surveys
-    };
-  } catch (error: any) {
-    console.error('Error fetching accessible surveys:', error);
-    return {
-      success: false,
-      message: error.response?.data?.error || 'Failed to fetch accessible surveys'
-    };
-  }
 };

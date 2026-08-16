@@ -24,6 +24,9 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
 
+/** Routes successfully mounted, in mount order. Serves the endpoint listing on `/`. */
+const mountedRoutes = [];
+
 // Helper to load and mount a serverless function
 function mountServerlessFunction(route, filePath) {
   try {
@@ -48,6 +51,7 @@ function mountServerlessFunction(route, filePath) {
       }
     });
 
+    mountedRoutes.push(route);
     console.log(`✓ Mounted: ${route} -> ${filePath}`);
   } catch (error) {
     console.error(`✗ Failed to mount ${route}:`, error.message);
@@ -70,7 +74,9 @@ mountServerlessFunction('/api/kobo/edit-url/:id', path.join(__dirname, '../api/k
 mountServerlessFunction('/api/kobo/validation-status/:id', path.join(__dirname, '../api/kobo/validation-status/[id].js'));
 
 // Submissions endpoints
-mountServerlessFunction('/api/submissions/:id/validation_status', path.join(__dirname, '../api/submissions/[id]/validation-status.js'));
+// Route spelling must match the production filename (Vercel routes by file path), which is
+// hyphenated — and which is what src/api/koboToolbox.ts requests.
+mountServerlessFunction('/api/submissions/:id/validation-status', path.join(__dirname, '../api/submissions/[id]/validation-status.js'));
 
 // Survey endpoints
 mountServerlessFunction('/api/surveys', path.join(__dirname, '../api/surveys/index.js'));
@@ -82,6 +88,7 @@ mountServerlessFunction('/api/users/:id', path.join(__dirname, '../api/users/[id
 mountServerlessFunction('/api/users/:id/reset-password', path.join(__dirname, '../api/users/[id]/reset-password.js'));
 mountServerlessFunction('/api/users/:id/permissions', path.join(__dirname, '../api/users/[id]/permissions.js'));
 mountServerlessFunction('/api/users/:id/accessible-surveys', path.join(__dirname, '../api/users/[id]/accessible-surveys.js'));
+mountServerlessFunction('/api/users/:id/language', path.join(__dirname, '../api/users/[id]/language.js'));
 
 // Country management endpoints
 mountServerlessFunction('/api/countries', path.join(__dirname, '../api/countries/index.js'));
@@ -112,67 +119,14 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Development server running' });
 });
 
-// Root endpoint
+// Root endpoint. The listing is derived from what actually mounted rather than
+// hand-maintained, which is how the previous copy came to advertise routes that no longer
+// existed and miss ones that did.
 app.get('/', (req, res) => {
   res.json({
     message: 'Management Platform API - Development Server',
-    version: '1.2.0-vercel',
-    endpoints: {
-      auth: [
-        'POST /api/auth/login',
-        'GET /api/auth/me',
-        'POST /api/auth/forgot-password',
-        'GET /api/auth/validate-reset-token',
-        'POST /api/auth/reset-password'
-      ],
-      kobo: [
-        'GET /api/kobo/submissions',
-        'GET /api/kobo/edit-url/:id',
-        'PATCH /api/kobo/validation-status/:id'
-      ],
-      submissions: [
-        'PATCH /api/submissions/:id/validation_status'
-      ],
-      surveys: [
-        'GET /api/surveys',
-        'GET /api/surveys/:asset_id/alert-codes'
-      ],
-      users: [
-        'GET /api/users',
-        'POST /api/users',
-        'GET /api/users/:id',
-        'PATCH /api/users/:id',
-        'DELETE /api/users/:id',
-        'PATCH /api/users/:id/reset-password',
-        'PATCH /api/users/:id/permissions',
-        'GET /api/users/:id/accessible-surveys'
-      ],
-      countries: [
-        'GET /api/countries',
-        'POST /api/countries',
-        'GET /api/countries/:code',
-        'PATCH /api/countries/:code',
-        'DELETE /api/countries/:code'
-      ],
-      districts: [
-        'GET /api/districts'
-      ],
-      stats: [
-        'GET /api/enumerators-stats'
-      ],
-      admin: [
-        'POST /api/admin/sync-users (requires refactoring)',
-        'POST /api/admin/refresh-enumerator-stats',
-        'GET /api/admin/audit-logs'
-      ],
-      dataDownload: [
-        'GET /api/data-download/metadata',
-        'GET /api/data-download/preview',
-        'GET /api/data-download/export',
-        'GET /api/data-download/explorer-data',
-        'GET /api/data-download/metadata-fields'
-      ]
-    }
+    version: require('../package.json').version,
+    endpoints: mountedRoutes
   });
 });
 
@@ -181,7 +135,7 @@ app.use((req, res) => {
   res.status(404).json({
     error: 'Not found',
     path: req.path,
-    message: 'This endpoint has not been implemented yet. Check server/index.js for the original implementation.'
+    message: 'No handler is mounted for this path. See the route list at GET /.'
   });
 });
 

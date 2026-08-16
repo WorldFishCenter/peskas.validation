@@ -10,6 +10,10 @@
   "users": "Users",
   "auditLog": "Audit Log",
   "logout": "Logout",
+  "feedback": {
+    "menuItem": "Send feedback or ask for help",
+    "title": "Help us improve your Peskas system"
+  },
   "role": {
     "admin": "Administrator",
     "user": "User"

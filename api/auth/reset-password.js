@@ -1,5 +1,6 @@
 const { getDb } = require('../../lib/db');
 const { sendSuccess, sendBadRequest, sendError, setCorsHeaders } = require('../../lib/response');
+const { isValidResetToken, validatePassword } = require('../../lib/helpers');
 const bcrypt = require('bcryptjs');
 
 module.exports = async (req, res) => {
@@ -18,8 +19,14 @@ module.exports = async (req, res) => {
   try {
     const { token, newPassword, confirmPassword } = req.body;
 
-    // Input validation
-    if (!token || !newPassword || !confirmPassword) {
+    // Input validation. The token format check must run before the value reaches the query:
+    // an object body such as {"token": {"$gt": ""}} would otherwise be interpreted as a
+    // MongoDB operator and match the first user holding any reset token.
+    if (!isValidResetToken(token)) {
+      return sendBadRequest(res, 'Invalid or expired reset token');
+    }
+
+    if (typeof newPassword !== 'string' || typeof confirmPassword !== 'string') {
       return sendBadRequest(res, 'All fields are required');
     }
 
@@ -27,8 +34,9 @@ module.exports = async (req, res) => {
       return sendBadRequest(res, 'Passwords do not match');
     }
 
-    if (newPassword.length < 8) {
-      return sendBadRequest(res, 'Password must be at least 8 characters');
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      return sendBadRequest(res, passwordError);
     }
 
     const db = await getDb();
@@ -41,8 +49,9 @@ module.exports = async (req, res) => {
       return sendBadRequest(res, 'Invalid or expired reset token');
     }
 
-    // Check token expiration
-    if (new Date() > user.reset_token_expires_at) {
+    // Check token expiration. A token row with no expiry is treated as expired rather than
+    // as never-expiring.
+    if (!user.reset_token_expires_at || new Date() > user.reset_token_expires_at) {
       return sendBadRequest(res, 'Reset token has expired');
     }
 

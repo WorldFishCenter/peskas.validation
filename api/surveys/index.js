@@ -6,7 +6,7 @@
  */
 
 const { withMiddleware, authenticateUser } = require('../../lib/middleware');
-const { getDb } = require('../../lib/db');
+const { getAccessibleSurveys } = require('../../lib/filter-permissions');
 const { sendServerError, setCorsHeaders } = require('../../lib/response');
 
 async function handler(req, res) {
@@ -21,37 +21,11 @@ async function handler(req, res) {
   }
 
   try {
-    const database = await getDb();
-    if (!database) {
-      return sendServerError(res, 'Database not configured');
-    }
-
-    // Get the authenticated user's full data
-    const user = await database.collection('users').findOne({ username: req.user.username });
-
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-
-    // Determine which surveys the user has access to
-    let accessibleSurveys;
-
-    if (user.role === 'admin') {
-      // Admin users get full access to ALL active surveys
-      accessibleSurveys = await database.collection('surveys')
-        .find({ active: true })
-        .sort({ country_id: 1, name: 1 })
-        .toArray();
-    } else {
-      // Regular user - only their assigned surveys
-      accessibleSurveys = await database.collection('surveys')
-        .find({
-          asset_id: { $in: user.permissions?.surveys || [] },
-          active: true
-        })
-        .sort({ country_id: 1, name: 1 })
-        .toArray();
-    }
+    // Single source of truth for the permission rule. This endpoint used to grant every
+    // active survey on `role === 'admin'` alone, which disagreed with the documented model
+    // (admin with a populated permissions.surveys is limited to that list) and with every
+    // other endpoint.
+    const accessibleSurveys = await getAccessibleSurveys(req.user);
 
     return res.json({
       success: true,

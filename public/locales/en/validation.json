@@ -12,7 +12,7 @@
   },
   "filters": {
     "search": "Search submissions...",
-    "searchPlaceholder": "Search submissions...",
+    "searchPlaceholder": "Search by submission ID or enumerator...",
     "clearSearch": "Clear search",
     "status": "Status",
     "survey": "Survey",
@@ -41,8 +41,6 @@
     "submissionIdLabel": "Submission ID:",
     "dateLabel": "Date:",
     "submittedByLabel": "Submitted By:",
-    "vesselLabel": "Vessel:",
-    "catchNumberLabel": "Catch #:",
     "statusLabel": "Status:",
     "alertFlagsLabel": "Alert Flags:",
     "lastValidatedLabel": "Last Validated:",

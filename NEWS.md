@@ -1,3 +1,315 @@
+# Management Platform 2.8.0
+
+Peskas users can now write to the team without leaving the portal.
+
+## New Features
+
+- **Send feedback or ask for help, from any page.** The avatar menu at the top right has a new
+  entry that opens a form in place — no email client, no separate website, no new tab. It reaches
+  the Peskas team directly, and a notification goes out the moment something is submitted.
+
+  The form covers the **whole system**, not only this portal: the public country dashboards, the
+  Tracks app, the open data exports, and the validation, enumerator performance, data download and
+  Data Explorer screens here. Report a figure that looks wrong, ask what a column means, ask for
+  help with validation work, propose a new feature, or propose adding or changing a quality flag.
+  Questions are as welcome as bug reports, and you can write in English, Portuguese or Swahili.
+
+- **The form already knows who you are.** Your name is filled in from your session, and so is your
+  country when your account is scoped to a single one — those questions are then hidden, so there
+  is less to fill in before you can say what you came to say. Anything the portal cannot determine
+  is left for you to answer rather than guessed: administrators and users working across several
+  countries pick their own, and a country the portal does not recognise is never stamped onto your
+  message.
+
+## Notes
+
+- Only a one-line summary and the details are required. Everything else — what kind of message it
+  is, which part of Peskas it concerns, how much it is holding you up, your role, organisation and
+  email — is optional, and the flag question appears only when you say your message is about a
+  quality flag.
+- Screenshots and files can be attached, and they travel with the message as real attachments.
+- The feedback entry only appears once a form is configured, so the menu can never point at
+  something that is not there.
+
+# Management Platform 2.7.0
+
+A performance and reliability release. The two heaviest screens now move a fraction of the data
+they did, one survey that crashed the validation table works, and the enumerator dashboard no
+longer counts a person who does not exist.
+
+## Fixed
+
+- **Fixed: opening the validation table on the Zanzibar Fish Catch Survey crashed the page**
+  - Problem: none of that survey's 31,387 submissions carries a submission date. The code that
+    works out the date-picker range assumed at least one did, and threw as soon as the rows
+    loaded. One user has that survey as their only one, so the screen was unusable for them.
+  - Solution: the range is empty when no submission is dated, and the date filter stays inactive
+    instead of hiding every row. A test covers the case.
+
+- **Fixed: the enumerator dashboard ranked an enumerator called "undefined"**
+  - Problem: rows whose enumerator could not be identified are written with the text
+    `"undefined"`. The dashboard filtered out `"Unknown"`, which never occurs, and so treated
+    4,479 Kenya submissions and 382 Mozambique ones as the work of a single person.
+  - Solution: placeholder enumerators are excluded where the data is read, so they cannot reach
+    any chart.
+
+- **Fixed: submissions awaiting validation showed a raw label.** Surveys the pipeline has not
+  validated yet carry the status `not_validated`, which had no translation and no entry in the
+  status filter. It now reads "Not Validated" in all three languages, and the filter offers
+  whichever statuses the loaded survey actually contains rather than a fixed pair.
+
+## Performance
+
+- **The two main screens transfer 94% and 50% less data.** Measured against the largest survey
+  (Mozambique SSF-CD, ~52,000 submissions):
+
+  | Screen | Before | After |
+  |---|---:|---:|
+  | Enumerator Performance | 12.9 MB, 4.2 s | 0.68 MB, 1.0 s |
+  | Validation table | 19.5 MB, 6.0 s | 0.01 MB, 0.6 s |
+
+  The enumerator dashboard now asks the database for the counts it draws instead of downloading
+  every submission and counting them in the browser.
+
+- **The validation table loads one page at a time.** It used to download every submission in the
+  survey — all 51,912 of them on Mozambique SSF-CD — and then show ten. Turning a page, sorting a
+  column, searching or changing a filter now asks the database for exactly the rows being shown,
+  so the screen opens in well under a second whatever the survey's size, and stays that way as
+  the data grows.
+
+  Two things behave differently as a result. The **search box** matches the start of a submission
+  ID or an enumerator name across the whole survey, rather than fuzzily matching anything on
+  screen; it waits a moment after you stop typing before searching. And the **date pickers start
+  empty** rather than pre-filled with the survey's first and last day — the range they allow still
+  shows what the survey covers, but an empty box now honestly means "no date filter".
+
+- **Every request was making a spare round-trip to the database** to health-check a connection the
+  driver already monitors. Removed.
+
+- **Twenty-two missing database indexes were created.** Three collections — including one with
+  31,387 documents — had none beyond the default, so sorting them was done in memory.
+  `npm run ensure:indexes` re-checks and is safe to re-run.
+
+## Housekeeping
+
+- Sorting and filtering the validation table no longer copies all 52,000 rows on every keystroke.
+- The submission detail panel no longer has a Vessel or Catch # row. The data pipeline has not
+  written either field for any of the 118,466 submissions on record, so neither has ever
+  appeared; they are gone rather than sitting there permanently blank.
+- Removed roughly 700 lines of code with no callers, including three unused dependencies and the
+  client functions left behind when user editing moved to Airtable.
+- The backend is now type-checked (`api/`, `lib/`, `server/`), which found an audit-log category
+  that eight endpoints wrote but the type did not allow.
+- Moved to ESLint 9. Its stricter defaults surfaced five places where an error was rethrown with
+  the original cause discarded.
+- `npm run sync:all` referenced a script that was never committed, so it failed in a fresh clone.
+
+# Management Platform 2.6.0
+
+A maintenance release with no new screens. It closes a set of security holes, fixes several
+features that had never actually worked, and pays off the accumulated code debt that was hiding
+them.
+
+## Security
+
+- **Fixed: the password reset form could be used to take over an account** (critical)
+  - Problem: the reset endpoint passed the token from the request straight into the database query
+    without checking it was a string. A crafted request could therefore match **the first account
+    holding any reset token** and overwrite its password. Combined with the account-disclosure
+    issue below, an attacker could trigger a reset for a known administrator and then claim it.
+  - Solution: reset tokens are now validated for shape (64 hexadecimal characters) before any
+    lookup, by both endpoints that accept one. A missing expiry date is now treated as expired
+    rather than as never expiring.
+
+- **Fixed: the password reset form revealed whether an account existed**
+  - Problem: it returned different messages for "no such user", "user has no email on file" and
+    success, and rate-limited only real accounts — so it could be used to confirm which usernames
+    and email addresses are valid.
+  - Solution: every outcome now returns the same message. The real reason is written to the server
+    log only.
+
+- **Fixed: any signed-in user could change validation status on any survey** (critical)
+  - Problem: both endpoints that record a validation status took the survey id from the request and
+    checked only that it wasn't empty. A user could change statuses on surveys they have no access
+    to, and could cause an entirely new collection to be created on first write. The KoboToolbox
+    endpoint had no authorisation check at all, and its error messages disclosed survey names and
+    configuration for surveys the caller cannot see.
+  - Solution: both endpoints check the survey against the caller's permissions before writing, and
+    both now return the same neutral message. Writing to an unknown submission is an honest "not
+    found" rather than a silent insert.
+
+- **Fixed: deactivating a user did nothing for up to seven days**
+  - Problem: login refused disabled accounts, but every other request only checked the sign-in
+    token — which lasts seven days. A deactivated user kept working until it expired.
+  - Solution: every authenticated request now checks the account is still active.
+
+- **Fixed: three secrets failed open when unset.** The signing key for sign-in tokens fell back to a
+  value published in the source code, meaning anyone who could read the repository could mint an
+  administrator session. Two sync endpoints accepted any caller when their secret was unconfigured.
+  All three now refuse rather than allow, and signature comparisons are timing-safe.
+
+- **Added: brute-force protection on login.** Ten failed attempts for a username within fifteen
+  minutes returns "too many attempts". Deliberately keyed on the username rather than the network
+  address, because field offices share an outbound address and an address-based limit would lock
+  out a whole office when one person mistypes. Only failures count, a successful sign-in clears the
+  counter, and the limiter is checked before any database or password work so a flood is cheap to
+  reject.
+
+- **Fixed: password length was unbounded on four endpoints**, which made password hashing an
+  inexpensive way to exhaust the server. All of them now apply the same 8–200 character rule that
+  login already used.
+
+- **Fixed: the portal trusted every `*.vercel.app` site as same-origin**, so anyone could deploy a
+  site to that domain and be treated as trusted. Now scoped to this project's own deployments plus
+  explicitly configured domains.
+
+- **Fixed: the admin screens had no role check in the interface.** The API always rejected
+  non-administrators, so nothing was exposed, but the pages themselves could be opened by typing
+  the URL. They now redirect.
+
+## Bug Fixes
+
+- **Fixed: validation status changes were never saved to the database** (critical)
+  - Problem: the external data pipeline stores submission ids as **numbers**, while the portal
+    received them from the page address as **text**. The database does not match across those two
+    types, so the update matched nothing — and because the endpoint was set to "insert if missing",
+    it quietly created a throwaway record instead and reported success. Status changes appeared to
+    work only because the portal also pushes them to KoboToolbox, and the next pipeline run copied
+    the real value back.
+  - Solution: the lookup now matches either form. The KoboToolbox update is also sent **first**, so
+    a failure there no longer leaves the two systems disagreeing.
+
+- **Fixed: three settings saved correctly but reported an error.** Changing your language,
+  changing a user's survey permissions, and editing a country all wrote to the database and then
+  returned "not found". Caused by a database driver upgrade that changed the shape of the response.
+
+- **Fixed: non-administrators saw an empty country list**, survey counts always showed zero, and
+  the "you cannot delete a country that still has surveys" guard never fired — all because the code
+  read a field that does not exist on survey records.
+
+- **Fixed: viewing, editing or deleting any country returned "not found".** The lookup lowercased
+  the country code before searching, but the stored codes are capitalised. Both sides are now
+  normalised, so the casing on either no longer matters.
+
+- **Fixed: an administrator with specific surveys assigned saw every survey.** There were five
+  separate implementations of "which surveys can this user see" and they disagreed. There is now
+  one.
+
+- **Fixed: your language preference was never saved.** Four independent faults stacked on the one
+  feature — the wrong address in the browser, the route missing from the local server, the
+  server reporting an error on success, and the page hiding the failure.
+
+## New Features
+
+- **Countries are now synced from Airtable** (`npm run sync:countries`, and a step in the scheduled
+  sync). Airtable was already the source of truth for users, surveys and districts, but not
+  countries — the list had been frozen since January 2026, which is why a newly added country never
+  appeared in the portal. Only countries with at least one linked form are synced, and the sync
+  never deletes: a country in the database but not in Airtable is reported and left alone, because
+  removing one would strip access from every user holding its surveys.
+
+- **A country renamed in Airtable no longer breaks the portal.** Alternative spellings of the same
+  country (for example "Timor" and "Timor-Leste") now resolve to a single internal code, so renaming
+  a cell in the spreadsheet no longer silently detaches a country from its districts, its flag and
+  its download data.
+
+- **The Audit Log now covers administrative actions** — creating, updating and deleting users and
+  countries, changing permissions, and administrator-initiated password resets. Updates record the
+  **names of the fields that changed**, never the values, so a password never reaches the log.
+
+## Improvements
+
+- **The Audit Log reads properly.** Administrative events now have friendly names in all three
+  languages instead of raw internal identifiers, are filterable as their own category, and show
+  who was acted on together with the fields that changed. Data Explorer loads — the single most
+  frequent event in the log — were also unnamed and now show their full filter details, matching
+  how download events already displayed.
+
+- **Missing country records are no longer silent.** When a user holds surveys in a country that has
+  no matching record, the server now says so by name instead of the country simply vanishing from
+  the interface.
+
+- **Error messages from the server now reach the screen.** Thirteen places built their own error
+  text and produced "[object Object]" for a whole class of gateway error. They all now use one
+  shared helper.
+
+- **The portal starts faster, especially on a slow connection.** Every visitor used to download all
+  seven screens before anything appeared — including the charting library behind Enumerator
+  Performance and the whole Data Explorer, even to reach the sign-in page. Each screen is now
+  fetched the first time it is opened, cutting what loads up front by roughly a third. The charting
+  library alone, the single largest piece, no longer loads at all for anyone who does not open
+  Enumerator Performance. If a screen is requested moments after a new version is deployed, the
+  page refreshes itself once to pick up the current files rather than showing an error.
+
+## Infrastructure
+
+- **Tabler is now bundled with the application instead of loaded from a public CDN.** The portal is
+  used from field offices on unreliable connections, where a third-party CDN was one more thing that
+  had to be reachable before the interface would render at all. The stylesheet and its JavaScript
+  now ship as part of the build.
+
+- **Removed a dead sync subsystem.** Scheduled Airtable syncing moved to GitHub Actions in an
+  earlier release, but six modules from the previous approach were still present — including two
+  endpoints that could never complete, because they started a background process that the hosting
+  platform stops the moment a response is sent. All six had no callers and were removed. The three
+  working sync paths are unchanged: the daily scheduled run, manual dispatch, and
+  `POST /api/admin/sync-users`.
+
+- **Fixed: new sync scripts would have been missing from CI.** A `.gitignore` rule excluded the
+  `scripts/` directory itself, which meant the exceptions meant to re-include the four scripts CI
+  runs were inert. Any newly added script would have been silently absent and the scheduled sync
+  would have failed on a missing file.
+
+- **Rate limiting is now general-purpose and bounded.** Previously specific to password resets, with
+  no index and no expiry — every counter ever written was kept forever and every check scanned the
+  whole collection. Now indexed, with a seven-day expiry.
+
+- **The local development server matches production.** A route was mounted under the wrong spelling
+  and four endpoints were missing entirely, so features worked in production and returned "not
+  found" locally. The server's endpoint listing is now derived from what actually mounted, so it
+  cannot drift again. A stale second copy of the database driver, three major versions behind, was
+  also removed from `server/` — it was being resolved ahead of the current one.
+
+- **Audit log indexes are created in one place.** They were declared twice with different retention
+  rules, so how long events were kept depended on which path ran first.
+
+- **Every known vulnerable dependency has been updated.** The project's third-party libraries had
+  accumulated 127 published security advisories, three of them rated critical. Most were resolved
+  simply by taking the current release of libraries the project already depended on — the HTTP
+  client, the router, the web server and the email client. Two build tools, Vite and the TypeScript
+  linter, had to move up a major version because their affected releases were never patched on the
+  older line; neither ships in the product, both are used only to build and check it. A further
+  forty advisories came from a leftover dependency list for the old development server, which this
+  release removes. No known advisories remain.
+
+## Code Quality
+
+- **ESLint had never actually run.** The React hooks plugin was installed but not enabled, and the
+  TypeScript rules were declared without being switched on — so the entire ruleset was inert and
+  `npm run lint` had been failing outright. With the rules enabled, eight genuine React dependency
+  bugs surfaced and were fixed, including two cases where a component held onto its very first
+  render's functions forever.
+
+- **`any` is gone from the codebase — 61 occurrences to zero**, and the lint gate now runs at
+  `--max-warnings 0`, so a new one fails the build. About a third disappeared with the dead code
+  that contained it; the rest was replaced with types checked against what the endpoints actually
+  return rather than what they were assumed to return. Two long-standing inaccuracies turned up
+  that way: a field that had never existed under the name the code used, and a field marked
+  required that is absent from most records.
+
+- **Duplication consolidated.** One definition each for the survey type, the quality-score
+  calculation, the alert tally, and the download query builder — where previously there were two to
+  four, quietly able to disagree. Six of the nine duplicates were resolved by deleting a copy that
+  had no callers at all, including a whole translation file whose contents nothing had ever read.
+
+- **Dead code removed** — two unreachable components, two unused data-processing functions, an
+  authentication scheme whose header no endpoint has ever read, and a database index on a field that
+  never exists.
+
+- **Survey identifiers are validated where the collection name is built**, rather than relying on
+  every caller to do it. Confirmed against production first: every existing survey identifier and
+  every existing collection satisfies the rule.
+
 # Management Platform 2.5.0
 
 ## New Features

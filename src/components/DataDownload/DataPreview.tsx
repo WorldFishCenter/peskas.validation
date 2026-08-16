@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useReactTable,
@@ -7,13 +7,13 @@ import {
   ColumnDef
 } from '@tanstack/react-table';
 import { IconDownload, IconAlertCircle, IconBook } from '@tabler/icons-react';
-import { DownloadFilters } from '../../types/download';
+import { DownloadFilters, DataRow } from '../../types/download';
 import { useFetchFieldMetadata } from '../../api/api';
 import FieldInfoIcon from './FieldInfoIcon';
 import FieldMetadataModal from './FieldMetadataModal';
 
 interface DataPreviewProps {
-  data: Record<string, any>[];
+  data: DataRow[];
   totalCount: number;
   appliedFilters: DownloadFilters | null;
   isLoading: boolean;
@@ -44,13 +44,13 @@ const DataPreview: React.FC<DataPreviewProps> = ({
   } = useFetchFieldMetadata(appliedFilters?.scope);
 
   // Handle field info icon click
-  const handleFieldInfoClick = (fieldName: string) => {
+  const handleFieldInfoClick = useCallback((fieldName: string) => {
     if (!metadata && !metadataLoading) {
       fetchMetadata(); // Lazy load on first click
     }
     setSelectedField(fieldName);
     setShowMetadataModal(true);
-  };
+  }, [metadata, metadataLoading, fetchMetadata]);
 
   // Handle Data Dictionary button click
   const handleDataDictionaryClick = () => {
@@ -62,7 +62,7 @@ const DataPreview: React.FC<DataPreviewProps> = ({
   };
 
   // Generate columns dynamically from data with info icons
-  const columns = useMemo<ColumnDef<Record<string, any>>[]>(() => {
+  const columns = useMemo<ColumnDef<DataRow>[]>(() => {
     if (!data || data.length === 0) return [];
 
     const firstRow = data[0];
@@ -83,7 +83,7 @@ const DataPreview: React.FC<DataPreviewProps> = ({
         return String(value);
       }
     }));
-  }, [data]);
+  }, [data, handleFieldInfoClick]);
 
   const table = useReactTable({
     data: data || [],
@@ -171,7 +171,7 @@ const DataPreview: React.FC<DataPreviewProps> = ({
             <strong>{t('preview.filtersApplied')}:</strong>
             {' '}
             {Object.entries(appliedFilters)
-              .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+              .filter(([, value]) => value !== undefined && value !== null && value !== '')
               .map(([key, value]) => {
                 // Format the display
                 const displayKey = key.replace(/_/g, ' ');

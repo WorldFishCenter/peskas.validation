@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getApiBaseUrl } from '../utils/apiConfig';
+import { extractErrorMessage, errorStatus } from '../utils/errors';
 
 const API_BASE_URL = getApiBaseUrl();
 
@@ -29,7 +30,7 @@ export const login = async (username: string, password: string): Promise<LoginRe
       if (error.code === 'ERR_NETWORK' || !error.response) {
         return { success: false, error: 'Unable to connect to server. Please check your connection.' };
       }
-      return { success: false, error: error.response?.data?.error || 'Login failed. Please try again.' };
+      return { success: false, error: extractErrorMessage(error, 'Login failed. Please try again.') };
     }
     return { success: false, error: 'An unexpected error occurred. Please try again.' };
   }
@@ -42,11 +43,11 @@ export const login = async (username: string, password: string): Promise<LoginRe
 export const requestPasswordReset = async (identifier: string): Promise<void> => {
   try {
     await axios.post(`${API_BASE_URL}/auth/forgot-password`, { identifier });
-  } catch (error: any) {
-    if (error.response?.status === 429) {
-      throw new Error(error.response.data.error || 'Too many requests');
+  } catch (error: unknown) {
+    if (errorStatus(error) === 429) {
+      throw new Error(extractErrorMessage(error, 'Too many requests'));
     }
-    throw new Error(error.response?.data?.error || 'Failed to send reset email');
+    throw new Error(extractErrorMessage(error, 'Failed to send reset email'));
   }
 };
 
@@ -65,8 +66,8 @@ export const validateResetToken = async (token: string): Promise<{
       params: { token }
     });
     return response.data;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.error || 'Failed to validate token');
+  } catch (error: unknown) {
+    throw new Error(extractErrorMessage(error, 'Failed to validate token'));
   }
 };
 
@@ -87,7 +88,7 @@ export const resetPassword = async (
       newPassword,
       confirmPassword
     });
-  } catch (error: any) {
-    throw new Error(error.response?.data?.error || 'Failed to reset password');
+  } catch (error: unknown) {
+    throw new Error(extractErrorMessage(error, 'Failed to reset password'));
   }
 };

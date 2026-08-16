@@ -1,16 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { IconCheck, IconChartBar, IconDownload, IconSchool, IconDatabase, IconClipboardCheck, IconUsers, IconHelp, IconShield } from '@tabler/icons-react';
+import { IconCheck, IconChartBar, IconDownload, IconSchool, IconDatabase, IconClipboardCheck, IconUsers, IconHelp, IconShield, IconMessage } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../Auth/AuthContext';
 import LanguageSwitcher from './LanguageSwitcher';
+import FeedbackModal from './FeedbackModal';
+import { FEEDBACK_FORM_EMBED_URL, getFeedbackFormUrl } from '../../constants/support';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const { t } = useTranslation('navigation');
+  const [showFeedback, setShowFeedback] = useState(false);
 
   return (
+    <>
     <header className="navbar navbar-expand-md navbar-light d-print-none">
       <div className="container-xl">
         <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +35,12 @@ const Navbar: React.FC = () => {
               </div>
             </a>
             <div className="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+              {FEEDBACK_FORM_EMBED_URL && (
+                <button className="dropdown-item" onClick={() => setShowFeedback(true)}>
+                  <IconMessage className="icon dropdown-item-icon" size={24} stroke={2} />
+                  {t('feedback.menuItem')}
+                </button>
+              )}
               <button className="dropdown-item" onClick={logout}>{t('logout')}</button>
             </div>
           </div>
@@ -134,6 +144,13 @@ const Navbar: React.FC = () => {
         </div>
       </div>
     </header>
+    {showFeedback && (
+      <FeedbackModal
+        src={getFeedbackFormUrl(user?.name, user?.country)}
+        onClose={() => setShowFeedback(false)}
+      />
+    )}
+    </>
   );
 };
 

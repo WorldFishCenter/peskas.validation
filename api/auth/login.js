@@ -11,6 +11,22 @@ const { generateToken } = require('../../lib/jwt');
 const { sendBadRequest, sendServerError, setCorsHeaders } = require('../../lib/response');
 const { sanitizeString } = require('../../lib/api-utils');
 const { logAuditEvent } = require('../../lib/audit-logger');
+const { isWithinLimit, recordFailure, clearLimit } = require('../../lib/rate-limit');
+
+/**
+ * Brute-force protection for login.
+ *
+ * Keyed on the submitted identifier rather than the client IP on purpose: field offices in
+ * Kenya, Mozambique and Zanzibar share outbound addresses, so an IP-keyed limit would lock out
+ * a whole office when one person fumbles a password. Only *failed* attempts count, and a
+ * successful login clears the counter, so a user who eventually gets it right is never blocked.
+ *
+ * The limiter fails open — see lib/rate-limit.js. It is defence-in-depth, not the security
+ * boundary, and must not become a way to take the portal down.
+ */
+const LOGIN_MAX_FAILURES = 10;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_LIMIT_TYPE = 'login_failures';
 
 module.exports = async function handler(req, res) {
   // Set CORS headers
@@ -47,6 +63,17 @@ module.exports = async function handler(req, res) {
       return res.status(401).json({ success: false, error: 'Invalid username or password' });
     }
 
+    // Checked before the database lookup and before bcrypt, so a flood of guesses is cheap to
+    // reject.
+    const limit = await isWithinLimit(identifier, LOGIN_LIMIT_TYPE, LOGIN_MAX_FAILURES, LOGIN_WINDOW_MS);
+    if (!limit.allowed) {
+      return res.status(429).json({
+        success: false,
+        error: 'Too many failed login attempts. Please try again later.',
+        retryAfter: limit.retryAfter
+      });
+    }
+
     // Get database connection
     const database = await getDb();
     if (!database) {
@@ -64,12 +91,14 @@ module.exports = async function handler(req, res) {
 
     if (!user) {
       await logAuditEvent(database, { username: identifier, user_id: null, category: 'auth', action: 'login_failure', status: 'failure', details: { attempted_username: identifier, reason: 'user_not_found' }, req });
+      await recordFailure(identifier, LOGIN_LIMIT_TYPE, LOGIN_WINDOW_MS);
       return res.status(401).json({ success: false, error: 'Invalid username or password' });
     }
 
     // Check if user is active
     if (!user.active) {
       await logAuditEvent(database, { username: user.username, user_id: user._id.toString(), category: 'auth', action: 'login_failure', status: 'failure', details: { reason: 'account_disabled' }, req });
+      await recordFailure(identifier, LOGIN_LIMIT_TYPE, LOGIN_WINDOW_MS);
       return res.status(401).json({ success: false, error: 'Account is disabled' });
     }
 
@@ -77,8 +106,13 @@ module.exports = async function handler(req, res) {
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
       await logAuditEvent(database, { username: user.username, user_id: user._id.toString(), category: 'auth', action: 'login_failure', status: 'failure', details: { reason: 'wrong_password' }, req });
+      await recordFailure(identifier, LOGIN_LIMIT_TYPE, LOGIN_WINDOW_MS);
       return res.status(401).json({ success: false, error: 'Invalid username or password' });
     }
+
+    // Password verified - drop any accumulated failure count so a user who eventually
+    // gets it right is never left throttled.
+    await clearLimit(identifier, LOGIN_LIMIT_TYPE);
 
     // Generate JWT token
     const token = generateToken(user);

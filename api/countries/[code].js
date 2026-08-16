@@ -7,7 +7,65 @@
 
 const { withMiddleware, authenticateUser } = require('../../lib/middleware');
 const { getDb } = require('../../lib/db');
+const { logAuditEvent } = require('../../lib/audit-logger');
+const { getAccessibleSurveys, normalizeCountryCode } = require('../../lib/filter-permissions');
 const { sendNotFound, sendBadRequest, sendForbidden, sendServerError, setCorsHeaders } = require('../../lib/response');
+
+/**
+ * Count the surveys in a country that this user can access.
+ *
+ * Scoped to the user's permissions so it agrees with `GET /api/countries`, which reports the
+ * same figure — otherwise the list and the detail view disagree about the same country. It
+ * also avoids disclosing how many surveys exist that the user cannot see.
+ *
+ * Survey documents carry `country_id` (capitalized, occasionally an array) and never
+ * `country_code`, so this cannot be expressed as a MongoDB `countDocuments` predicate.
+ *
+ * @param {Object} user - req.user
+ * @param {string} code - Country code in any casing
+ * @returns {Promise<number>}
+ */
+async function countAccessibleSurveysForCountry(user, code) {
+  const surveys = await getAccessibleSurveys(user, code);
+  return surveys.length;
+}
+
+/**
+ * Count every active survey in a country, ignoring permissions.
+ *
+ * Distinct from the permission-scoped count above on purpose: this one answers "is it safe to
+ * delete this country", which must consider surveys the acting admin cannot see. Using the
+ * scoped count here would let an admin with a restricted survey list delete a country that
+ * still has data under it.
+ *
+ * @param {import('mongodb').Db} database
+ * @param {string} code - Country code in any casing
+ * @returns {Promise<number>}
+ */
+async function countAllActiveSurveysForCountry(database, code) {
+  const wanted = normalizeCountryCode(code);
+  const surveys = await database.collection('surveys')
+    .find({ active: true }, { projection: { country_id: 1 } })
+    .toArray();
+  return surveys.filter(s => normalizeCountryCode(s.country_id) === wanted).length;
+}
+
+/**
+ * Look up a country by code, ignoring casing.
+ *
+ * `countries.code` is stored capitalized ("Zanzibar"), so the previous
+ * `findOne({ code: code.toLowerCase() })` matched nothing and every request 404'd.
+ *
+ * @param {import('mongodb').Db} database
+ * @param {string} code - Country code from the URL, in any casing
+ * @returns {Promise<Object|null>}
+ */
+async function findCountryByCode(database, code) {
+  const wanted = normalizeCountryCode(code);
+  if (!wanted) return null;
+  const countries = await database.collection('countries').find({}).toArray();
+  return countries.find(c => normalizeCountryCode(c.code) === wanted) || null;
+}
 
 async function handler(req, res) {
   setCorsHeaders(res, req);
@@ -45,35 +103,22 @@ async function handleGet(req, res, code) {
       return sendServerError(res, 'Database not configured');
     }
 
-    const country = await database.collection('countries').findOne({
-      code: code.toLowerCase()
-    });
+    const country = await findCountryByCode(database, code);
 
     if (!country) {
       return sendNotFound(res, 'Country not found');
     }
 
-    // Check if user has access to this country
-    const user = await database.collection('users').findOne({ username: req.user.username });
-    const isAdmin = user.role === 'admin' && (!user.permissions?.surveys || user.permissions.surveys.length === 0);
+    // A user has access to a country when they have access to at least one of its surveys.
+    // Full-access admins (empty permissions.surveys) match every survey, so the same call
+    // answers both the access check and the count.
+    const accessibleSurveys = await getAccessibleSurveys(req.user, country.code);
 
-    if (!isAdmin) {
-      // Check if user has access to any survey in this country
-      const accessibleSurveys = await database.collection('surveys').find({
-        asset_id: { $in: user.permissions?.surveys || [] },
-        country_code: country.code
-      }).toArray();
-
-      if (accessibleSurveys.length === 0) {
-        return sendForbidden(res, 'Access denied to this country');
-      }
+    if (accessibleSurveys.length === 0) {
+      return sendForbidden(res, 'Access denied to this country');
     }
 
-    // Get survey count
-    const surveyCount = await database.collection('surveys').countDocuments({
-      country_code: country.code,
-      active: true
-    });
+    const surveyCount = accessibleSurveys.length;
 
     return res.json({
       success: true,
@@ -126,23 +171,37 @@ async function handlePatch(req, res, code) {
       updateDoc.metadata = metadata;
     }
 
-    // Update country
+    // Resolved case-insensitively first, then updated by _id: matching on a lowercased code
+    // never hit the capitalized values actually stored.
+    const target = await findCountryByCode(database, code);
+    if (!target) {
+      return sendNotFound(res, 'Country not found');
+    }
+
     const result = await database.collection('countries').findOneAndUpdate(
-      { code: code.toLowerCase() },
+      { _id: target._id },
       { $set: updateDoc },
       { returnDocument: 'after' }
     );
 
-    if (!result || !result.value) {
+    // The mongodb driver returns the document itself from findOneAndUpdate (v4+ default);
+    // `result.value` is undefined, so guarding on it reported 404 on every successful update.
+    if (!result) {
       return sendNotFound(res, 'Country not found');
     }
 
-    const updatedCountry = result.value || result;
+    const updatedCountry = result;
 
-    // Get survey count
-    const surveyCount = await database.collection('surveys').countDocuments({
-      country_code: updatedCountry.code,
-      active: true
+    const surveyCount = await countAccessibleSurveysForCountry(req.user, updatedCountry.code);
+
+    await logAuditEvent(database, {
+      username: req.user.username, user_id: req.user.id,
+      category: 'admin', action: 'country_updated', status: 'success',
+      details: {
+        country_code: updatedCountry.code,
+        fields: Object.keys(updateDoc).filter(k => k !== 'updated_at' && k !== 'updated_by')
+      },
+      req
     });
 
     return res.json({
@@ -173,10 +232,9 @@ async function handleDelete(req, res, code) {
       return sendServerError(res, 'Database not configured');
     }
 
-    // Check if country has surveys
-    const surveyCount = await database.collection('surveys').countDocuments({
-      country_code: code.toLowerCase()
-    });
+    // Check if country has surveys. This guard counted on `surveys.country_code`, which no
+    // document has, so it always read zero and never actually blocked a delete.
+    const surveyCount = await countAllActiveSurveysForCountry(database, code);
 
     if (surveyCount > 0) {
       return res.status(400).json({
@@ -184,13 +242,19 @@ async function handleDelete(req, res, code) {
       });
     }
 
-    const result = await database.collection('countries').deleteOne({
-      code: code.toLowerCase()
-    });
-
-    if (result.deletedCount === 0) {
+    const target = await findCountryByCode(database, code);
+    if (!target) {
       return sendNotFound(res, 'Country not found');
     }
+
+    await database.collection('countries').deleteOne({ _id: target._id });
+
+    await logAuditEvent(database, {
+      username: req.user.username, user_id: req.user.id,
+      category: 'admin', action: 'country_deleted', status: 'success',
+      details: { country_code: target.code, country_name: target.name },
+      req
+    });
 
     return res.json({
       success: true,

@@ -19,7 +19,8 @@
     "onHold": "Em Espera",
     "default": "Pendente",
     "not_approved": "Não Aprovado",
-    "on_hold": "Em Espera"
+    "on_hold": "Em Espera",
+    "not_validated": "Não Validado"
   },
   "role": {
     "admin": "Administrador",
@@ -52,5 +53,6 @@
   "unknown": "Desconhecido",
   "footer": {
     "copyright": "WorldFish Center © 2025"
-  }
+  },
+  "learnMore": "Saiba mais"
 }

@@ -11,6 +11,7 @@ import {
   wrapTooltip,
   chartColors
 } from '../utils/chartConfig';
+import { qualityScore as computeQualityScore } from '../utils/dataUtils';
 
 interface QualityRankingChartProps {
   enumerators: EnumeratorData[];
@@ -59,12 +60,13 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = React.memo(({
     tooltip: {
       ...baseTooltipConfig,
       shared: true,
-      formatter: function(this: any) {
+      formatter: function(this: Highcharts.Point) {
         // Get category name from points array (more reliable than this.x for category axes)
-        const categoryName = this.points && this.points.length > 0 
-          ? (this.points[0].key || this.chart.xAxis[0].categories[this.points[0].x])
-          : (typeof this.x === 'string' ? this.x : this.chart.xAxis[0].categories[this.x]);
-        
+        const categories = this.series.chart.xAxis[0].categories;
+        const categoryName = this.points && this.points.length > 0
+          ? (this.points[0].key || categories[this.points[0].x])
+          : categories[this.x];
+
         const name = String(categoryName);
         const enumerator = sortedEnumerators.find(e => e.name === name);
 
@@ -73,7 +75,7 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = React.memo(({
         const total = enumerator.filteredTotal ?? enumerator.totalSubmissions;
         const alerts = enumerator.filteredAlertsCount ?? enumerator.submissionsWithAlerts;
         const cleanCount = Math.max(0, total - alerts);
-        const qualityScore = (100 - (enumerator.filteredErrorRate ?? enumerator.errorRate)).toFixed(1);
+        const qualityScore = computeQualityScore(enumerator).toFixed(1);
 
         return wrapTooltip(
           formatTooltipHeader(name) +
@@ -99,10 +101,7 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = React.memo(({
     series: [{
       name: t('charts.qualityScore'),
       type: 'bar',
-      data: sortedEnumerators.map(e => {
-        const rate = e.filteredErrorRate ?? e.errorRate;
-        return parseFloat((100 - rate).toFixed(1));
-      }),
+      data: sortedEnumerators.map(e => parseFloat(computeQualityScore(e).toFixed(1))),
       color: chartColors.success,
       dataLabels: { format: '{y}%' }
     }, {

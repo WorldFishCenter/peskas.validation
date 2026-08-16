@@ -2,7 +2,6 @@
   "pageTitle": "Enumerator Performance Dashboard",
   "pageSubtitle": "Monitor and analyze data collection performance metrics",
   "title": "Enumerator Performance",
-  "adminTokenPrompt": "Enter admin token to refresh data:",
   "refreshError": "Failed to refresh data. Please try again.",
   "noData": "No enumerator performance data available.",
   "alertGuide": "Alert Guide",

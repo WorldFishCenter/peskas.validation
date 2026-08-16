@@ -2,17 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { IconInfoCircle, IconAlertCircle, IconCheck, IconExternalLink } from '@tabler/icons-react';
 import { generateEditUrl } from '../../api/koboToolbox';
 import { useTranslation } from 'react-i18next';
-
-interface Submission {
-  submission_id: string;
-  submission_date: string;
-  vessel_number?: string;
-  catch_number?: string;
-  alert_number?: string;
-  validation_status: string;
-  validated_at: string;
-  asset_id?: string;
-}
+// The shared declaration, not a local near-copy: the two had already drifted on `validated_at`.
+import { Submission } from '../../types/validation';
 
 interface StatusUpdateFormProps {
   selectedSubmission: Submission;

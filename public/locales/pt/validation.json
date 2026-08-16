@@ -12,7 +12,7 @@
   },
   "filters": {
     "search": "Pesquisar submissões...",
-    "searchPlaceholder": "Pesquisar submissões...",
+    "searchPlaceholder": "Pesquisar por ID de submissão ou enumerador...",
     "clearSearch": "Limpar pesquisa",
     "status": "Estado",
     "survey": "Inquérito",
@@ -41,8 +41,6 @@
     "submissionIdLabel": "ID da Submissão:",
     "dateLabel": "Data:",
     "submittedByLabel": "Submetido por:",
-    "vesselLabel": "Embarcação:",
-    "catchNumberLabel": "Captura #:",
     "statusLabel": "Estado:",
     "alertFlagsLabel": "Sinalizadores de Alerta:",
     "lastValidatedLabel": "Última Validação:",

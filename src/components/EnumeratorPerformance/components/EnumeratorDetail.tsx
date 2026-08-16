@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { EnumeratorData, DetailTabType } from '../types';
 import { AlertDistributionChart, EnumeratorTrendChart } from '../charts/EnumeratorDetailCharts';
+import { qualityScore } from '../utils/dataUtils';
 
 interface EnumeratorDetailProps {
   selectedEnumeratorData: EnumeratorData;
@@ -127,7 +128,7 @@ const EnumeratorDetail: React.FC<EnumeratorDetailProps> = ({
                     <div className="d-flex justify-content-between">
                       <div>
                         <div className="subheader">{t('qualityScoreLabel')}</div>
-                        <div className="h1 mt-2">{(100 - (selectedEnumeratorData.filteredErrorRate !== undefined ? selectedEnumeratorData.filteredErrorRate : selectedEnumeratorData.errorRate)).toFixed(1)}%</div>
+                        <div className="h1 mt-2">{qualityScore(selectedEnumeratorData).toFixed(1)}%</div>
                       </div>
                       <div>
                         <span className="badge bg-success text-white p-2">

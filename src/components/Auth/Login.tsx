@@ -71,8 +71,8 @@ const Login: React.FC = () => {
     try {
       await requestPasswordReset(resetIdentifier);
       setResetSent(true);
-    } catch (err: any) {
-      setResetError(err.message || t('errors.emailSendFailed'));
+    } catch (err: unknown) {
+      setResetError(err instanceof Error ? err.message : t('errors.emailSendFailed'));
     } finally {
       setResetLoading(false);
     }

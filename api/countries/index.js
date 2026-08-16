@@ -7,6 +7,8 @@
 
 const { withMiddleware, authenticateUser } = require('../../lib/middleware');
 const { getDb } = require('../../lib/db');
+const { logAuditEvent } = require('../../lib/audit-logger');
+const { getAccessibleCountries, getAccessibleSurveys, normalizeCountryCode } = require('../../lib/filter-permissions');
 const { sendBadRequest, sendServerError, setCorsHeaders } = require('../../lib/response');
 
 async function handler(req, res) {
@@ -31,61 +33,28 @@ async function handler(req, res) {
 
 async function handleGet(req, res) {
   try {
-    const database = await getDb();
-    if (!database) {
-      return sendServerError(res, 'Database not configured');
-    }
+    const countries = await getAccessibleCountries(req.user);
 
-    // For admins with empty permissions.surveys array, show all countries
-    // For regular users, show only countries they have access to via their surveys
-    let countries;
+    // Survey counts are derived from the surveys this user can actually see, matched on the
+    // normalized country slug. The previous implementation counted on `surveys.country_code`,
+    // a field nothing ever writes, so every count was zero.
+    const accessibleSurveys = await getAccessibleSurveys(req.user);
+    const surveyCountByCode = accessibleSurveys.reduce((acc, survey) => {
+      const code = normalizeCountryCode(survey.country_id);
+      if (code) acc[code] = (acc[code] || 0) + 1;
+      return acc;
+    }, {});
 
-    const user = await database.collection('users').findOne({ username: req.user.username });
-
-    if (user.role === 'admin' && (!user.permissions?.surveys || user.permissions.surveys.length === 0)) {
-      // Admin with full access - show all countries
-      countries = await database.collection('countries')
-        .find({ active: true })
-        .sort({ name: 1 })
-        .toArray();
-    } else {
-      // Regular user - find countries they have access to via their surveys
-      const accessibleSurveys = await database.collection('surveys').find({
-        asset_id: { $in: user.permissions?.surveys || [] },
-        active: true
-      }).toArray();
-
-      const countryCodes = [...new Set(accessibleSurveys.map(s => s.country_code))];
-
-      countries = await database.collection('countries')
-        .find({
-          code: { $in: countryCodes },
-          active: true
-        })
-        .sort({ name: 1 })
-        .toArray();
-    }
-
-    // Get survey count for each country
-    const countriesWithCount = await Promise.all(
-      countries.map(async (country) => {
-        const surveyCount = await database.collection('surveys').countDocuments({
-          country_code: country.code,
-          active: true
-        });
-
-        return {
-          id: country._id.toString(),
-          code: country.code,
-          name: country.name,
-          active: country.active,
-          metadata: country.metadata,
-          survey_count: surveyCount,
-          created_at: country.created_at,
-          created_by: country.created_by
-        };
-      })
-    );
+    const countriesWithCount = countries.map(country => ({
+      id: country._id.toString(),
+      code: country.code,
+      name: country.name,
+      active: country.active,
+      metadata: country.metadata,
+      survey_count: surveyCountByCode[normalizeCountryCode(country.code)] || 0,
+      created_at: country.created_at,
+      created_by: country.created_by
+    }));
 
     return res.json({
       success: true,
@@ -115,12 +84,12 @@ async function handlePost(req, res) {
       return sendServerError(res, 'Database not configured');
     }
 
-    // Check if country already exists
-    const existingCountry = await database.collection('countries').findOne({
-      code: code.trim().toLowerCase()
-    });
+    // Existing codes are stored capitalized, so an exact lowercase lookup would miss them and
+    // let a duplicate through. Compare normalized.
+    const wanted = normalizeCountryCode(code);
+    const existing = await database.collection('countries').find({}, { projection: { code: 1 } }).toArray();
 
-    if (existingCountry) {
+    if (existing.some(c => normalizeCountryCode(c.code) === wanted)) {
       return res.status(409).json({ error: 'Country code already exists' });
     }
 
@@ -135,6 +104,13 @@ async function handlePost(req, res) {
     };
 
     const result = await database.collection('countries').insertOne(newCountry);
+
+    await logAuditEvent(database, {
+      username: req.user.username, user_id: req.user.id,
+      category: 'admin', action: 'country_created', status: 'success',
+      details: { country_code: newCountry.code, country_name: newCountry.name },
+      req
+    });
 
     return res.status(201).json({
       success: true,
