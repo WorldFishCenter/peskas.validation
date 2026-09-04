@@ -5,27 +5,17 @@
  * Requires authentication
  */
 
-const { withMiddleware, authenticateUser } = require('../../lib/middleware');
+const { withMiddleware } = require('../../lib/middleware');
 const { getAccessibleSurveys } = require('../../lib/filter-permissions');
-const { sendServerError, setCorsHeaders } = require('../../lib/response');
+const { sendServerError } = require('../../lib/response');
 
 async function handler(req, res) {
-  setCorsHeaders(res, req);
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
     // Single source of truth for the permission rule. This endpoint used to grant every
     // active survey on `role === 'admin'` alone, which disagreed with the documented model
     // (admin with a populated permissions.surveys is limited to that list) and with every
     // other endpoint.
-    const accessibleSurveys = await getAccessibleSurveys(req.user);
+    const accessibleSurveys = await getAccessibleSurveys(req.db, req.user);
 
     return res.json({
       success: true,
@@ -44,4 +34,4 @@ async function handler(req, res) {
   }
 }
 
-module.exports = withMiddleware(handler, authenticateUser);
+module.exports = withMiddleware(handler, { methods: ['GET'] });

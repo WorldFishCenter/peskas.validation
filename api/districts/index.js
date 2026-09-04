@@ -9,24 +9,13 @@
  * - country_id (optional): Filter by country
  */
 
-const { withMiddleware, authenticateUser } = require('../../lib/middleware');
-const { getDb } = require('../../lib/db');
+const { withMiddleware } = require('../../lib/middleware');
 const { getAccessibleDistricts } = require('../../lib/filter-permissions');
-const { sendServerError, setCorsHeaders } = require('../../lib/response');
+const { sendServerError } = require('../../lib/response');
 
 async function handler(req, res) {
-  setCorsHeaders(res, req);
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
-    const database = await getDb();
+    const database = req.db;
 
     // Get the authenticated user's full data
     const user = await database.collection('users').findOne({
@@ -41,7 +30,7 @@ async function handler(req, res) {
     const { country_id } = req.query;
 
     // Use shared utility for permission filtering
-    const districts = await getAccessibleDistricts(user, country_id);
+    const districts = await getAccessibleDistricts(req.db, user, country_id);
 
     return res.json({
       success: true,
@@ -59,4 +48,4 @@ async function handler(req, res) {
   }
 }
 
-module.exports = withMiddleware(handler, authenticateUser);
+module.exports = withMiddleware(handler, { methods: ['GET'] });

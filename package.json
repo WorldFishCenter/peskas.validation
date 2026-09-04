@@ -1,7 +1,7 @@
 {
   "name": "peskas-management-platform",
   "private": true,
-  "version": "2.8.0",
+  "version": "2.9.0",
   "type": "module",
   "scripts": {
     "dev:frontend": "vite",
@@ -21,7 +21,7 @@
     "sync:surveys": "node scripts/sync_surveys_from_airtable.js",
     "sync:districts": "node scripts/sync_districts_from_airtable.cjs",
     "ensure:indexes": "node scripts/ensure_survey_indexes.cjs",
-    "test": "tsx src/utils/countryMetadata.test.ts && node lib/submissions-query.test.js"
+    "test": "tsx src/utils/countryMetadata.test.ts && tsx src/components/EnumeratorPerformance/utils/dataUtils.test.ts && node lib/submissions-query.test.js && node lib/filter-permissions.test.js && node lib/survey-selection.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.972.0",

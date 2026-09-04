@@ -25,39 +25,23 @@
  * @module api/data-download/explorer-data
  */
 
-const { withMiddleware, authenticateUser } = require('../../lib/middleware');
+const { withMiddleware } = require('../../lib/middleware');
 const { fetchLandingsPreviewMerged, PeskasAPIError } = require('../../lib/peskas-api');
 const {
   resolveDownloadRequests,
   getAccessibleSurveys,
   DownloadPermissionError
 } = require('../../lib/filter-permissions');
-const {
-  sendError,
-  sendServerError,
-  setCorsHeaders
-} = require('../../lib/response');
+const { sendError, sendServerError } = require('../../lib/response');
 const { logAuditEvent } = require('../../lib/audit-logger');
-const { getDb } = require('../../lib/db');
 
 // Cap rows so the dataset loads quickly into the in-browser webR runtime.
 // Lessons teach techniques on a representative slice, not the full ~1M-row export.
 const LESSON_ROW_CAP = 5000;
 
 async function handler(req, res) {
-  setCorsHeaders(res, req);
-
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
-    const database = await getDb();
+    const database = req.db;
 
     // Admins must normally specify a country (resolveDownloadRequests throws without one). For the
     // Data Explorer we default it to their first accessible survey's country so a
@@ -65,7 +49,7 @@ async function handler(req, res) {
     // to user.country[0] regardless of this value.
     const queryParams = { ...req.query };
     if (req.user.role === 'admin' && !queryParams.country) {
-      const surveys = await getAccessibleSurveys(req.user);
+      const surveys = await getAccessibleSurveys(req.db, req.user);
       if (surveys.length > 0) {
         queryParams.country = surveys[0].country_id;
       }
@@ -74,7 +58,7 @@ async function handler(req, res) {
     // Each request is pinned to one permitted form, with its country taken from the form
     // itself — the same gate preview.js and export.js use, so a lesson can never see data
     // the user could not download.
-    const requests = await resolveDownloadRequests(req.user, queryParams);
+    const requests = await resolveDownloadRequests(req.db, req.user, queryParams);
 
     const {
       status = 'validated',
@@ -155,4 +139,4 @@ async function handler(req, res) {
   }
 }
 
-module.exports = withMiddleware(handler, authenticateUser);
+module.exports = withMiddleware(handler, { methods: ['GET'] });

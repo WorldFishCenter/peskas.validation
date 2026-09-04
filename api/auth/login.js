@@ -6,12 +6,12 @@
  */
 
 const bcrypt = require('bcryptjs');
-const { getDb } = require('../../lib/db');
 const { generateToken } = require('../../lib/jwt');
-const { sendBadRequest, sendServerError, setCorsHeaders } = require('../../lib/response');
+const { sendBadRequest } = require('../../lib/response');
 const { sanitizeString } = require('../../lib/api-utils');
 const { logAuditEvent } = require('../../lib/audit-logger');
 const { isWithinLimit, recordFailure, clearLimit } = require('../../lib/rate-limit');
+const { withMiddleware } = require('../../lib/middleware');
 
 /**
  * Brute-force protection for login.
@@ -28,20 +28,7 @@ const LOGIN_MAX_FAILURES = 10;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_LIMIT_TYPE = 'login_failures';
 
-module.exports = async function handler(req, res) {
-  // Set CORS headers
-  setCorsHeaders(res, req);
-
-  // Handle OPTIONS request for CORS preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  // Only allow POST method
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
+async function handler(req, res) {
   try {
     const { username: rawIdentifier, password } = req.body;
 
@@ -75,12 +62,7 @@ module.exports = async function handler(req, res) {
     }
 
     // Get database connection
-    const database = await getDb();
-    if (!database) {
-      console.error('Database not configured');
-      return sendServerError(res, 'Authentication system not configured');
-    }
-
+    const database = req.db;
     // Find user by username OR email
     const user = await database.collection('users').findOne({
       $or: [
@@ -149,4 +131,6 @@ module.exports = async function handler(req, res) {
     console.error('Login error:', error);
     return res.status(500).json({ success: false, error: 'Login failed' });
   }
-};
+}
+
+module.exports = withMiddleware(handler, { methods: ['POST'], auth: false });

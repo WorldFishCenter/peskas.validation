@@ -15,26 +15,15 @@
  * @access Protected — requires JWT authentication + admin role
  */
 
-const { withMiddleware, authenticateUser, requireAdmin } = require('../../lib/middleware');
-const { getDb } = require('../../lib/db');
-const { setCorsHeaders, sendBadRequest, sendServerError, sendSuccess, sendMethodNotAllowed } = require('../../lib/response');
+const { withMiddleware } = require('../../lib/middleware');
+const { sendBadRequest, sendServerError, sendSuccess } = require('../../lib/response');
 const { escapeRegex, isValidDate } = require('../../lib/helpers');
 
 const SORTABLE_FIELDS = ['timestamp', 'username', 'category', 'action', 'status'];
 
 async function handler(req, res) {
-  setCorsHeaders(res, req);
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'GET') {
-    return sendMethodNotAllowed(res, ['GET']);
-  }
-
   try {
-    const database = await getDb();
+    const database = req.db;
 
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 50));
@@ -92,4 +81,4 @@ async function handler(req, res) {
   }
 }
 
-module.exports = withMiddleware(handler, authenticateUser, requireAdmin);
+module.exports = withMiddleware(handler, { methods: ['GET'], admin: true });

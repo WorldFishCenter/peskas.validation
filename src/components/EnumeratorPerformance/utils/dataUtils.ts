@@ -93,6 +93,127 @@ export const tallyAlertFlags = (
     .sort((a, b) => b.y - a.y);
 };
 
+
+/**
+ * Submissions to show for an enumerator: the date-filtered count when a filter is active,
+ * otherwise the all-time count.
+ *
+ * This one rule was previously written three ways across six modules — `??`, `||`, and
+ * `!== undefined ? :` — which are *not* equivalent. The eight `||` sites treated a filtered
+ * total of 0 as "no filtered value" and fell back to the all-time total, so an enumerator with
+ * no submissions in the selected range was shown their lifetime count on a filtered screen.
+ */
+export const displayTotal = (e: Pick<EnumeratorData, 'filteredTotal' | 'totalSubmissions'>): number =>
+  e.filteredTotal ?? e.totalSubmissions;
+
+/** Alerts to show for an enumerator, under the same filtered/all-time rule as `displayTotal`. */
+export const displayAlerts = (
+  e: Pick<EnumeratorData, 'filteredAlertsCount' | 'submissionsWithAlerts'>
+): number => e.filteredAlertsCount ?? e.submissionsWithAlerts;
+
+/** Error rate to show for an enumerator, under the same rule. */
+export const displayErrorRate = (
+  e: Pick<EnumeratorData, 'filteredErrorRate' | 'errorRate'>
+): number => e.filteredErrorRate ?? e.errorRate;
+
+/**
+ * Earliest and latest day present in the rollup.
+ *
+ * The rollup carries plain `YYYY-MM-DD` days, so these are string comparisons rather than Date
+ * construction. Returns nulls for an empty rollup — the caller decides what to do with that,
+ * rather than this function guessing at today's date.
+ */
+export const dateBounds = (
+  enumerators: EnumeratorData[]
+): { min: string | null; max: string | null } => {
+  let min: string | null = null;
+  let max: string | null = null;
+  for (const enumerator of enumerators) {
+    for (const stat of enumerator.dailyStats) {
+      if (!stat.date) continue;
+      if (min === null || stat.date < min) min = stat.date;
+      if (max === null || stat.date > max) max = stat.date;
+    }
+  }
+  return { min, max };
+};
+
+/**
+ * Narrow every enumerator's rollup rows to a day range, recomputing their totals.
+ *
+ * An empty `from`/`to` means unbounded on that side. Every enumerator is kept, including those
+ * with nothing in range — dropping them here would silently change who appears in the charts.
+ */
+export const applyDateRange = (
+  enumerators: EnumeratorData[],
+  fromDate: string,
+  toDate: string
+): EnumeratorData[] =>
+  enumerators.map(enumerator => {
+    const filteredStats = enumerator.dailyStats.filter(stat => {
+      if (!stat.date) return false;
+      return (!fromDate || stat.date >= fromDate) && (!toDate || stat.date <= toDate);
+    });
+    const filteredTotal = sumCounts(filteredStats);
+    const filteredAlertsCount = sumAlertCounts(filteredStats);
+    return {
+      ...enumerator,
+      filteredStats,
+      filteredTrend: toTrend(filteredStats),
+      filteredTotal,
+      filteredAlertsCount,
+      filteredErrorRate: filteredTotal > 0 ? (filteredAlertsCount / filteredTotal) * 100 : 0
+    };
+  });
+
+/** Every day any enumerator has data for, ascending. `YYYY-MM-DD` sorts lexically. */
+export const uniqueDates = (enumerators: EnumeratorData[]): string[] =>
+  [...new Set(enumerators.flatMap(e => (e.filteredTrend || []).map(point => point.date)))].sort();
+
+/** Enumerators with at least one submission in view, busiest first. */
+export const byVolume = (enumerators: EnumeratorData[]): EnumeratorData[] =>
+  enumerators.filter(e => displayTotal(e) > 0).sort((a, b) => displayTotal(b) - displayTotal(a));
+
+/**
+ * Enumerators with at least one submission in view, best quality first.
+ *
+ * The ranking rule lived in `QualityRankingChart` and was re-derived, differently, in three
+ * other modules. Ties break on volume, matching `findBestEnumerator`.
+ */
+export const byQuality = (enumerators: EnumeratorData[]): EnumeratorData[] =>
+  enumerators
+    .filter(e => displayTotal(e) > 0)
+    .sort((a, b) =>
+      displayErrorRate(a) - displayErrorRate(b) || displayTotal(b) - displayTotal(a));
+
+/** Totals across everyone currently in view. */
+export const summarise = (
+  enumerators: EnumeratorData[]
+): { totalSubmissions: number; totalAlerts: number; avgErrorRate: number } => {
+  const totalSubmissions = enumerators.reduce((sum, e) => sum + displayTotal(e), 0);
+  const totalAlerts = enumerators.reduce((sum, e) => sum + displayAlerts(e), 0);
+  return {
+    totalSubmissions,
+    totalAlerts,
+    avgErrorRate: totalSubmissions > 0 ? (totalAlerts / totalSubmissions) * 100 : 0
+  };
+};
+
+/**
+ * One enumerator's volume as a percentage of the average, rounded.
+ *
+ * Was computed inline inside JSX, where it could not be tested and its divide-by-zero case was
+ * invisible. Returns 0 when there is nobody to average over.
+ */
+export const shareOfAverage = (
+  enumerator: Pick<EnumeratorData, 'filteredTotal' | 'totalSubmissions'>,
+  enumerators: EnumeratorData[]
+): number => {
+  if (enumerators.length === 0) return 0;
+  const mean = enumerators.reduce((sum, e) => sum + displayTotal(e), 0) / enumerators.length;
+  return mean > 0 ? Math.round((displayTotal(enumerator) / mean) * 100) : 0;
+};
+
 /**
  * Find the best performing enumerator based on quality (lowest error rate)
  * Only considers enumerators with a minimum number of submissions for statistical significance
@@ -117,57 +238,19 @@ export const findBestEnumerator = (
     };
   }
 
-  // Filter to enumerators with sufficient submissions for meaningful comparison
-  const qualified = enumerators.filter(e => {
-    const submissions = e.filteredTotal !== undefined ? e.filteredTotal : e.totalSubmissions;
-    return submissions >= minSubmissions;
-  });
-
-  // If no one meets the minimum, lower the threshold and try again
-  if (qualified.length === 0) {
-    const lowerThreshold = Math.max(1, Math.floor(minSubmissions / 2));
-    const secondAttempt = enumerators.filter(e => {
-      const submissions = e.filteredTotal !== undefined ? e.filteredTotal : e.totalSubmissions;
-      return submissions >= lowerThreshold;
-    });
-
-    // If still no one qualifies, return the one with most submissions
-    if (secondAttempt.length === 0) {
-      return enumerators.reduce((best, current) => {
-        const bestSubs = best.filteredTotal ?? best.totalSubmissions;
-        const currentSubs = current.filteredTotal ?? current.totalSubmissions;
-        return currentSubs > bestSubs ? current : best;
-      }, enumerators[0]);
+  // Enough submissions to compare meaningfully; if nobody clears the bar, halve it. Both passes
+  // rank by quality with volume as the tiebreaker, which is exactly `byQuality`.
+  const lowerThreshold = Math.max(1, Math.floor(minSubmissions / 2));
+  for (const threshold of [minSubmissions, lowerThreshold]) {
+    const qualified = enumerators.filter(e => displayTotal(e) >= threshold);
+    if (qualified.length > 0) {
+      return byQuality(qualified)[0] ?? qualified[0];
     }
-
-    // Use the lower threshold candidates
-    return secondAttempt.reduce((best, current) => {
-      const bestError = best.filteredErrorRate !== undefined ? best.filteredErrorRate : best.errorRate;
-      const currentError = current.filteredErrorRate !== undefined ? current.filteredErrorRate : current.errorRate;
-
-      // Prioritize quality (lowest error rate)
-      if (currentError < bestError) return current;
-      if (currentError > bestError) return best;
-
-      // If equal quality, prefer higher volume
-      const bestSubs = best.filteredTotal ?? best.totalSubmissions;
-      const currentSubs = current.filteredTotal ?? current.totalSubmissions;
-      return currentSubs > bestSubs ? current : best;
-    }, secondAttempt[0]);
   }
 
-  // Find the enumerator with the lowest error rate among qualified candidates
-  return qualified.reduce((best, current) => {
-    const bestError = best.filteredErrorRate !== undefined ? best.filteredErrorRate : best.errorRate;
-    const currentError = current.filteredErrorRate !== undefined ? current.filteredErrorRate : current.errorRate;
-
-    // Prioritize quality (lowest error rate wins)
-    if (currentError < bestError) return current;
-    if (currentError > bestError) return best;
-
-    // If error rates are equal, prefer higher volume as tiebreaker
-    const bestSubs = best.filteredTotal ?? best.totalSubmissions;
-    const currentSubs = current.filteredTotal ?? current.totalSubmissions;
-    return currentSubs > bestSubs ? current : best;
-  }, qualified[0]);
+  // Still nobody: fall back to whoever submitted most.
+  return enumerators.reduce(
+    (best, current) => (displayTotal(current) > displayTotal(best) ? current : best),
+    enumerators[0]
+  );
 }; 

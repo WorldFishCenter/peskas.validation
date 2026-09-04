@@ -1,21 +1,9 @@
-const { getDb } = require('../../lib/db');
-const { sendSuccess, sendBadRequest, sendError, setCorsHeaders } = require('../../lib/response');
+const { sendSuccess, sendBadRequest, sendError } = require('../../lib/response');
 const { isValidResetToken, validatePassword } = require('../../lib/helpers');
+const { withMiddleware } = require('../../lib/middleware');
 const bcrypt = require('bcryptjs');
 
-module.exports = async (req, res) => {
-  // Set CORS headers
-  setCorsHeaders(res, req);
-
-  // Handle OPTIONS request for CORS preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    return sendError(res, 'Method not allowed', 405);
-  }
-
+async function handler(req, res) {
   try {
     const { token, newPassword, confirmPassword } = req.body;
 
@@ -39,7 +27,7 @@ module.exports = async (req, res) => {
       return sendBadRequest(res, passwordError);
     }
 
-    const db = await getDb();
+    const db = req.db;
     const user = await db.collection('users').findOne({
       reset_token: token,
       active: true
@@ -89,4 +77,6 @@ module.exports = async (req, res) => {
     console.error('[RESET_PASSWORD] Error:', error);
     return sendError(res, 'Failed to reset password', 500);
   }
-};
+}
+
+module.exports = withMiddleware(handler, { methods: ['POST'], auth: false });

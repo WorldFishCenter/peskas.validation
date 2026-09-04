@@ -2,7 +2,14 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetchEnumeratorStats } from '../../api/api';
 import { ChartTabType, DetailTabType, EnumeratorData } from './types';
-import { processEnumeratorData, findBestEnumerator, sumCounts, sumAlertCounts, toTrend } from './utils/dataUtils';
+import {
+  processEnumeratorData,
+  findBestEnumerator,
+  applyDateRange,
+  dateBounds,
+  uniqueDates as toUniqueDates,
+  summarise
+} from './utils/dataUtils';
 import { refreshEnumeratorStats } from './utils/apiUtils';
 import { useContextualAlertCodes } from '../../hooks/useContextualAlertCodes';
 import { useAuth } from '../Auth/AuthContext';
@@ -27,7 +34,7 @@ declare module 'highcharts' {
 
 const EnumeratorPerformance: React.FC = () => {
   const { t } = useTranslation('enumerators');
-  const { data: rawData = [], accessibleSurveys, loadedSurvey, selectedSurvey, setSelectedSurvey, isLoading, error, refetch } = useFetchEnumeratorStats();
+  const { data: rawData = [], accessibleSurveys, loadedSurvey, selectedSurvey, selectSurvey, isLoading, error, refetch } = useFetchEnumeratorStats();
   const { user } = useAuth();
   // Admin status comes from the authenticated session, the same source Navbar gates on — not
   // from the presence of a locally-stored token.
@@ -76,19 +83,10 @@ const EnumeratorPerformance: React.FC = () => {
     }
   }, [processedData, selectedEnumerator]);
 
-  // Compute min/max dates from processedData - reset when survey changes.
-  // The rollup already carries plain `YYYY-MM-DD` days, so these are string comparisons.
+  // Reset the picker to the full span whenever a new survey's data arrives.
   useEffect(() => {
     if (processedData.length === 0) return;
-    let min: string | null = null;
-    let max: string | null = null;
-    for (const enumerator of processedData) {
-      for (const stat of enumerator.dailyStats) {
-        if (!stat.date) continue;
-        if (min === null || stat.date < min) min = stat.date;
-        if (max === null || stat.date > max) max = stat.date;
-      }
-    }
+    const { min, max } = dateBounds(processedData);
     if (min && max) {
       setMinDate(min);
       setMaxDate(max);
@@ -97,32 +95,13 @@ const EnumeratorPerformance: React.FC = () => {
     }
   }, [processedData]);
 
-  // Apply date range filtering — derived directly, no intermediate state
-  const enumerators = useMemo<EnumeratorData[]>(() => {
-    if (processedData.length === 0) return [];
-    return processedData.map(enumerator => {
-      const filteredStats = enumerator.dailyStats.filter(stat => {
-        if (!stat.date) return false;
-        return (!fromDate || stat.date >= fromDate) && (!toDate || stat.date <= toDate);
-      });
-      const filteredTotal = sumCounts(filteredStats);
-      const filteredAlertsCount = sumAlertCounts(filteredStats);
-      return {
-        ...enumerator,
-        filteredStats,
-        filteredTrend: toTrend(filteredStats),
-        filteredTotal,
-        filteredAlertsCount,
-        filteredErrorRate: filteredTotal > 0 ? (filteredAlertsCount / filteredTotal) * 100 : 0
-      };
-    });
-  }, [processedData, fromDate, toDate]);
-
-  // Calculate dates for submission trend chart — must be above early returns (Rules of Hooks)
-  const uniqueDates = useMemo(
-    () => [...new Set(enumerators.flatMap(e => (e.filteredTrend || []).map(t => t.date)))].sort(),
-    [enumerators]
+  const enumerators = useMemo<EnumeratorData[]>(
+    () => applyDateRange(processedData, fromDate, toDate),
+    [processedData, fromDate, toDate]
   );
+
+  // Must be above the early returns (Rules of Hooks).
+  const uniqueDates = useMemo(() => toUniqueDates(enumerators), [enumerators]);
 
   // Check for admin token
   // Handle admin refresh
@@ -209,10 +188,7 @@ const EnumeratorPerformance: React.FC = () => {
 
   const selectedEnumeratorData = enumerators.find(e => e.name === selectedEnumerator);
 
-  // Calculate summary statistics based on filtered data
-  const totalSubmissions = enumerators.reduce((sum, e) => sum + (e.filteredTotal || e.totalSubmissions), 0);
-  const totalAlerts = enumerators.reduce((sum, e) => sum + (e.filteredAlertsCount || e.submissionsWithAlerts), 0);
-  const avgErrorRate = totalSubmissions > 0 ? (totalAlerts / totalSubmissions) * 100 : 0;
+  const { totalSubmissions, avgErrorRate } = summarise(enumerators);
 
   // Find the best enumerator using a weighted quality score
   const bestEnumerator = findBestEnumerator(enumerators);
@@ -231,7 +207,7 @@ const EnumeratorPerformance: React.FC = () => {
         minDate={minDate}
         maxDate={maxDate}
         selectedSurvey={selectedSurvey}
-        setSelectedSurvey={(assetId) => { setSelectedSurvey(assetId); refetch(assetId); }}
+        selectSurvey={selectSurvey}
         accessibleSurveys={accessibleSurveys}
         surveyCountry={surveyCountry}
         onShowAlertGuide={() => setShowAlertGuide(true)}

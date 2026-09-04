@@ -6,93 +6,62 @@
  */
 
 const bcrypt = require('bcryptjs');
-const { withMiddleware, authenticateUser, requireAdmin } = require('../../../lib/middleware');
-const { getDb } = require('../../../lib/db');
+const { withMiddleware } = require('../../../lib/middleware');
 const { validateObjectId, validatePassword } = require('../../../lib/helpers');
-const { setCorsHeaders } = require('../../../lib/response');
+const { HttpError } = require('../../../lib/response');
 const { logAuditEvent } = require('../../../lib/audit-logger');
 
 async function handler(req, res) {
-  setCorsHeaders(res, req);
+  // Get user ID from query parameter (Vercel converts [id] to query.id)
+  const id = req.query.id;
+  const { newPassword } = req.body;
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  // Validate ObjectId before using it
+  const userId = validateObjectId(id, 'User ID');
+
+  const passwordError = validatePassword(newPassword);
+  if (passwordError) {
+    throw new HttpError(passwordError, 400);
   }
 
-  if (req.method !== 'PATCH') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  const database = req.db;
 
-  try {
-    // Get user ID from query parameter (Vercel converts [id] to query.id)
-    const id = req.query.id;
-    const { newPassword } = req.body;
+  // Hash the new password
+  const password_hash = await bcrypt.hash(newPassword, 10);
 
-    // Validate ObjectId before using it
-    const userId = validateObjectId(id, 'User ID');
-
-    const passwordError = validatePassword(newPassword);
-    if (passwordError) {
-      return res.status(400).json({ success: false, message: passwordError });
-    }
-
-    const database = await getDb();
-
-    // Hash the new password
-    const password_hash = await bcrypt.hash(newPassword, 10);
-
-    // Update the password
-    const result = await database.collection('users').updateOne(
-      { _id: userId },
-      {
-        $set: {
-          password_hash,
-          updated_at: new Date(),
-          updated_by: req.user.username
-        }
+  // Update the password
+  const result = await database.collection('users').updateOne(
+    { _id: userId },
+    {
+      $set: {
+        password_hash,
+        updated_at: new Date(),
+        updated_by: req.user.username
       }
-    );
-
-    if (result.matchedCount === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
     }
+  );
 
-    // An admin changing another account's password is exactly the kind of action the audit
-    // log exists for. Awaited before responding: Vercel freezes the context after the
-    // response, so a fire-and-forget write is dropped.
-    await logAuditEvent(database, {
-      username: req.user.username,
-      user_id: req.user.id,
-      category: 'admin',
-      action: 'user_password_reset',
-      status: 'success',
-      details: { target_user_id: userId.toString() },
-      req
-    });
-
-    return res.json({
-      success: true,
-      message: 'Password reset successfully'
-    });
-  } catch (error) {
-    console.error('Reset password error:', error);
-
-    // Return 400 for validation errors
-    if (error.message && (error.message.includes('Invalid') || error.message.includes('required'))) {
-      return res.status(400).json({
-        success: false,
-        message: error.message
-      });
-    }
-
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to reset password'
-    });
+  if (result.matchedCount === 0) {
+    throw new HttpError('User not found', 404);
   }
+
+  // An admin changing another account's password is exactly the kind of action the audit
+  // log exists for. Awaited before responding: Vercel freezes the context after the
+  // response, so a fire-and-forget write is dropped.
+  await logAuditEvent(database, {
+    username: req.user.username,
+    user_id: req.user.id,
+    category: 'admin',
+    action: 'user_password_reset',
+    status: 'success',
+    details: { target_user_id: userId.toString() },
+    req
+  });
+
+  return res.json({
+    success: true,
+    message: 'Password reset successfully'
+  });
 }
 
-module.exports = withMiddleware(handler, authenticateUser, requireAdmin);
+module.exports = withMiddleware(handler, { methods: ['PATCH'], admin: true });

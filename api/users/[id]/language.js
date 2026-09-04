@@ -5,25 +5,14 @@
  * Requires authentication (users can update their own language, admins can update any)
  */
 
-const { withMiddleware, authenticateUser } = require('../../../lib/middleware');
-const { getDb } = require('../../../lib/db');
+const { withMiddleware } = require('../../../lib/middleware');
 const { validateObjectId } = require('../../../lib/helpers');
-const { sendNotFound, sendBadRequest, sendServerError, sendUnauthorized, setCorsHeaders } = require('../../../lib/response');
+const { sendNotFound, sendBadRequest, sendServerError, sendUnauthorized } = require('../../../lib/response');
 
 // Supported language codes
 const VALID_LANGUAGES = ['en', 'pt', 'sw'];
 
 async function handler(req, res) {
-  setCorsHeaders(res, req);
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'PATCH') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
     // Get user ID from query parameter (Vercel converts [id] to query.id)
     const id = req.query.id;
@@ -50,11 +39,7 @@ async function handler(req, res) {
       return sendUnauthorized(res, 'You can only update your own language preference');
     }
 
-    const database = await getDb();
-    if (!database) {
-      return sendServerError(res, 'Database not configured');
-    }
-
+    const database = req.db;
     // Update user language
     const result = await database.collection('users').findOneAndUpdate(
       { _id: userId },
@@ -88,12 +73,8 @@ async function handler(req, res) {
     console.error('Update language error:', error);
 
     // Return 400 for validation errors
-    if (error.message && (error.message.includes('Invalid') || error.message.includes('required'))) {
-      return sendBadRequest(res, error.message);
-    }
-
     return sendServerError(res, 'Failed to update language preference');
   }
 }
 
-module.exports = withMiddleware(handler, authenticateUser);
+module.exports = withMiddleware(handler, { methods: ['PATCH'] });

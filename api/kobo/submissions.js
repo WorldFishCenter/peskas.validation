@@ -11,12 +11,12 @@
  * `search`; see `lib/submissions-query.js` for how each is validated.
  */
 
-const { withMiddleware, authenticateUser } = require('../../lib/middleware');
-const { getDb } = require('../../lib/db');
+const { withMiddleware } = require('../../lib/middleware');
 const { getSurveyFlagsCollection } = require('../../lib/helpers');
-const { getAccessibleSurveys } = require('../../lib/filter-permissions');
+const { enumeratorFilter } = require('../../lib/filter-permissions');
+const { resolveSurveySelection, SURVEY_REQUIRED, SURVEY_DENIED } = require('../../lib/survey-selection');
 const { buildSubmissionsQuery } = require('../../lib/submissions-query');
-const { sendSuccess, sendServerError, sendMethodNotAllowed, setCorsHeaders } = require('../../lib/response');
+const { sendSuccess, sendServerError } = require('../../lib/response');
 
 const PROJECTION = {
   submission_id: 1,
@@ -33,67 +33,31 @@ const surveyRef = s => ({ asset_id: s.asset_id, name: s.name, country_id: s.coun
 
 const surveyOption = s => ({ ...surveyRef(s), alert_codes: s.alert_codes || {} });
 
-const emptyPage = (res, extra = {}) =>
-  sendSuccess(res, { count: 0, total: 0, page: 1, limit: 0, results: [], metadata: { accessible_surveys: [] }, ...extra });
+const emptyPage = (res, surveys = [], code = undefined) =>
+  sendSuccess(res, {
+    count: 0, total: 0, page: 1, limit: 0, results: [],
+    ...(code && { code }),
+    metadata: { accessible_surveys: surveys.map(surveyOption) }
+  });
 
 async function handler(req, res) {
-  setCorsHeaders(res, req);
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'GET') {
-    return sendMethodNotAllowed(res, ['GET']);
-  }
-
   try {
-    const database = await getDb();
-    if (!database) {
-      return sendServerError(res, 'Database not configured');
-    }
-
+    const database = req.db;
     const user = req.user;
 
-    let accessibleSurveys = await getAccessibleSurveys(user);
+    const selection = await resolveSurveySelection(database, user, req.query.survey_id);
 
-    if (accessibleSurveys.length === 0) {
-      return emptyPage(res);
-    }
-
-    // Save full list before any filtering — always returned in metadata so the
-    // frontend can populate the survey selector regardless of which survey is loaded
-    const allAccessibleSurveys = [...accessibleSurveys];
-
-    const surveyIdFilter = req.query.survey_id;
-
-    if (surveyIdFilter) {
-      // User selected a specific survey - filter to just that one
-      accessibleSurveys = allAccessibleSurveys.filter(s => s.asset_id === surveyIdFilter);
-
-      if (accessibleSurveys.length === 0) {
-        return emptyPage(res, { message: 'Survey not found or access denied' });
-      }
-    } else if (accessibleSurveys.length > 1) {
-      // Multiple surveys available but no selection — require explicit choice
-      return emptyPage(res, {
-        message: 'Please select a survey to view submissions',
-        metadata: { accessible_surveys: allAccessibleSurveys.map(surveyOption) }
-      });
-    }
-
-    // Enumerator restrictions
-    const allowedEnumerators = user.permissions?.enumerators || [];
-    const enumeratorFilter = allowedEnumerators.length > 0
-      ? { submitted_by: { $in: allowedEnumerators } }
-      : {};
+    if (selection.kind === 'none') return emptyPage(res);
+    if (selection.kind === 'denied') return emptyPage(res, selection.surveys, SURVEY_DENIED);
+    if (selection.kind === 'ambiguous') return emptyPage(res, selection.surveys, SURVEY_REQUIRED);
 
     // Exactly one survey is loaded per request — either the client picked one, or the user has
-    // only one. Both branches above guarantee it, so there is no fan-out to merge.
-    const survey = accessibleSurveys[0];
+    // only one. `resolveSurveySelection` guarantees it, so there is no fan-out to merge.
+    const { survey, surveys: allAccessibleSurveys } = selection;
     const collection = database.collection(getSurveyFlagsCollection(survey.asset_id));
 
-    const { filter, sort, skip, limit, page } = buildSubmissionsQuery(req.query, enumeratorFilter);
+    const enumerators = enumeratorFilter(user);
+    const { filter, sort, skip, limit, page } = buildSubmissionsQuery(req.query, enumerators);
 
     // Everything the survey as a whole implies — which statuses exist, how far the dates run —
     // has to come from the collection now that only one page of rows is loaded. The picker bounds
@@ -105,7 +69,7 @@ async function handler(req, res) {
     // changes. One request at a time these three cost nothing measurable; ten at once they cost
     // a third of the response time, which is where the page turns of several users collide.
     const wantMeta = req.query.meta === '1';
-    const scope = { type: { $ne: 'metadata' }, ...enumeratorFilter };
+    const scope = { type: { $ne: 'metadata' }, ...enumerators };
     const dated = { ...scope, submission_date: { $ne: null } };
     /** @type {import('mongodb').FindOptions} */
     const bounds = { sort: { submission_date: 1 }, projection: { submission_date: 1, _id: 0 } };
@@ -150,4 +114,4 @@ async function handler(req, res) {
   }
 }
 
-module.exports = withMiddleware(handler, authenticateUser);
+module.exports = withMiddleware(handler, { methods: ['GET'] });

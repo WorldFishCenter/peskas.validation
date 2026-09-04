@@ -7,81 +7,41 @@
  * Requires authentication.
  */
 
-const { withMiddleware, authenticateUser } = require('../lib/middleware');
-const { getDb } = require('../lib/db');
+const { withMiddleware } = require('../lib/middleware');
 const { getEnumeratorStatsCollection, PLACEHOLDER_ENUMERATORS } = require('../lib/helpers');
-const { getAccessibleSurveys } = require('../lib/filter-permissions');
-const { sendSuccess, sendServerError, sendMethodNotAllowed, setCorsHeaders } = require('../lib/response');
+const { enumeratorFilter } = require('../lib/filter-permissions');
+const { resolveSurveySelection, SURVEY_REQUIRED, SURVEY_DENIED } = require('../lib/survey-selection');
+const { sendSuccess, sendServerError } = require('../lib/response');
 
 /** Kept local rather than shared with `api/kobo/submissions.js` — the survey shape already
- *  varies by endpoint (`api/data-download/metadata.js` carries `active` instead). */
+ *  varies by endpoint (`api/data-download/metadata.js` carries `active` instead, and
+ *  `submissions` adds `alert_codes`). Only the *selection* is shared; see lib/survey-selection.js. */
 const surveyRef = s => ({ asset_id: s.asset_id, name: s.name, country_id: s.country_id });
 
+const emptyStats = (res, surveys = [], code = undefined) =>
+  sendSuccess(res, {
+    count: 0,
+    results: [],
+    ...(code && { code }),
+    metadata: { accessible_surveys: surveys.map(surveyRef) }
+  });
+
 async function handler(req, res) {
-  setCorsHeaders(res, req);
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'GET') {
-    return sendMethodNotAllowed(res, ['GET']);
-  }
-
   try {
-    const database = await getDb();
-    if (!database) {
-      return sendServerError(res, 'Database not configured');
-    }
-
+    const database = req.db;
     const user = req.user;
 
-    // Permission filtering goes through filter-permissions.js. This endpoint used to inline its
-    // own copy of the admin/empty-array rule, which meant the rule was written twice and could
-    // drift — the surveys endpoint had already drifted the same way.
-    let accessibleSurveys = await getAccessibleSurveys(user);
+    // Permission filtering and survey selection both go through shared modules. This endpoint
+    // used to inline its own copy of each, which is how the two came to drift apart.
+    const selection = await resolveSurveySelection(req.db, user, req.query.survey_id);
 
-    if (accessibleSurveys.length === 0) {
-      return sendSuccess(res, {
-        count: 0,
-        results: [],
-        metadata: { accessible_surveys: [] }
-      });
-    }
-
-    // Save full list before any filtering — always returned in metadata
-    const allAccessibleSurveys = [...accessibleSurveys];
-
-    const surveyIdFilter = req.query.survey_id;
-
-    if (surveyIdFilter) {
-      accessibleSurveys = allAccessibleSurveys.filter(s => s.asset_id === surveyIdFilter);
-
-      if (accessibleSurveys.length === 0) {
-        return sendSuccess(res, {
-          count: 0,
-          results: [],
-          message: 'Survey not found or access denied',
-          metadata: { accessible_surveys: allAccessibleSurveys.map(surveyRef) }
-        });
-      }
-    } else if (accessibleSurveys.length > 1) {
-      return sendSuccess(res, {
-        count: 0,
-        results: [],
-        message: 'Please select a survey to view statistics',
-        metadata: { accessible_surveys: allAccessibleSurveys.map(surveyRef) }
-      });
-    }
-
-    // Enumerator restrictions
-    const allowedEnumerators = user.permissions?.enumerators || [];
-    const enumeratorFilter = allowedEnumerators.length > 0
-      ? { submitted_by: { $in: allowedEnumerators } }
-      : {};
+    if (selection.kind === 'none') return emptyStats(res);
+    if (selection.kind === 'denied') return emptyStats(res, selection.surveys, SURVEY_DENIED);
+    if (selection.kind === 'ambiguous') return emptyStats(res, selection.surveys, SURVEY_REQUIRED);
 
     // Exactly one survey is loaded per request, same as /api/kobo/submissions.
-    const survey = accessibleSurveys[0];
+    const { survey, surveys: allAccessibleSurveys } = selection;
+    const enumerators = enumeratorFilter(user);
 
     // The dashboard never shows an individual submission: every chart is a count per enumerator,
     // per day, or per alert code. So the grouping happens in MongoDB rather than being shipped raw
@@ -98,7 +58,7 @@ async function handler(req, res) {
           $match: {
             type: { $ne: 'metadata' },
             submitted_by: { $nin: PLACEHOLDER_ENUMERATORS },
-            ...enumeratorFilter
+            ...enumerators
           }
         },
         {
@@ -148,4 +108,4 @@ async function handler(req, res) {
   }
 }
 
-module.exports = withMiddleware(handler, authenticateUser);
+module.exports = withMiddleware(handler, { methods: ['GET'] });

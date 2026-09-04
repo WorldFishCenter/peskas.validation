@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Guidance for Claude Code working in this repository. **Version 2.6.0.**
+Guidance for Claude Code working in this repository. **Version 2.9.0.**
 
 <!-- Keep this file under ~200 lines: it loads into every session, and length costs adherence.
      Detail belongs in .claude/rules/ (path-scoped, loads only for matching files), in docs/, or in
@@ -36,8 +36,12 @@ npm run render:lessons   # Quarto → public/data-explorer/lessons/
 npm run sync:all         # Airtable → MongoDB (districts → surveys → users)
 ```
 
-**There is no test suite.** Verify with `npm run build` and `npm run lint`, and by exercising the
-change in the running app. Don't claim a change is tested when it isn't.
+**`npm test` runs five assert-based checks** (`node:assert/strict`, no framework): country
+metadata, the enumerator dashboard's derivations, the submissions query builder, the permission
+filter and survey selection. They cover pure logic and the two modules that take an injected `db`.
+Everything else — every handler, every React module — is still unverified by tests, so also run
+`npm run build` and `npm run lint` and exercise the change in the running app. Don't claim a
+change is tested when it isn't.
 
 If `npm run render:lessons` fails with `MissingEnvVarsError`, use
 `cd data-explorer && quarto render .` — the root script validates `.env`, which a render doesn't need.
@@ -56,14 +60,23 @@ flags; the portal reads from Mongo and does not call KoboToolbox during page loa
 `surveys` collection, so alert codes differ between surveys.
 
 **Permissions**: `permissions.surveys` on the user gates everything. **An admin with an empty array
-has access to all surveys**; a regular user sees only what is listed. Never trust a client-supplied
-survey or country id — filter through `lib/filter-permissions.js`.
+has access to all surveys**; a regular user sees only what is listed. That rule lives in exactly one
+place — `hasFullSurveyAccess()` in `lib/filter-permissions.js` — so don't re-test `role === 'admin'`
+to mean "sees everything". Never trust a client-supplied survey or country id: filter through
+`lib/filter-permissions.js`, whose functions all take the `db` handle as their first argument.
+Choosing *which* survey a request is about is `lib/survey-selection.js`.
 
 **Production is `api/` (Vercel serverless); `server/dev.js` mounts those same handlers for local
 dev. `server/index.js` was deleted** — do not reference or recreate it.
 
 ## Rules that apply everywhere
 
+- **Every `api/` handler is wrapped in `withMiddleware(handler, { methods, auth, admin })`.** That
+  frame owns CORS, the OPTIONS preflight, the method guard, `req.db`, `req.user` and the single
+  error shape — don't re-implement any of them in a handler. A handler returns a value (sent as
+  200 JSON) or throws: `HttpError(message, status, code)` for anything the caller can fix, a plain
+  `Error` for a server fault (logged in full, reported as a generic 500). To stream or set your own
+  headers, write to `res` and return nothing.
 - **Adding an `api/` endpoint means also adding `mountServerlessFunction(...)` to `server/dev.js`**,
   or it will work in production and 404 locally.
 - **`await logAuditEvent(db, event)` before sending the response.** Vercel freezes the context after

@@ -1,21 +1,9 @@
-const { getDb } = require('../../lib/db');
-const { sendError, setCorsHeaders } = require('../../lib/response');
+const { sendError } = require('../../lib/response');
 const { isValidResetToken } = require('../../lib/helpers');
+const { withMiddleware } = require('../../lib/middleware');
 const crypto = require('crypto');
 
-module.exports = async (req, res) => {
-  // Set CORS headers
-  setCorsHeaders(res, req);
-
-  // Handle OPTIONS request for CORS preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'GET') {
-    return sendError(res, 'Method not allowed', 405);
-  }
-
+async function handler(req, res) {
   try {
     const startTime = Date.now();
     const { token } = req.query;
@@ -30,7 +18,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    const db = await getDb();
+    const db = req.db;
     
     // SECURITY: Query for all active users with non-expired tokens
     // This prevents the database query timing from leaking information
@@ -118,3 +106,5 @@ async function applyTimingDelay(startTime) {
     await new Promise(resolve => setTimeout(resolve, delay));
   }
 }
+
+module.exports = withMiddleware(handler, { methods: ['GET'], auth: false });

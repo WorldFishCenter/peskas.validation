@@ -1,7 +1,7 @@
-const { getDb } = require('../../lib/db');
 const { sendPasswordResetEmail } = require('../../lib/email');
 const { consumeRateLimit } = require('../../lib/rate-limit');
-const { sendBadRequest, sendError, setCorsHeaders } = require('../../lib/response');
+const { sendBadRequest, sendError } = require('../../lib/response');
+const { withMiddleware } = require('../../lib/middleware');
 const crypto = require('crypto');
 
 /**
@@ -14,19 +14,7 @@ const crypto = require('crypto');
 const GENERIC_RESPONSE =
   'If an account matches that username or email, password reset instructions have been sent to it.';
 
-module.exports = async (req, res) => {
-  // Set CORS headers
-  setCorsHeaders(res, req);
-
-  // Handle OPTIONS request for CORS preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    return sendError(res, 'Method not allowed', 405);
-  }
-
+async function handler(req, res) {
   try {
     const { identifier } = req.body; // Username or email
 
@@ -53,7 +41,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    const db = await getDb();
+    const db = req.db;
 
     // Find user by username OR email
     const user = await db.collection('users').findOne({
@@ -134,4 +122,6 @@ module.exports = async (req, res) => {
     console.error('[PASSWORD_RESET] Error:', error);
     return sendError(res, 'Failed to process password reset request', 500);
   }
-};
+}
+
+module.exports = withMiddleware(handler, { methods: ['POST'], auth: false });

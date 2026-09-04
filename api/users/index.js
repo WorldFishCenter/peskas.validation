@@ -6,35 +6,22 @@
  */
 
 const bcrypt = require('bcryptjs');
-const { withMiddleware, authenticateUser, requireAdmin } = require('../../lib/middleware');
-const { getDb } = require('../../lib/db');
+const { withMiddleware } = require('../../lib/middleware');
 const { logAuditEvent } = require('../../lib/audit-logger');
 const { validatePassword } = require('../../lib/helpers');
-const { sendBadRequest, sendServerError, setCorsHeaders } = require('../../lib/response');
+const { sendBadRequest, sendServerError } = require('../../lib/response');
 
 async function handler(req, res) {
-  setCorsHeaders(res, req);
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
   if (req.method === 'GET') {
     return await handleGet(req, res);
   } else if (req.method === 'POST') {
     return await handlePost(req, res);
-  } else {
-    return res.status(405).json({ error: 'Method not allowed' });
   }
 }
 
 async function handleGet(req, res) {
   try {
-    const database = await getDb();
-    if (!database) {
-      return sendServerError(res, 'Database not configured');
-    }
-
+    const database = req.db;
     const users = await database.collection('users')
       .find({}, { projection: { password_hash: 0 } })
       .sort({ created_at: -1 })
@@ -79,11 +66,7 @@ async function handlePost(req, res) {
       return sendBadRequest(res, 'Role must be admin or user');
     }
 
-    const database = await getDb();
-    if (!database) {
-      return sendServerError(res, 'Database not configured');
-    }
-
+    const database = req.db;
     // Hash password
     const password_hash = await bcrypt.hash(password, 10);
 
@@ -151,4 +134,4 @@ async function handlePost(req, res) {
   }
 }
 
-module.exports = withMiddleware(handler, authenticateUser, requireAdmin);
+module.exports = withMiddleware(handler, { methods: ['GET', 'POST'], admin: true });

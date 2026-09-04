@@ -9,21 +9,10 @@
  * 2. Via CLI: node scripts/sync_users_from_airtable.cjs
  */
 
-const { withMiddleware, authenticateUser, requireAdmin } = require('../../lib/middleware');
-const { setCorsHeaders } = require('../../lib/response');
-const { syncUsersFromAirtable } = require('../../lib/airtable-sync');
+const { withMiddleware } = require('../../lib/middleware');
+const { syncUsersFromAirtable } = require('../../lib/airtable-sync-users');
 
 async function handler(req, res) {
-  setCorsHeaders(res, req);
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
     const result = await syncUsersFromAirtable();
 
@@ -48,4 +37,4 @@ async function handler(req, res) {
   }
 }
 
-module.exports = withMiddleware(handler, authenticateUser, requireAdmin);
+module.exports = withMiddleware(handler, { methods: ['POST'], admin: true });

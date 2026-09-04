@@ -9,20 +9,9 @@
  * dedicated background job.
  */
 
-const { withMiddleware, authenticateUser, requireAdmin } = require('../../lib/middleware');
-const { setCorsHeaders } = require('../../lib/response');
+const { withMiddleware } = require('../../lib/middleware');
 
 async function handler(req, res) {
-  setCorsHeaders(res, req);
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
     // Return 501 with informative message
     // The R pipeline handles statistics computation
@@ -47,4 +36,4 @@ async function handler(req, res) {
   }
 }
 
-module.exports = withMiddleware(handler, authenticateUser, requireAdmin);
+module.exports = withMiddleware(handler, { methods: ['POST'], admin: true });

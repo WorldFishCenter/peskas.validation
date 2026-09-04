@@ -5,27 +5,14 @@
  * Requires authentication
  */
 
-const { withMiddleware, authenticateUser } = require('../../../lib/middleware');
+const { withMiddleware } = require('../../../lib/middleware');
 const { getDb } = require('../../../lib/db');
 const { getSurveyFlagsCollection, VALIDATION_STATUSES } = require('../../../lib/helpers');
 const { getAccessibleSurveys } = require('../../../lib/filter-permissions');
-const { sendBadRequest, sendForbidden, sendNotFound, sendServerError, setCorsHeaders } = require('../../../lib/response');
+const { sendBadRequest, sendForbidden, sendNotFound, sendServerError } = require('../../../lib/response');
 const { logAuditEvent } = require('../../../lib/audit-logger');
 
 async function handler(req, res) {
-  // Set CORS headers
-  setCorsHeaders(res, req);
-
-  // Handle OPTIONS request for CORS preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  // Only allow PATCH method
-  if (req.method !== 'PATCH') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   let database;
   try {
     const id = req.query.id;
@@ -46,7 +33,7 @@ async function handler(req, res) {
     // surveys this user may touch — not merely a non-empty string. Without this check any
     // authenticated user could write into any survey, and an unrecognised value would create
     // a new `surveys_flags-*` collection on first upsert.
-    const accessibleSurveys = await getAccessibleSurveys(req.user);
+    const accessibleSurveys = await getAccessibleSurveys(req.db, req.user);
     if (!accessibleSurveys.some(s => s.asset_id === asset_id)) {
       return sendForbidden(res, 'You do not have access to the requested survey.');
     }
@@ -115,4 +102,4 @@ async function handler(req, res) {
 }
 
 // Export with authentication middleware
-module.exports = withMiddleware(handler, authenticateUser);
+module.exports = withMiddleware(handler, { methods: ['PATCH'] });

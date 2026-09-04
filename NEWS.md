@@ -1,3 +1,34 @@
+# Management Platform 2.9.0
+
+A maintenance release: a few fixes on screens you use daily, and a large internal tidy-up that
+leaves the portal safer to change.
+
+## Fixed
+
+- **Enumerator performance: filtered figures no longer fall back to all-time totals.** With a date
+  range applied, an enumerator with no submissions in that range was shown their lifetime count
+  instead of zero, so a quiet period could read as a busy one. They now show zero and drop out of
+  the charts, as they always should have.
+
+- **Alert code definitions are now scoped to your surveys.** Any signed-in user could read the
+  alert-code configuration of any survey, including surveys in countries they have no access to.
+
+- **Data download: choosing several forms returns all of them.** An administrator requesting more
+  than one form received data from only the first, with nothing to say the rest had been dropped.
+  The download screen selects one form at a time, so this affected direct API use rather than
+  anything you could do from the page.
+
+- **The enumerator picker no longer depends on your language.** It matched names against the
+  translated word for "Unknown", so in Portuguese and Swahili it could have hidden a real
+  enumerator from the dropdown. No one was affected.
+
+## Notes
+
+- Internal: all 29 API endpoints now share one wrapper for authentication, permissions, method
+  checks and error handling, and the survey-permission rules live in one place covered by
+  automated checks (`npm test`, now five). A few hundred lines of duplicated and unused code were
+  removed. None of this changes how the portal looks or behaves.
+
 # Management Platform 2.8.0
 
 Peskas users can now write to the team without leaving the portal.

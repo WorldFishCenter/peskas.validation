@@ -14,7 +14,8 @@ interface PageHeaderProps {
   minDate: string;
   maxDate: string;
   selectedSurvey: string | null;
-  setSelectedSurvey: (assetId: string | null) => void;
+  /** Choosing a survey also loads it — see `selectSurvey` in src/api/api.ts. */
+  selectSurvey: (assetId: string | null) => void;
   accessibleSurveys: Array<{ asset_id: string; name: string; country_id?: string }>;
   surveyCountry: string;
   onShowAlertGuide?: () => void;
@@ -31,7 +32,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   minDate,
   maxDate,
   selectedSurvey,
-  setSelectedSurvey,
+  selectSurvey,
   accessibleSurveys,
   surveyCountry,
   onShowAlertGuide
@@ -71,7 +72,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                     <select
                       className="form-select mw-12"
                       value={selectedSurvey || ''}
-                      onChange={e => setSelectedSurvey(e.target.value || null)}
+                      onChange={e => selectSurvey(e.target.value || null)}
                     >
                       {!selectedSurvey && (
                         <option value="" disabled>{t('filters.selectSurvey', { ns: 'validation' })}</option>

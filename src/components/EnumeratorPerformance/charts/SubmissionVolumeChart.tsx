@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { byVolume, displayTotal } from '../utils/dataUtils';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { EnumeratorData } from '../types';
@@ -25,9 +26,7 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = React.memo((
   const { t } = useTranslation('enumerators');
 
   const chartOptions: Highcharts.Options = useMemo(() => {
-    const sortedEnumerators = [...enumerators].sort(
-      (a, b) => (b.filteredTotal || b.totalSubmissions) - (a.filteredTotal || a.totalSubmissions)
-    );
+    const sortedEnumerators = byVolume(enumerators);
     return {
       chart: {
         type: 'bar',
@@ -94,7 +93,7 @@ const SubmissionVolumeChart: React.FC<SubmissionVolumeChartProps> = React.memo((
       series: [{
         name: t('charts.submissions'),
         type: 'bar',
-        data: sortedEnumerators.map(e => e.filteredTotal || e.totalSubmissions)
+        data: sortedEnumerators.map(displayTotal)
       }],
       legend: { enabled: false },
       credits: { enabled: false }

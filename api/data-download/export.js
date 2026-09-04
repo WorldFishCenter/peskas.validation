@@ -37,40 +37,24 @@
  * @module api/data-download/export
  */
 
-const { withMiddleware, authenticateUser } = require('../../lib/middleware');
+const { withMiddleware } = require('../../lib/middleware');
 const { getLandingsCSVMerged, PeskasAPIError } = require('../../lib/peskas-api');
 const { resolveDownloadRequests, DownloadPermissionError } = require('../../lib/filter-permissions');
 const { sanitizeCSV } = require('../../lib/helpers');
-const {
-  sendError,
-  sendServerError,
-  setCorsHeaders
-} = require('../../lib/response');
+const { sendError, sendServerError } = require('../../lib/response');
 const { logAuditEvent } = require('../../lib/audit-logger');
-const { getDb } = require('../../lib/db');
 
 /**
  * Handler function for export endpoint
  */
 async function handler(req, res) {
-  setCorsHeaders(res, req);
-
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
-    const database = await getDb();
+    const database = req.db;
 
     // Resolve the selection into permission-safe PeSKAS requests. Each request is pinned
     // to a survey the user may access, with the country derived per-survey. A user with
     // several forms/districts fans out to multiple CSV requests that are merged below.
-    const requests = await resolveDownloadRequests(req.user, req.query);
+    const requests = await resolveDownloadRequests(req.db, req.user, req.query);
 
     const {
       status = 'validated',
@@ -144,4 +128,4 @@ async function handler(req, res) {
   }
 }
 
-module.exports = withMiddleware(handler, authenticateUser);
+module.exports = withMiddleware(handler, { methods: ['GET'] });

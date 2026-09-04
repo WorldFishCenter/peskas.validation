@@ -27,33 +27,18 @@
  * @module api/data-download/metadata
  */
 
-const { withMiddleware, authenticateUser } = require('../../lib/middleware');
+const { withMiddleware } = require('../../lib/middleware');
 const {
   getAccessibleCountries,
   getAccessibleDistricts,
   getAccessibleSurveys
 } = require('../../lib/filter-permissions');
-const {
-  sendSuccess,
-  sendServerError,
-  setCorsHeaders
-} = require('../../lib/response');
+const { sendSuccess, sendServerError } = require('../../lib/response');
 
 /**
  * Handler function for metadata endpoint
  */
 async function handler(req, res) {
-  setCorsHeaders(res, req);
-
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
     // 1. Extract optional filters
     // Note: req.user is populated by authenticateUser middleware with full user data
@@ -61,9 +46,9 @@ async function handler(req, res) {
 
     // 2. Fetch all metadata in parallel using shared utilities
     const [countries, districts, surveys] = await Promise.all([
-      getAccessibleCountries(req.user),
-      getAccessibleDistricts(req.user, country_id, survey_id), // Pass survey_id for cascade filtering
-      getAccessibleSurveys(req.user, country_id)
+      getAccessibleCountries(req.db, req.user),
+      getAccessibleDistricts(req.db, req.user, country_id, survey_id), // Pass survey_id for cascade filtering
+      getAccessibleSurveys(req.db, req.user, country_id)
     ]);
 
     // 3. Format response
@@ -99,4 +84,4 @@ async function handler(req, res) {
   }
 }
 
-module.exports = withMiddleware(handler, authenticateUser);
+module.exports = withMiddleware(handler, { methods: ['GET'] });

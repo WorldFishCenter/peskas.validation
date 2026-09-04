@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { byVolume } from '../utils/dataUtils';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { EnumeratorData } from '../types';
@@ -17,14 +18,9 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = React.memo(({
 }) => {
   const { t } = useTranslation('enumerators');
 
-  // Filter enumerators with submissions
-  const filteredEnumerators = enumerators.filter(e => {
-    const total = e.filteredTotal !== undefined ? e.filteredTotal : e.totalSubmissions;
-    return total > 0;
-  });
-
-  // Sort dates chronologically
-  const sortedDates = [...uniqueDates].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  // `uniqueDates` arrives already sorted from dataUtils — `YYYY-MM-DD` sorts lexically, so the
+  // Date round-trip this used to do was a second, slower sort of an already-sorted array.
+  const sortedDates = uniqueDates;
 
   // Format dates for display
   const formattedDates = sortedDates.map(date => {
@@ -38,14 +34,8 @@ const SubmissionTrendChart: React.FC<SubmissionTrendChartProps> = React.memo(({
 
   const tickInterval = Math.max(1, Math.floor(sortedDates.length / 10));
 
-  // Get top 10 enumerators
-  const topEnumerators = [...filteredEnumerators]
-    .sort((a, b) => {
-      const aTotal = a.filteredTotal ?? a.totalSubmissions;
-      const bTotal = b.filteredTotal ?? b.totalSubmissions;
-      return bTotal - aTotal;
-    })
-    .slice(0, 10);
+  // Top 10 by volume.
+  const topEnumerators = byVolume(enumerators).slice(0, 10);
 
   const chartOptions: Highcharts.Options = useMemo(() => ({
     chart: {

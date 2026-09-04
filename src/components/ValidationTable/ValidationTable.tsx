@@ -89,7 +89,7 @@ const ValidationTable: React.FC = () => {
     accessibleSurveys,
     loadedSurvey,
     selectedSurvey,
-    setSelectedSurvey,
+    selectSurvey,
     isLoading,
     error,
     refetch,
@@ -377,8 +377,7 @@ const ValidationTable: React.FC = () => {
                 selectedSurvey={selectedSurvey}
                 onSurveyChange={(assetId) => {
                   resetFilters();
-                  setSelectedSurvey(assetId);
-                  refetch(assetId);
+                  selectSurvey(assetId);
                 }}
                 onShowAlertGuide={() => setShowAlertGuide(true)}
               />

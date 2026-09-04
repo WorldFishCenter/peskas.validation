@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { byQuality, displayTotal } from '../utils/dataUtils';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { EnumeratorData } from '../types';
@@ -23,17 +24,8 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = React.memo(({
 }) => {
   const { t } = useTranslation('enumerators');
 
-  // Filter and sort once
-  const sortedEnumerators = enumerators
-    .filter(e => {
-      const total = e.filteredTotal !== undefined ? e.filteredTotal : e.totalSubmissions;
-      return total > 0;
-    })
-    .sort((a, b) => {
-      const aRate = a.filteredErrorRate ?? a.errorRate;
-      const bRate = b.filteredErrorRate ?? b.errorRate;
-      return aRate - bRate; // Best quality first
-    });
+  // Ranking rule lives in dataUtils — it used to be re-derived here and in three other modules.
+  const sortedEnumerators = useMemo(() => byQuality(enumerators), [enumerators]);
 
   const chartOptions: Highcharts.Options = useMemo(() => ({
     chart: {
@@ -72,7 +64,7 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = React.memo(({
 
         if (!enumerator) return wrapTooltip(formatTooltipHeader(name) + `<span style="color:#888;">${t('charts.noData')}</span>`);
 
-        const total = enumerator.filteredTotal ?? enumerator.totalSubmissions;
+        const total = displayTotal(enumerator);
         const alerts = enumerator.filteredAlertsCount ?? enumerator.submissionsWithAlerts;
         const cleanCount = Math.max(0, total - alerts);
         const qualityScore = computeQualityScore(enumerator).toFixed(1);
@@ -107,7 +99,7 @@ const QualityRankingChart: React.FC<QualityRankingChartProps> = React.memo(({
     }, {
       name: t('charts.submissions'),
       type: 'bar',
-      data: sortedEnumerators.map(e => e.filteredTotal || e.totalSubmissions),
+      data: sortedEnumerators.map(displayTotal),
       color: chartColors.info,
       yAxis: 1,
       opacity: 0.8,

@@ -5,11 +5,10 @@
  * GET requires authentication, PATCH/DELETE require admin
  */
 
-const { withMiddleware, authenticateUser } = require('../../lib/middleware');
-const { getDb } = require('../../lib/db');
+const { withMiddleware } = require('../../lib/middleware');
 const { logAuditEvent } = require('../../lib/audit-logger');
 const { getAccessibleSurveys, normalizeCountryCode } = require('../../lib/filter-permissions');
-const { sendNotFound, sendBadRequest, sendForbidden, sendServerError, setCorsHeaders } = require('../../lib/response');
+const { sendNotFound, sendBadRequest, sendForbidden, sendServerError } = require('../../lib/response');
 
 /**
  * Count the surveys in a country that this user can access.
@@ -21,12 +20,13 @@ const { sendNotFound, sendBadRequest, sendForbidden, sendServerError, setCorsHea
  * Survey documents carry `country_id` (capitalized, occasionally an array) and never
  * `country_code`, so this cannot be expressed as a MongoDB `countDocuments` predicate.
  *
+ * @param {import('mongodb').Db} database - Database handle (`req.db`)
  * @param {Object} user - req.user
  * @param {string} code - Country code in any casing
  * @returns {Promise<number>}
  */
-async function countAccessibleSurveysForCountry(user, code) {
-  const surveys = await getAccessibleSurveys(user, code);
+async function countAccessibleSurveysForCountry(database, user, code) {
+  const surveys = await getAccessibleSurveys(database, user, code);
   return surveys.length;
 }
 
@@ -68,12 +68,6 @@ async function findCountryByCode(database, code) {
 }
 
 async function handler(req, res) {
-  setCorsHeaders(res, req);
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
   // Get country code from query parameter (Vercel converts [code] to query.code)
   const code = req.query.code;
 
@@ -91,18 +85,12 @@ async function handler(req, res) {
       return sendForbidden(res, 'Admin access required');
     }
     return await handleDelete(req, res, code);
-  } else {
-    return res.status(405).json({ error: 'Method not allowed' });
   }
 }
 
 async function handleGet(req, res, code) {
   try {
-    const database = await getDb();
-    if (!database) {
-      return sendServerError(res, 'Database not configured');
-    }
-
+    const database = req.db;
     const country = await findCountryByCode(database, code);
 
     if (!country) {
@@ -112,7 +100,7 @@ async function handleGet(req, res, code) {
     // A user has access to a country when they have access to at least one of its surveys.
     // Full-access admins (empty permissions.surveys) match every survey, so the same call
     // answers both the access check and the count.
-    const accessibleSurveys = await getAccessibleSurveys(req.user, country.code);
+    const accessibleSurveys = await getAccessibleSurveys(req.db, req.user, country.code);
 
     if (accessibleSurveys.length === 0) {
       return sendForbidden(res, 'Access denied to this country');
@@ -145,11 +133,7 @@ async function handlePatch(req, res, code) {
   try {
     const { name, active, metadata } = req.body;
 
-    const database = await getDb();
-    if (!database) {
-      return sendServerError(res, 'Database not configured');
-    }
-
+    const database = req.db;
     // Build update object
     const updateDoc = {
       updated_at: new Date(),
@@ -192,7 +176,7 @@ async function handlePatch(req, res, code) {
 
     const updatedCountry = result;
 
-    const surveyCount = await countAccessibleSurveysForCountry(req.user, updatedCountry.code);
+    const surveyCount = await countAccessibleSurveysForCountry(req.db, req.user, updatedCountry.code);
 
     await logAuditEvent(database, {
       username: req.user.username, user_id: req.user.id,
@@ -227,11 +211,7 @@ async function handlePatch(req, res, code) {
 
 async function handleDelete(req, res, code) {
   try {
-    const database = await getDb();
-    if (!database) {
-      return sendServerError(res, 'Database not configured');
-    }
-
+    const database = req.db;
     // Check if country has surveys. This guard counted on `surveys.country_code`, which no
     // document has, so it always read zero and never actually blocked a delete.
     const surveyCount = await countAllActiveSurveysForCountry(database, code);
@@ -266,4 +246,4 @@ async function handleDelete(req, res, code) {
   }
 }
 
-module.exports = withMiddleware(handler, authenticateUser);
+module.exports = withMiddleware(handler, { methods: ['GET', 'PATCH', 'DELETE'] });

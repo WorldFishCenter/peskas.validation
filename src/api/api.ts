@@ -3,6 +3,7 @@ import axios from 'axios';
 import { getApiBaseUrl } from '../utils/apiConfig';
 import { extractErrorMessage } from '../utils/errors';
 import { useSurveyContext } from '../contexts/SurveyContext';
+import { SURVEY_REQUIRED } from '../constants/surveySelection';
 
 // Get the appropriate API base URL based on environment
 const API_BASE_URL = getApiBaseUrl();
@@ -110,7 +111,6 @@ export const useFetchSubmissions = (query: SubmissionQuery) => {
   // The one survey these rows belong to, as named by the API. Consumers read it instead of
   // deriving it from the rows.
   const [loadedSurvey, setLoadedSurvey] = useState<AccessibleSurvey | null>(null);
-  const [alertCodes, setAlertCodes] = useState<Record<string, Record<string, string>>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -160,8 +160,9 @@ export const useFetchSubmissions = (query: SubmissionQuery) => {
         signal: controller.signal,
       });
 
-      // Handle case where backend requires survey selection
-      if (response.data.message === 'Please select a survey to view submissions') {
+      // The API reports "you must choose a survey" as a code. It used to be an English
+      // sentence compared verbatim here, which made a user-facing string load-bearing.
+      if (response.data.code === SURVEY_REQUIRED) {
         setData([]);
         setTotal(0);
         setLoadedSurvey(null);
@@ -208,14 +209,6 @@ export const useFetchSubmissions = (query: SubmissionQuery) => {
         const surveys = response.data.metadata.accessible_surveys;
         setAccessibleSurveys(surveys);
 
-        const codesMap: Record<string, Record<string, string>> = {};
-        surveys.forEach((survey: AccessibleSurvey) => {
-          if (survey.alert_codes) {
-            codesMap[survey.asset_id] = survey.alert_codes;
-          }
-        });
-        setAlertCodes(codesMap);
-
         // For single-survey users: sync the context so other pages know which
         // survey is active. Safe — fetchData is stable, so this won't retrigger
         // the useEffect below.
@@ -245,6 +238,20 @@ export const useFetchSubmissions = (query: SubmissionQuery) => {
     return () => { abortRef.current?.abort(); };
   }, [fetchData]);
 
+  /**
+   * Choose a survey, and load it.
+   *
+   * `fetchData` reads the survey from a ref rather than from the context, so setting the context
+   * alone does not start a fetch. That used to be the caller's problem: every selection site had
+   * to remember `setSelectedSurvey(id)` *and* `refetch(id)`, in that order, or the screen went
+   * quietly stale. Pairing them here makes the ordering internal — a caller has one thing to get
+   * right instead of two.
+   */
+  const selectSurvey = useCallback((assetId: string | null) => {
+    setSelectedSurveyId(assetId);
+    fetchData(assetId);
+  }, [setSelectedSurveyId, fetchData]);
+
   return {
     data,
     total,
@@ -252,9 +259,8 @@ export const useFetchSubmissions = (query: SubmissionQuery) => {
     dateRange,
     accessibleSurveys,
     loadedSurvey,
-    alertCodes,
     selectedSurvey: selectedSurveyId,
-    setSelectedSurvey: setSelectedSurveyId,
+    selectSurvey,
     isLoading,
     error,
     refetch: fetchData
@@ -296,7 +302,7 @@ export const useFetchEnumeratorStats = () => {
         signal: controller.signal,
       });
 
-      if (response.data.message === 'Please select a survey to view statistics') {
+      if (response.data.code === SURVEY_REQUIRED) {
         setData([]);
         setLoadedSurvey(null);
         if (response.data.metadata?.accessible_surveys) {
@@ -346,12 +352,26 @@ export const useFetchEnumeratorStats = () => {
     return () => { abortRef.current?.abort(); };
   }, [fetchData]);
 
+  /**
+   * Choose a survey, and load it.
+   *
+   * `fetchData` reads the survey from a ref rather than from the context, so setting the context
+   * alone does not start a fetch. That used to be the caller's problem: every selection site had
+   * to remember `setSelectedSurvey(id)` *and* `refetch(id)`, in that order, or the screen went
+   * quietly stale. Pairing them here makes the ordering internal — a caller has one thing to get
+   * right instead of two.
+   */
+  const selectSurvey = useCallback((assetId: string | null) => {
+    setSelectedSurveyId(assetId);
+    fetchData(assetId);
+  }, [setSelectedSurveyId, fetchData]);
+
   return {
     data,
     accessibleSurveys,
     loadedSurvey,
     selectedSurvey: selectedSurveyId,
-    setSelectedSurvey: setSelectedSurveyId,
+    selectSurvey,
     isLoading,
     error,
     refetch: fetchData

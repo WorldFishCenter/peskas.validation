@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { displayTotal, displayAlerts, shareOfAverage } from '../utils/dataUtils';
 import { EnumeratorData, DetailTabType } from '../types';
 import { AlertDistributionChart, EnumeratorTrendChart } from '../charts/EnumeratorDetailCharts';
 import { qualityScore } from '../utils/dataUtils';
@@ -44,8 +45,18 @@ const EnumeratorDetail: React.FC<EnumeratorDetailProps> = ({
               onChange={(e) => setSelectedEnumerator(e.target.value)}
             >
               <option value="" disabled>{t('selectEnumerator')}</option>
-              {enumerators
-                .filter(e => e.name !== t('table.unknownEnumerator', { ns: 'validation' }))
+              {/* No placeholder filter here on purpose: `/api/enumerators-stats` already excludes
+                  them server-side via PLACEHOLDER_ENUMERATORS, and processEnumeratorData drops
+                  rows with no `submitted_by`. This list used to filter on
+                  `t('table.unknownEnumerator')` — a *translated* string compared against a name
+                  from the database. In English that matched a value the backend had already
+                  removed, so it did nothing; in Portuguese and Swahili it could only ever hide a
+                  real enumerator who happened to be called "Desconhecido" or "Haijulikani",
+                  making the dropdown's contents depend on the reader's language. */}
+              {/* Copied before sorting: `enumerators` is the parent's memoized array, shared by
+                  reference with every chart. The removed `.filter()` used to return a new array,
+                  which is what made the in-place sort harmless. */}
+              {[...enumerators]
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map(enumerator => (
                   <option key={enumerator.name} value={enumerator.name}>
@@ -99,7 +110,7 @@ const EnumeratorDetail: React.FC<EnumeratorDetailProps> = ({
                     <div className="d-flex justify-content-between">
                       <div>
                         <div className="subheader">{t('totalSubmissionsLabel')}</div>
-                        <div className="h1 mt-2">{selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions}</div>
+                        <div className="h1 mt-2">{displayTotal(selectedEnumeratorData)}</div>
                       </div>
                       <div>
                         <span className="badge bg-primary text-white p-2">
@@ -110,7 +121,7 @@ const EnumeratorDetail: React.FC<EnumeratorDetailProps> = ({
                     <div className="d-flex mt-3">
                       <div>{t('submissionRate')}</div>
                       <div className="ms-auto text-green">
-                        {Math.round((selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions) / (enumerators.reduce((sum, e) => sum + (e.filteredTotal || e.totalSubmissions), 0) / enumerators.length) * 100)}%
+                        {shareOfAverage(selectedEnumeratorData, enumerators)}%
                         <svg xmlns="http://www.w3.org/2000/svg" className="icon ms-1" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
                           <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                           <path d="M3 17l6 -6l4 4l8 -8"></path>
@@ -139,10 +150,10 @@ const EnumeratorDetail: React.FC<EnumeratorDetailProps> = ({
                     <div className="d-flex mt-3">
                       <div>{t('cleanSubmissions')}</div>
                       <div className="ms-auto text-green">
-                        {(selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions) -
-                         (selectedEnumeratorData.filteredAlertsCount || selectedEnumeratorData.submissionsWithAlerts)}
+                        {displayTotal(selectedEnumeratorData) -
+                         displayAlerts(selectedEnumeratorData)}
                         <span className="text-muted ms-2">
-                          {t('pagination.of', { ns: 'common' })} {selectedEnumeratorData.filteredTotal || selectedEnumeratorData.totalSubmissions}
+                          {t('pagination.of', { ns: 'common' })} {displayTotal(selectedEnumeratorData)}
                         </span>
                       </div>
                     </div>

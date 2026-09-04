@@ -5,26 +5,13 @@
  * Requires authentication
  */
 
-const { sendDetailedError, sendForbidden, setCorsHeaders } = require('../../../lib/response');
-const { withMiddleware, authenticateUser } = require('../../../lib/middleware');
+const { HttpError, sendForbidden } = require('../../../lib/response');
+const { withMiddleware } = require('../../../lib/middleware');
 const { makeKoboRequest, isValidAssetId, sanitizeString } = require('../../../lib/api-utils');
 const { getAccessibleSurveys } = require('../../../lib/filter-permissions');
 const { VALIDATION_STATUSES } = require('../../../lib/helpers');
 
 async function handler(req, res) {
-  // Set CORS headers
-  setCorsHeaders(res, req);
-
-  // Handle OPTIONS request for CORS preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  // Only allow PATCH method
-  if (req.method !== 'PATCH') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
     // Get submission ID from query parameter (Vercel converts [id] to query.id)
     const rawId = req.query.id;
@@ -33,18 +20,15 @@ async function handler(req, res) {
 
     // Validate inputs
     if (!rawId || typeof rawId !== 'string') {
-      return sendDetailedError(res, 'PATCH /api/kobo/validation-status/:id - Missing ID',
-        new Error('Submission ID is required'), req, 400);
+      throw new HttpError('Submission ID is required', 400);
     }
 
     if (!rawStatus || typeof rawStatus !== 'string') {
-      return sendDetailedError(res, 'PATCH /api/kobo/validation-status/:id - Missing validation_status',
-        new Error('validation_status is required in request body'), req, 400);
+      throw new HttpError('validation_status is required in request body', 400);
     }
 
     if (!rawAssetId || typeof rawAssetId !== 'string') {
-      return sendDetailedError(res, 'PATCH /api/kobo/validation-status/:id - Missing asset_id',
-        new Error('asset_id in body or KOBO_ASSET_ID env var is required'), req, 400);
+      throw new HttpError('asset_id in body or KOBO_ASSET_ID env var is required', 400);
     }
 
     // Sanitize inputs
@@ -54,15 +38,13 @@ async function handler(req, res) {
 
     // Validate asset ID format
     if (!isValidAssetId(koboAssetId)) {
-      return sendDetailedError(res, 'PATCH /api/kobo/validation-status/:id - Invalid asset_id',
-        new Error('Invalid asset_id format'), req, 400);
+      throw new HttpError('Invalid asset_id format', 400);
     }
 
     // Validate validation_status against the shared list, so this endpoint and the MongoDB one
     // accept exactly the same set.
     if (!VALIDATION_STATUSES.includes(validation_status)) {
-      return sendDetailedError(res, 'PATCH /api/kobo/validation-status/:id - Invalid validation_status',
-        new Error(`validation_status must be one of: ${VALIDATION_STATUSES.join(', ')}`), req, 400);
+      throw new HttpError(`validation_status must be one of: ${VALIDATION_STATUSES.join(', ')}`, 400);
     }
 
     // Permission check before touching the database or KoboToolbox. This endpoint writes to the
@@ -71,7 +53,7 @@ async function handler(req, res) {
     // signed-in user set a status on any survey. Resolving the survey through the permission
     // filter also stops the error messages below from disclosing names and config state of
     // surveys the caller cannot see.
-    const accessibleSurveys = await getAccessibleSurveys(req.user);
+    const accessibleSurveys = await getAccessibleSurveys(req.db, req.user);
     const survey = accessibleSurveys.find(s => s.asset_id === koboAssetId);
 
     if (!survey) {
@@ -79,15 +61,13 @@ async function handler(req, res) {
     }
 
     if (!survey.kobo_config) {
-      return sendDetailedError(res, 'PATCH /api/kobo/validation_status/:id - Missing KoboToolbox config',
-        new Error(`Survey '${survey.name}' (${koboAssetId}) has no kobo_config. Run update_single_survey.R to configure.`), req, 500);
+      throw new Error(`Survey '${survey.name}' (${koboAssetId}) has no kobo_config. Run update_single_survey.R to configure.`);
     }
 
     const { api_url, token } = survey.kobo_config;
 
     if (!api_url || !token) {
-      return sendDetailedError(res, 'PATCH /api/kobo/validation_status/:id - Incomplete KoboToolbox config',
-        new Error(`Survey '${survey.name}' kobo_config is missing api_url or token`), req, 500);
+      throw new Error(`Survey '${survey.name}' kobo_config is missing api_url or token`);
     }
 
     const url = `${api_url}/assets/${koboAssetId}/data/${id}/validation_status/`;
@@ -109,19 +89,16 @@ async function handler(req, res) {
       message: `Validation status correctly updated for submission ${id}`
     });
   } catch (error) {
-    // Handle Axios errors specifically
+    // An upstream KoboToolbox failure is reported at the status KoboToolbox gave us.
     if (error.isAxiosError) {
       const status = error.response?.status || 500;
       const message = error.response?.data?.detail || error.response?.statusText || error.message;
-      return sendDetailedError(res, 'PATCH /api/kobo/validation-status/:id - KoboToolbox API error',
-        new Error(`KoboToolbox API error: ${status} - ${message}`),
-        req, status);
+      throw new HttpError(`KoboToolbox API error: ${status} - ${message}`, status);
     }
 
-    // Handle other errors
-    return sendDetailedError(res, 'PATCH /api/kobo/validation-status/:id', error, req, 500);
+    throw error;
   }
 }
 
 // Apply authentication middleware
-module.exports = withMiddleware(handler, authenticateUser);
+module.exports = withMiddleware(handler, { methods: ['PATCH'] });

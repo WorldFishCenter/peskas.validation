@@ -5,40 +5,33 @@
  * GET requires authentication, POST requires admin
  */
 
-const { withMiddleware, authenticateUser } = require('../../lib/middleware');
-const { getDb } = require('../../lib/db');
+const { withMiddleware } = require('../../lib/middleware');
 const { logAuditEvent } = require('../../lib/audit-logger');
 const { getAccessibleCountries, getAccessibleSurveys, normalizeCountryCode } = require('../../lib/filter-permissions');
-const { sendBadRequest, sendServerError, setCorsHeaders } = require('../../lib/response');
+const { sendBadRequest, sendServerError, sendForbidden } = require('../../lib/response');
 
 async function handler(req, res) {
-  setCorsHeaders(res, req);
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
   if (req.method === 'GET') {
     return await handleGet(req, res);
   } else if (req.method === 'POST') {
     // Check admin for POST
     if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Admin access required' });
+      return sendForbidden(res, 'Admin access required');
     }
     return await handlePost(req, res);
-  } else {
-    return res.status(405).json({ error: 'Method not allowed' });
   }
 }
 
 async function handleGet(req, res) {
   try {
-    const countries = await getAccessibleCountries(req.user);
-
+    // Independent of each other, so they run concurrently rather than back to back.
     // Survey counts are derived from the surveys this user can actually see, matched on the
     // normalized country slug. The previous implementation counted on `surveys.country_code`,
     // a field nothing ever writes, so every count was zero.
-    const accessibleSurveys = await getAccessibleSurveys(req.user);
+    const [countries, accessibleSurveys] = await Promise.all([
+      getAccessibleCountries(req.db, req.user),
+      getAccessibleSurveys(req.db, req.user)
+    ]);
     const surveyCountByCode = accessibleSurveys.reduce((acc, survey) => {
       const code = normalizeCountryCode(survey.country_id);
       if (code) acc[code] = (acc[code] || 0) + 1;
@@ -79,11 +72,7 @@ async function handlePost(req, res) {
       return sendBadRequest(res, 'Country name required');
     }
 
-    const database = await getDb();
-    if (!database) {
-      return sendServerError(res, 'Database not configured');
-    }
-
+    const database = req.db;
     // Existing codes are stored capitalized, so an exact lowercase lookup would miss them and
     // let a duplicate through. Compare normalized.
     const wanted = normalizeCountryCode(code);
@@ -135,4 +124,4 @@ async function handlePost(req, res) {
   }
 }
 
-module.exports = withMiddleware(handler, authenticateUser);
+module.exports = withMiddleware(handler, { methods: ['GET', 'POST'] });

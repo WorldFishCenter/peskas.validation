@@ -33,29 +33,14 @@
  * @module api/data-download/metadata-fields
  */
 
-const { withMiddleware, authenticateUser } = require('../../lib/middleware');
+const { withMiddleware } = require('../../lib/middleware');
 const { fetchLandingsMetadata, PeskasAPIError } = require('../../lib/peskas-api');
-const {
-  sendSuccess,
-  sendServerError,
-  setCorsHeaders
-} = require('../../lib/response');
+const { sendSuccess, sendServerError } = require('../../lib/response');
 
 /**
  * Handler function for metadata-fields endpoint
  */
 async function handler(req, res) {
-  setCorsHeaders(res, req);
-
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
     // Extract scope parameter if provided
     const { scope } = req.query;
@@ -91,4 +76,4 @@ async function handler(req, res) {
   }
 }
 
-module.exports = withMiddleware(handler, authenticateUser);
+module.exports = withMiddleware(handler, { methods: ['GET'] });

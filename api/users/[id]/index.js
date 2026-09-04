@@ -6,19 +6,12 @@
  */
 
 const bcrypt = require('bcryptjs');
-const { withMiddleware, authenticateUser, requireAdmin } = require('../../../lib/middleware');
-const { getDb } = require('../../../lib/db');
+const { withMiddleware } = require('../../../lib/middleware');
 const { logAuditEvent } = require('../../../lib/audit-logger');
 const { validateObjectId, validatePassword } = require('../../../lib/helpers');
-const { sendNotFound, sendBadRequest, sendServerError, setCorsHeaders } = require('../../../lib/response');
+const { sendNotFound, sendBadRequest, sendServerError } = require('../../../lib/response');
 
 async function handler(req, res) {
-  setCorsHeaders(res, req);
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
   // Get user ID from query parameter (Vercel converts [id] to query.id)
   const id = req.query.id;
 
@@ -28,8 +21,6 @@ async function handler(req, res) {
     return await handlePatch(req, res, id);
   } else if (req.method === 'DELETE') {
     return await handleDelete(req, res, id);
-  } else {
-    return res.status(405).json({ error: 'Method not allowed' });
   }
 }
 
@@ -38,11 +29,7 @@ async function handleGet(req, res, id) {
     // Validate ObjectId before using it
     const userId = validateObjectId(id, 'User ID');
 
-    const database = await getDb();
-    if (!database) {
-      return sendServerError(res, 'Database not configured');
-    }
-
+    const database = req.db;
     const user = await database.collection('users').findOne(
       { _id: userId },
       { projection: { password_hash: 0 } }
@@ -71,10 +58,6 @@ async function handleGet(req, res, id) {
     console.error('Get user error:', error);
 
     // Return 400 for validation errors
-    if (error.message && (error.message.includes('Invalid') || error.message.includes('required'))) {
-      return sendBadRequest(res, error.message);
-    }
-
     return sendServerError(res, 'Failed to fetch user');
   }
 }
@@ -86,11 +69,7 @@ async function handlePatch(req, res, id) {
 
     const { name, country, role, active, password } = req.body;
 
-    const database = await getDb();
-    if (!database) {
-      return sendServerError(res, 'Database not configured');
-    }
-
+    const database = req.db;
     // Get existing user to check role changes
     const existingUser = await database.collection('users').findOne({ _id: userId });
     if (!existingUser) {
@@ -208,10 +187,6 @@ async function handlePatch(req, res, id) {
     console.error('Update user error:', error);
 
     // Return 400 for validation errors
-    if (error.message && (error.message.includes('Invalid') || error.message.includes('required'))) {
-      return sendBadRequest(res, error.message);
-    }
-
     if (error.code === 11000) {
       return res.status(409).json({ error: 'Email already in use' });
     }
@@ -225,11 +200,7 @@ async function handleDelete(req, res, id) {
     // Validate ObjectId before using it
     const userId = validateObjectId(id, 'User ID');
 
-    const database = await getDb();
-    if (!database) {
-      return sendServerError(res, 'Database not configured');
-    }
-
+    const database = req.db;
     // Prevent deleting yourself
     if (id === req.user.id) {
       return sendBadRequest(res, 'Cannot delete your own account');
@@ -262,12 +233,8 @@ async function handleDelete(req, res, id) {
     console.error('Delete user error:', error);
 
     // Return 400 for validation errors
-    if (error.message && (error.message.includes('Invalid') || error.message.includes('required'))) {
-      return sendBadRequest(res, error.message);
-    }
-
     return sendServerError(res, 'Failed to delete user');
   }
 }
 
-module.exports = withMiddleware(handler, authenticateUser, requireAdmin);
+module.exports = withMiddleware(handler, { methods: ['GET', 'PATCH', 'DELETE'], admin: true });
